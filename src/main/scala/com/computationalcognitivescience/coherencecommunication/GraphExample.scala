@@ -11,7 +11,7 @@ object GraphExample {
     println("Edges")
     network.edges.foreach(println)
 
-    
+
   }
 
 }
