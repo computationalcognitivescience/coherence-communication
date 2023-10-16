@@ -12,6 +12,7 @@ object GraphExample {
     network.edges.foreach(println)
 
 
+
   }
 
 }

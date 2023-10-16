@@ -23,17 +23,17 @@ class CoherenceNetwork(
     // Check the discriminating vertices d in D, add w(d) if d is accepted
     val satisfiedVertices: Double = vertices.map((v: Node[WeightedBelief]) => if (assignment(v)) v.label.weight else 0).sum
 
+    def isEdgeSatisfied(edge: WUnDiEdge[Node[WeightedBelief]]): Boolean = {
+      // This edge is a positive constraint and satisfied
+      val posC = (positiveConstraints.contains(edge) && assignment(edge.left) == assignment(edge.right))
+      // This edge is a negative constraint and satisfied
+      val negC = (negativeConstraints.contains(edge) && assignment(edge.left) != assignment(edge.right))
+      posC || negC
+    }
+
     // Map all satisfied edges to their weights in w
-    val satisfiedEdges: Double = {edges | ((edge: WUnDiEdge[Node[WeightedBelief]]) =>
-      (
-        positiveConstraints.contains(edge) // This edge is a positive constraint
-          && // and
-          assignment(edge.left) == assignment(edge.right) // Both vertices are in the same set (A or R)
-          || // or
-          negativeConstraints.contains(edge) // This edge is a negative constraint
-            && // and
-            assignment(edge.left) != assignment(edge.right) // Vertices are in different sets
-        ))}.map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight).sum
+    val satisfiedEdges: Double = { edges | isEdgeSatisfied _ }
+      .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight).sum
 
     satisfiedVertices + satisfiedEdges
   }
