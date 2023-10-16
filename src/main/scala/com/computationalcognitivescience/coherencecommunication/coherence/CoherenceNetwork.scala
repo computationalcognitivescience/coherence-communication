@@ -15,28 +15,27 @@ class CoherenceNetwork(
 
     // Output
     // The number of edges that are satisfied
-    def coh(assignment: Map[Node[WeightedBelief], Boolean]): Double = {
-      // Check the discriminating vertices d in D, add w(d) if d is accepted
-      val satisfiedVertices: Double = vertices.map((v: Node[WeightedBelief]) => if (assignment(v)) v.label.weight else 0).sum
-      //TODO: FOREACH(d in vertices where assignment(d) is TRUE): SUM(d)
-
-      // Map all satisfied edges to their weights in w
-      val satisfiedEdges: Double = {edges | ((edge: WUnDiEdge[Node[WeightedBelief]]) =>
-        (
-          positiveConstraints.contains(edge) // This edge is a positive constraint
-            && // and
-            assignment(edge.left) == assignment(edge.right) // Both vertices are in the same set (A or R)
-            || // or
-            negativeConstraints.contains(edge) // This edge is a negative constraint
-              && // and
-              assignment(edge.left) != assignment(edge.right) // Vertices are in different sets
-          ))}.map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight).sum
-
-      satisfiedVertices + satisfiedEdges
-    }
-
     val allAssignments = vertices allMappings Set(true, false)
-    allAssignments.argMax(coh).random.get
+    allAssignments.argMax(dcoh).random.get
+  }
+
+  def dcoh(assignment: Map[Node[WeightedBelief], Boolean]): Double = {
+    // Check the discriminating vertices d in D, add w(d) if d is accepted
+    val satisfiedVertices: Double = vertices.map((v: Node[WeightedBelief]) => if (assignment(v)) v.label.weight else 0).sum
+
+    // Map all satisfied edges to their weights in w
+    val satisfiedEdges: Double = {edges | ((edge: WUnDiEdge[Node[WeightedBelief]]) =>
+      (
+        positiveConstraints.contains(edge) // This edge is a positive constraint
+          && // and
+          assignment(edge.left) == assignment(edge.right) // Both vertices are in the same set (A or R)
+          || // or
+          negativeConstraints.contains(edge) // This edge is a negative constraint
+            && // and
+            assignment(edge.left) != assignment(edge.right) // Vertices are in different sets
+        ))}.map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight).sum
+
+    satisfiedVertices + satisfiedEdges
   }
 
   // Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and psychology Chapter 5
