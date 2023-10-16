@@ -2,6 +2,8 @@ package com.computationalcognitivescience.coherencecommunication
 
 import mathlib.graph._
 import mathlib.graph.GraphImplicits._
+
+import mathlib.set.SetTheory._
 object GraphExample {
 
   def main(args: Array[String]): Unit = {
@@ -11,6 +13,10 @@ object GraphExample {
     println("Edges")
     network.edges.foreach(println)
 
+
+    val s = Set(1,2,3,4,5)
+    println(powerset(s))
+    println(powerset(s, 3))
 
 
   }

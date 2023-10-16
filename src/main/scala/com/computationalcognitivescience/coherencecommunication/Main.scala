@@ -11,12 +11,13 @@ object Main {
 //
 //    println(A == B)
 
+
     val r = scala.util.Random
     val G = WUnDiGraph.random(5,0.1)
 
     val verticesPrime = G.vertices.map((v: Node[String]) => Node[WeightedBelief](WeightedBelief(v.label, r.nextDouble())))
     val vertexMap = verticesPrime.map(v => v.label.label -> v.label.weight).toMap
-    val edgesPrime = G.edges.map((e) => WUnDiEdge(Node(WeightedBelief(e.left.label, vertexMap(e.left.label))), Node(WeightedBelief(e.right.label, vertexMap(e.right.label))), e.weight))
+    val edgesPrime = G.edges.map(e => WUnDiEdge(Node(WeightedBelief(e.left.label, vertexMap(e.left.label))), Node(WeightedBelief(e.right.label, vertexMap(e.right.label))), e.weight))
 
 //    println(verticesPrime)
 
