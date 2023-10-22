@@ -32,10 +32,10 @@ object Main {
     val (positiveConstraints, negativeConstraints) = foo(edgesPrime)
     val cohNet = new CoherenceNetwork(verticesPrime, positiveConstraints, negativeConstraints)
 
-    val optAssignment = cohNet.dCoherence()
-
-    println(optAssignment)
-    println(cohNet.dcoh(optAssignment))
+//    val optAssignment = cohNet.dCoherence()
+//
+//    println(optAssignment)
+//    println(cohNet.dcoh(optAssignment))
 
   }
 }
