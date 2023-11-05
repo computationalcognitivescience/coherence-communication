@@ -1,27 +1,34 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
+import jdk.jfr.Threshold
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
-// TODO: Ask mark about weights for WUnDiEdges (They're not constrained to [0,1])
 class CoherenceNetwork(
-                        override val vertices: Set[Node[WeightedBelief]],
-                        val positiveConstraints: Set[WUnDiEdge[Node[WeightedBelief]]],
-                        val negativeConstraints: Set[WUnDiEdge[Node[WeightedBelief]]]) extends WUnDiGraph[WeightedBelief](vertices, positiveConstraints /\ negativeConstraints) {
+    override val vertices: Set[Node[WeightedBelief]],
+    val positiveConstraints: Set[WUnDiEdge[Node[WeightedBelief]]],
+    val negativeConstraints: Set[WUnDiEdge[Node[WeightedBelief]]],
+    val accepted: Set[Node[WeightedBelief]],
+    val rejected: Set[Node[WeightedBelief]],
+    val unassigned: Set[Node[WeightedBelief]]
+) extends WUnDiGraph[WeightedBelief](vertices, positiveConstraints /\ negativeConstraints) {
 
   // Based on Thagard & Verbeurgt, 1998
   // Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and psychology Chapter 5
   // Generalized discriminating coherence
-  def dCoherence(preferredAssignment: Map[Node[WeightedBelief], Boolean]): Map[Node[WeightedBelief], Boolean]  = {
+  def dCoherence(
+      preferredAssignment: Map[Node[WeightedBelief], Boolean]
+  ): Map[Node[WeightedBelief], Boolean] = {
 
     // Output
-    // The number of edges that are satisfied
     val allAssignments = vertices allMappings Set(true, false)
     allAssignments.argMax(dcoh(_, preferredAssignment)).random.get
   }
 
-  // Generalized Foundational Coherence
-  def fCoherence(requiredAssignment: Map[Node[WeightedBelief], Boolean]): Map[Node[WeightedBelief], Boolean]  = {
+  // Generalized Foundational Coherence (Annotated Coherence?)
+  def fCoherence(
+      requiredAssignment: Map[Node[WeightedBelief], Boolean]
+  ): Map[Node[WeightedBelief], Boolean] = {
 
     // Check if truth-value assignment is valid (i.e. all foundational vertices have their required truth-value)
     def isValidAssignment(assignment: Map[Node[WeightedBelief], Boolean]): Boolean = {
@@ -35,23 +42,36 @@ class CoherenceNetwork(
     }
 
     // Output
-    val allAssignments = vertices allMappings Set(true, false) // Generate all possible truth-value assignments
-    val validAssignments = allAssignments.filter(isValidAssignment)
-    validAssignments.argMax(coh).random.get // Return the truth-value assignment that maximizes coherence value
+    val allAssignments =
+      vertices allMappings Set(true, false) // Generate all possible truth-value assignments
+    val validAssignments = allAssignments.filter(
+      isValidAssignment
+    ) // Filter those truth-value assignments that are invalid
+    validAssignments
+      .argMax(coh)
+      .random
+      .get // Return the truth-value assignment that maximizes coherence value
   }
 
   // Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and psychology Chapter 5
   // Standard coherence
-  def coherence(): Map[Node[WeightedBelief], Boolean]  = {
+  def coherence(): Map[Node[WeightedBelief], Boolean] = {
 
     // Output
     // Get the truth-assignment that maximizes coherence
-    val allAssignments = vertices allMappings Set(true, false) // Generate all possible truth-value assignments
-    allAssignments.argMax(coh).random.get // Return the truth-value assignment that maximizes coherence value
+    val allAssignments =
+      vertices allMappings Set(true, false) // Generate all possible truth-value assignments
+    allAssignments
+      .argMax(coh)
+      .random
+      .get // Return the truth-value assignment that maximizes coherence value
   }
 
   // Calculate the (generalized) discriminating coherence value of a truth-value assignment
-  def dcoh(assignment: Map[Node[WeightedBelief], Boolean], preferredAssignment: Map[Node[WeightedBelief], Boolean]): Double = {
+  def dcoh(
+      assignment: Map[Node[WeightedBelief], Boolean],
+      preferredAssignment: Map[Node[WeightedBelief], Boolean]
+  ): Double = {
 
     // Check for (u,v) if T(u) == T(v)
     def satisfiedPositiveConstraint(edge: WUnDiEdge[Node[WeightedBelief]]): Boolean = {
@@ -70,21 +90,24 @@ class CoherenceNetwork(
 
     // Sum weights of satisfied positive constraints
     def coh_plus(): Double = {
-      {positiveConstraints | satisfiedPositiveConstraint}
-        .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight).sum
+      { positiveConstraints | satisfiedPositiveConstraint }
+        .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight)
+        .sum
     }
 
     // Sum weights of satisfied negative constraints
     def coh_min(): Double = {
-      {negativeConstraints | satisfiedNegativeConstraint}
-        .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight).sum
+      { negativeConstraints | satisfiedNegativeConstraint }
+        .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight)
+        .sum
     }
 
     // Sum weights of satisfied vertices in the preferred set
     val preferredSet: Set[Node[WeightedBelief]] = preferredAssignment.keySet
     def coh_p(): Double = {
-      {preferredSet | satisfiedVertex}
-        .map((vertex: Node[WeightedBelief]) => vertex.label.weight).sum
+      { preferredSet | satisfiedVertex }
+        .map((vertex: Node[WeightedBelief]) => vertex.label.weight)
+        .sum
     }
 
     coh_plus + coh_min + coh_p
@@ -102,19 +125,134 @@ class CoherenceNetwork(
     }
 
     def coh_plus(): Double = {
-      {positiveConstraints | satisfiedPositiveConstraint}
-        .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight).sum
+      { positiveConstraints | satisfiedPositiveConstraint }
+        .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight)
+        .sum
     }
 
     def coh_min(): Double = {
-      {negativeConstraints | satisfiedNegativeConstraint}
-        .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight).sum
+      { negativeConstraints | satisfiedNegativeConstraint }
+        .map((edge: WUnDiEdge[Node[WeightedBelief]]) => edge.weight)
+        .sum
     }
 
     coh_plus + coh_min
   }
+
+  // FPT algorithm for the decision version of pos-annotated coherence
+  def cMinusCoherenceDecision(
+      threshold: Double
+  ): Boolean = {
+    // Get all unassigned nodes incident to a negative constraint
+    def unassignedNegativeConstraints(): Set[Node[WeightedBelief]] = {
+      negativeConstraints
+        .flatMap(e => Set(e.left, e.right))
+        .intersect(unassigned)
+    }
+
+    val unassignedMinus = unassignedNegativeConstraints()
+    val unassignedPlus  = unassigned - unassignedMinus
+
+    // Apply AC1 exhaustively
+    val leaves: Set[CoherenceNetwork] = AC1(this, unassignedMinus)
+
+    // Apply AC2 where possible
+    ???
+  }
+
+  // Branching rule
+  // Observation: for an optimal partition, any vertex that is connected by a negative constraint must either be accepted or rejected
+  // Therefore, branch on unassigned vertices incident to a negative constraint such that we have 2 graphs
+  // On graph where the vertex is accepted, and one where it is rejected
+  def AC1(
+      network: CoherenceNetwork,                 // The coherence network
+      unassignedMinus: Set[Node[WeightedBelief]] // All nodes incident to a negative constraint
+  ): Set[CoherenceNetwork] = {
+    if (unassignedMinus.isEmpty) {
+      Set(network)
+    } else {
+      val unassignedNode: Node[WeightedBelief]            = unassignedMinus.random.get
+      val unassignedMinusPrime: Set[Node[WeightedBelief]] = unassignedMinus - unassignedNode
+
+      // New Coherence network
+      // Assign random unassigned node to the accepted set
+      val nodeAcceptedNetwork: CoherenceNetwork = new CoherenceNetwork(
+        network.vertices,
+        network.positiveConstraints,
+        network.negativeConstraints,
+        network.accepted + unassignedNode,
+        network.rejected,
+        network.unassigned - unassignedNode
+      )
+
+      // New Coherence network
+      // Assign random unassigned node to the rejected set
+      val nodeRejectedNetwork: CoherenceNetwork = new CoherenceNetwork(
+        network.vertices,
+        network.positiveConstraints,
+        network.negativeConstraints,
+        network.accepted,
+        network.rejected + unassignedNode,
+        network.unassigned - unassignedNode
+      )
+
+      // Call AC1 again on both new coherence networks
+      AC1(nodeAcceptedNetwork, unassignedMinusPrime) + AC1(
+        nodeRejectedNetwork,
+        unassignedMinusPrime
+      )
+    }
+  }
+
+  // remove constraints rule
+  def AC2(
+      network: CoherenceNetwork,
+      unassignedPlus: Set[Node[WeightedBelief]],
+      threshold: Double
+  ): (CoherenceNetwork, Double) = {
+
+    // Collect all positive constraints that are already satisfied (i.e. find those where none of the endpoints are unassigned)
+    def isPositiveConstraintDetermined(edge: WUnDiEdge[Node[WeightedBelief]]): Boolean = {
+      !(unassignedPlus.contains(edge.left) || unassignedPlus.contains(edge.right))
+    }
+
+    // For positive constraints we need to check if they've been determined already
+    val dPosConstraints: Set[WUnDiEdge[Node[WeightedBelief]]] =
+      network.positiveConstraints.filter(isPositiveConstraintDetermined)
+
+    // Because of the application of AC1 we know all negative constraints are already satisfied
+    val dNegConstraints: Set[WUnDiEdge[Node[WeightedBelief]]] = network.negativeConstraints
+
+    // If both edges are in the accepted or the rejected set, return true
+    // ASSUMPTION: edge is determined (i.e. neither end is unassigned)
+    def satisfiedPositiveConstraint(edge: WUnDiEdge[Node[WeightedBelief]]): Boolean = {
+      network.accepted.contains(edge.left) == network.accepted.contains(edge.right)
+    }
+
+    def satisfiedNegativeConstraint(edge: WUnDiEdge[Node[WeightedBelief]]): Boolean = {
+      network.accepted.contains(edge.left) != network.accepted.contains(edge.right)
+    }
+
+    val dPosCoherence = dPosConstraints
+      .filter(satisfiedPositiveConstraint)
+      .map(e => e.weight)
+    val dNegCoherence = dNegConstraints
+      .filter(satisfiedNegativeConstraint)
+      .map(e => e.weight)
+
+    // Create new network with all determined constraints removed
+    val networkPrime: CoherenceNetwork = new CoherenceNetwork(
+      network.vertices,
+      network.positiveConstraints -- dPosConstraints,
+      Set.empty,
+      network.accepted,
+      network.rejected,
+      network.unassigned
+    )
+
+    // Subtract those weights from the threshold that are already determined
+    val thresholdPrime: Double = threshold - (dPosCoherence + dNegCoherence)
+
+    (networkPrime, thresholdPrime)
+  }
 }
-
-
-
-
