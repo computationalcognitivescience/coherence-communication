@@ -197,14 +197,11 @@ class CoherenceNetwork(
       )
 
       // Call AC1 again on both new coherence networks
-      AC1(nodeAcceptedNetwork, unassignedMinusPrime) + AC1(
-        nodeRejectedNetwork,
-        unassignedMinusPrime
-      )
+      AC1(nodeAcceptedNetwork, unassignedMinusPrime) + AC1(nodeRejectedNetwork, unassignedMinusPrime)
     }
   }
 
-  // remove constraints rule
+  // Remove determined constraints rule
   def AC2(
       network: CoherenceNetwork,
       unassignedPlus: Set[Node[WeightedBelief]],
@@ -254,5 +251,81 @@ class CoherenceNetwork(
     val thresholdPrime: Double = threshold - (dPosCoherence + dNegCoherence)
 
     (networkPrime, thresholdPrime)
+  }
+
+  // Merge Accepted and Rejected vertices rule
+  def AC3(network: CoherenceNetwork): CoherenceNetwork = {
+    val acceptedNode: Node[WeightedBelief] = Node(WeightedBelief("a", 0))
+    val rejectedNode: Node[WeightedBelief] = Node(WeightedBelief("r", 0))
+
+    // Check if a constraint is incident to an accepted node
+    def incidentToA(edge: WUnDiEdge[Node[WeightedBelief]]): Boolean = {
+      network.accepted.contains(edge.left) || network.accepted.contains(edge.right)
+    }
+
+    // Check if a constraint is incident to a rejected node
+    def incidentToR(edge: WUnDiEdge[Node[WeightedBelief]]): Boolean = {
+      network.rejected.contains(edge.left) || network.rejected.contains(edge.right)
+    }
+
+    // Collect all constraints that are incident to an accepted node
+    val constraintsAPrime: Set[WUnDiEdge[Node[WeightedBelief]]] = network.positiveConstraints.filter(incidentToA)
+
+    // Collect all constraints that are incident to an rejected node
+    val constraintsRPrime: Set[WUnDiEdge[Node[WeightedBelief]]] = network.positiveConstraints.filter(incidentToR)
+
+    // Replace a constraint that is incident to an accepted node with one that is connected to new node 'a'
+    def replaceConstraintAPrime(edge:WUnDiEdge[Node[WeightedBelief]]): WUnDiEdge[Node[WeightedBelief]] = {
+      if (network.unassigned.contains(edge.left)) {
+        WUnDiEdge(left = edge.left, right = acceptedNode, weight = edge.weight)
+      }
+      else {
+        WUnDiEdge(left = edge.right, right = acceptedNode, weight = edge.weight)
+      }
+    }
+
+    // Replace a constraint that is incident to a rejected node with one that is connected to new node 'r'
+    def replaceConstraintRPrime(edge:WUnDiEdge[Node[WeightedBelief]]): WUnDiEdge[Node[WeightedBelief]] = {
+      if (network.unassigned.contains(edge.left)) {
+        WUnDiEdge(left = edge.left, right = rejectedNode, weight = edge.weight)
+      }
+      else {
+        WUnDiEdge(left = edge.right, right = rejectedNode, weight = edge.weight)
+      }
+    }
+
+    // Replace a constraint from A-Prime with a new constraint in A-Star (A-star is a subset of P' x {a})
+    val newConstraintsAStar = constraintsAPrime.map(replaceConstraintAPrime)
+    // Replace a constraint from R-Prime with a new constraint in R-Star (R-star is a subset of P' x {r})
+    val newConstraintsRStar = constraintsRPrime.map(replaceConstraintRPrime)
+
+    // The new graph only has the old unassigned nodes plus the "a" and "r" nodes
+    val newNodes =  network.unassigned ++ Set(acceptedNode, rejectedNode)
+
+    // Replace all constraints that were incident to A' and R' with their replacing constraints connecting to 'a' and 'r'.
+    val newConstraints = network.positiveConstraints -- (constraintsAPrime ++ constraintsRPrime) ++ newConstraintsAStar ++ newConstraintsRStar
+
+    new CoherenceNetwork(
+      newNodes,
+      newConstraints,
+      Set.empty,
+      Set(acceptedNode),
+      Set(rejectedNode),
+      network.unassigned
+    )
+  }
+
+  // Ford-Fulkerson
+  def minCut(network: CoherenceNetwork): Map[Node[WeightedBelief], Boolean] = {
+    val acceptedSet: Set[Node[WeightedBelief]] = network.accepted // {a}
+    val rejectedSet: Set[Node[WeightedBelief]] = network.rejected // {r}
+
+    // Create directed graph
+    def createDirectedEdges(edge: WUnDiEdge[Node[WeightedBelief]]): Set[WDiEdge[Node[WeightedBelief]]] = {
+      ???
+    }
+    val edges = network.edges
+    val dirGraph = ???
+    ???
   }
 }
