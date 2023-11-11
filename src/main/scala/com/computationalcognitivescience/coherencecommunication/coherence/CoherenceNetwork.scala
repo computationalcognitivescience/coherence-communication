@@ -1,6 +1,5 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
-import jdk.jfr.Threshold
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
@@ -140,7 +139,7 @@ class CoherenceNetwork(
   }
 
   // FPT algorithm for the decision version of pos-annotated coherence
-  def cMinusCoherenceDecision(
+  def cMinusCoherence(
       threshold: Double
   ): Boolean = {
     // Get all unassigned nodes incident to a negative constraint
@@ -150,13 +149,25 @@ class CoherenceNetwork(
         .intersect(unassigned)
     }
 
-    val unassignedMinus = unassignedNegativeConstraints()
-    val unassignedPlus  = unassigned - unassignedMinus
+    val unassignedMinus: Set[Node[WeightedBelief]] = unassignedNegativeConstraints()
+    val unassignedPlus: Set[Node[WeightedBelief]]  = unassigned -- unassignedMinus
 
     // Apply AC1 exhaustively
-    val leaves: Set[CoherenceNetwork] = AC1(this, unassignedMinus)
+    val negEdgeAssigned: Set[CoherenceNetwork] = ac1(this, unassignedMinus)
 
     // Apply AC2 where possible
+    val determinedEdgeRemoved: Set[(CoherenceNetwork, Double)] =
+      negEdgeAssigned.map(ac2(_, unassignedPlus, threshold))
+
+//    // Select the instance that has the highest coherence value already satisfied
+//    val highestCoherence = argMax(determinedEdgeRemoved, (instance: (CoherenceNetwork, Double)) => -instance._2)
+
+    // Apply AC3 where possible
+    val maxFlowGraphs: Set[(CoherenceNetwork, Double)] =
+    // Apply AC3 to the graph, pass the threshold value as is
+      determinedEdgeRemoved.map(instance => (ac3(instance._1), instance._2))
+
+    val paritions = ???
     ???
   }
 
@@ -164,7 +175,7 @@ class CoherenceNetwork(
   // Observation: for an optimal partition, any vertex that is connected by a negative constraint must either be accepted or rejected
   // Therefore, branch on unassigned vertices incident to a negative constraint such that we have 2 graphs
   // On graph where the vertex is accepted, and one where it is rejected
-  def AC1(
+  def ac1(
       network: CoherenceNetwork,                 // The coherence network
       unassignedMinus: Set[Node[WeightedBelief]] // All nodes incident to a negative constraint
   ): Set[CoherenceNetwork] = {
@@ -197,12 +208,15 @@ class CoherenceNetwork(
       )
 
       // Call AC1 again on both new coherence networks
-      AC1(nodeAcceptedNetwork, unassignedMinusPrime) + AC1(nodeRejectedNetwork, unassignedMinusPrime)
+      ac1(nodeAcceptedNetwork, unassignedMinusPrime) ++ ac1(
+        nodeRejectedNetwork,
+        unassignedMinusPrime
+      )
     }
   }
 
   // Remove determined constraints rule
-  def AC2(
+  def ac2(
       network: CoherenceNetwork,
       unassignedPlus: Set[Node[WeightedBelief]],
       threshold: Double
@@ -254,7 +268,7 @@ class CoherenceNetwork(
   }
 
   // Merge Accepted and Rejected vertices rule
-  def AC3(network: CoherenceNetwork): CoherenceNetwork = {
+  def ac3(network: CoherenceNetwork): CoherenceNetwork = {
     val acceptedNode: Node[WeightedBelief] = Node(WeightedBelief("a", 0))
     val rejectedNode: Node[WeightedBelief] = Node(WeightedBelief("r", 0))
 
@@ -269,27 +283,31 @@ class CoherenceNetwork(
     }
 
     // Collect all constraints that are incident to an accepted node
-    val constraintsAPrime: Set[WUnDiEdge[Node[WeightedBelief]]] = network.positiveConstraints.filter(incidentToA)
+    val constraintsAPrime: Set[WUnDiEdge[Node[WeightedBelief]]] =
+      network.positiveConstraints.filter(incidentToA)
 
     // Collect all constraints that are incident to an rejected node
-    val constraintsRPrime: Set[WUnDiEdge[Node[WeightedBelief]]] = network.positiveConstraints.filter(incidentToR)
+    val constraintsRPrime: Set[WUnDiEdge[Node[WeightedBelief]]] =
+      network.positiveConstraints.filter(incidentToR)
 
     // Replace a constraint that is incident to an accepted node with one that is connected to new node 'a'
-    def replaceConstraintAPrime(edge:WUnDiEdge[Node[WeightedBelief]]): WUnDiEdge[Node[WeightedBelief]] = {
+    def replaceConstraintAPrime(
+        edge: WUnDiEdge[Node[WeightedBelief]]
+    ): WUnDiEdge[Node[WeightedBelief]] = {
       if (network.unassigned.contains(edge.left)) {
         WUnDiEdge(left = edge.left, right = acceptedNode, weight = edge.weight)
-      }
-      else {
+      } else {
         WUnDiEdge(left = edge.right, right = acceptedNode, weight = edge.weight)
       }
     }
 
     // Replace a constraint that is incident to a rejected node with one that is connected to new node 'r'
-    def replaceConstraintRPrime(edge:WUnDiEdge[Node[WeightedBelief]]): WUnDiEdge[Node[WeightedBelief]] = {
+    def replaceConstraintRPrime(
+        edge: WUnDiEdge[Node[WeightedBelief]]
+    ): WUnDiEdge[Node[WeightedBelief]] = {
       if (network.unassigned.contains(edge.left)) {
         WUnDiEdge(left = edge.left, right = rejectedNode, weight = edge.weight)
-      }
-      else {
+      } else {
         WUnDiEdge(left = edge.right, right = rejectedNode, weight = edge.weight)
       }
     }
@@ -300,32 +318,64 @@ class CoherenceNetwork(
     val newConstraintsRStar = constraintsRPrime.map(replaceConstraintRPrime)
 
     // The new graph only has the old unassigned nodes plus the "a" and "r" nodes
-    val newNodes =  network.unassigned ++ Set(acceptedNode, rejectedNode)
+    val newNodes = network.unassigned ++ Set(acceptedNode, rejectedNode)
 
     // Replace all constraints that were incident to A' and R' with their replacing constraints connecting to 'a' and 'r'.
-    val newConstraints = network.positiveConstraints -- (constraintsAPrime ++ constraintsRPrime) ++ newConstraintsAStar ++ newConstraintsRStar
+    val newConstraints =
+      network.positiveConstraints -- (constraintsAPrime ++ constraintsRPrime) ++ newConstraintsAStar ++ newConstraintsRStar
 
     new CoherenceNetwork(
-      newNodes,
-      newConstraints,
-      Set.empty,
-      Set(acceptedNode),
-      Set(rejectedNode),
-      network.unassigned
+      newNodes,          // Vertices
+      newConstraints,    // PositiveConstraints
+      Set.empty,         // NegativeConstraints
+      Set(acceptedNode), // AcceptedVertices
+      Set(rejectedNode), // RejectedVertices
+      network.unassigned // UnassignedVertices
     )
   }
 
   // Ford-Fulkerson
-  def minCut(network: CoherenceNetwork): Map[Node[WeightedBelief], Boolean] = {
-    val acceptedSet: Set[Node[WeightedBelief]] = network.accepted // {a}
-    val rejectedSet: Set[Node[WeightedBelief]] = network.rejected // {r}
+  def maxFlow(network: CoherenceNetwork): Map[Node[WeightedBelief], Boolean] = {
+    assert(network.accepted.size == 1)
+    assert(network.rejected.size == 1)
+    val sourceNode: Node[WeightedBelief] = network.accepted.random.get // {a}
+    val targetNode: Node[WeightedBelief] = network.rejected.random.get // {r}
+
+    // Create directed edges from an undirected edge
+    def createDirectedEdges(
+        edge: WUnDiEdge[Node[WeightedBelief]]
+    ): Set[WDiEdge[Node[WeightedBelief]]] = {
+      val firstEdge  = WDiEdge(edge.left, edge.right, edge.weight)
+      val secondEdge = WDiEdge(edge.right, edge.left, edge.weight)
+      Set(firstEdge, secondEdge)
+    }
 
     // Create directed graph
-    def createDirectedEdges(edge: WUnDiEdge[Node[WeightedBelief]]): Set[WDiEdge[Node[WeightedBelief]]] = {
+    val edges: Set[WDiEdge[Node[WeightedBelief]]] = network.edges.flatMap(createDirectedEdges)
+    val dirGraph: WDiGraph[Node[WeightedBelief]]  = WDiGraph(network.vertices, edges)
+
+    def recursiveFindAugmentingPath(network: WDiGraph[Node[WeightedBelief]]):  WDiGraph[Node[WeightedBelief]] = {
+      // Find path from a to r
+      val augmentingPath = bfs(network, sourceNode, targetNode)
+
       ???
     }
-    val edges = network.edges
-    val dirGraph = ???
+
+    val finalGraph = recursiveFindAugmentingPath(dirGraph)
+    ???
+
+  }
+
+  def bfs(network: WDiGraph[Node[WeightedBelief]], startNode: Node[WeightedBelief], targetNode:  Node[WeightedBelief]): List[Node[WeightedBelief]] = {
+    var stack: List[Node[_]] = List.empty
+
+    def findNeighbours(network: WDiGraph[WeightedBelief], node: Node[WeightedBelief]): Set[Node[WeightedBelief]] = {
+      assert(network.vertices.contains(node))
+      ???
+    }
+
+
     ???
   }
+
 }
