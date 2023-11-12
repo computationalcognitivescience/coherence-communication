@@ -3,6 +3,8 @@ package com.computationalcognitivescience.coherencecommunication.coherence
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
+import scala.annotation.tailrec
+
 class CoherenceNetwork(
     override val vertices: Set[Node[WeightedBelief]],
     val positiveConstraints: Set[WUnDiEdge[Node[WeightedBelief]]],
@@ -335,7 +337,8 @@ class CoherenceNetwork(
   }
 
   // Ford-Fulkerson
-  def maxFlow(network: CoherenceNetwork): Map[Node[WeightedBelief], Boolean] = {
+  def maxFlow(network: CoherenceNetwork
+             ): Map[Node[WeightedBelief], Boolean] = {
     assert(network.accepted.size == 1)
     assert(network.rejected.size == 1)
     val sourceNode: Node[WeightedBelief] = network.accepted.random.get // {a}
@@ -352,9 +355,10 @@ class CoherenceNetwork(
 
     // Create directed graph
     val edges: Set[WDiEdge[Node[WeightedBelief]]] = network.edges.flatMap(createDirectedEdges)
-    val dirGraph: WDiGraph[Node[WeightedBelief]]  = WDiGraph(network.vertices, edges)
+    val dirGraph: WDiGraph[WeightedBelief]  = WDiGraph(network.vertices, edges)
 
-    def recursiveFindAugmentingPath(network: WDiGraph[Node[WeightedBelief]]):  WDiGraph[Node[WeightedBelief]] = {
+    def recursiveFindAugmentingPath(network: WDiGraph[WeightedBelief]
+                                   ):  WDiGraph[Node[WeightedBelief]] = {
       // Find path from a to r
       val augmentingPath = bfs(network, sourceNode, targetNode)
 
@@ -366,16 +370,96 @@ class CoherenceNetwork(
 
   }
 
-  def bfs(network: WDiGraph[Node[WeightedBelief]], startNode: Node[WeightedBelief], targetNode:  Node[WeightedBelief]): List[Node[WeightedBelief]] = {
-    var stack: List[Node[_]] = List.empty
 
-    def findNeighbours(network: WDiGraph[WeightedBelief], node: Node[WeightedBelief]): Set[Node[WeightedBelief]] = {
+
+  // Find shortest path from startNode to targetNode O(|E| + |V|)
+  def bfs(network: WDiGraph[WeightedBelief],
+          startNode: Node[WeightedBelief],
+          targetNode: Node[WeightedBelief]
+         ): List[Node[WeightedBelief]] = {
+    assert(network.vertices.contains(startNode))
+    assert(network.vertices.contains(targetNode))
+
+    class NodeWithParent(val self: Node[WeightedBelief],
+                         val parent: Node[WeightedBelief])
+
+    def findNeighboursInGraph(network: WDiGraph[WeightedBelief],
+                              node: Node[WeightedBelief]
+                             ): Set[Node[WeightedBelief]] = {
       assert(network.vertices.contains(node))
-      ???
+
+      def getNeighbourIfIncident(edge: WDiEdge[Node[WeightedBelief]],
+                                 self: Node[WeightedBelief]
+                                ): Set[Node[WeightedBelief]] = {
+        if (edge.left == self) Set(edge.right)
+        else if (edge.right == self) Set(edge.left)
+        else Set.empty
+      }
+
+      network.edges.map(getNeighbourIfIncident(_, node))
     }
 
+    @tailrec
+    def bfsPrime(network: WDiGraph[WeightedBelief],
+                 startNode: Node[WeightedBelief],
+                 targetNode: Node[WeightedBelief],
+                 queue: List[NodeWithParent],
+                 explored: Set[Node[WeightedBelief]],
+                 parents: Set[NodeWithParent]
+                ): (Set[NodeWithParent], Boolean) = {
 
-    ???
+      val neighbours: Set[Node[WeightedBelief]] = findNeighboursInGraph(network, startNode)
+        .filterNot(queue.contains) // Remove nodes that are already in the queue
+        .diff(explored) // Remove nodes that have already been explored
+
+      // If the target has been found
+      if(neighbours.contains(targetNode)){
+        // Return the list of parents
+        (parents + new NodeWithParent(startNode, targetNode), true)
+      } else{
+        // Keep track of the neighbours' parents
+        val newParents: Set[NodeWithParent] = parents ++ neighbours.map(new NodeWithParent(_, startNode))
+        // We've explored the current node
+        val newExplored: Set[Node[WeightedBelief]] = explored + startNode
+        // Add neighbours to the end of the queue
+        val newQueue: List[NodeWithParent] = queue + neighbours.toList
+
+        // If the queue is empty at this point, there is no more path from startNode to targetNode
+        if(newQueue.isEmpty){
+          (newParents, false)
+        } else {
+          // Keep searching
+          bfsPrime(network, // network
+            newQueue.head.self, // startNode
+            targetNode, // targetNode
+            newQueue.tail, // queue
+            newExplored, // explored
+            newParents) // parents
+        }
+      }
+    }
+
+    val parents = findNeighboursInGraph(network, startNode)
+      .map(new NodeWithParent(_, startNode))
+    val explored: Set[Node[WeightedBelief]] = Set(startNode)
+    val queue: List[NodeWithParent] = parents.toList
+
+    // No path can be found
+    if (queue.isEmpty) List.empty
+    // The target has been immediately found
+    else if (queue.head.self == targetNode) List(startNode, targetNode)
+    // Continue searching from next node
+    else {
+      val (parentsPrime, foundPath) = bfsPrime(network, queue.head.self, targetNode, queue, explored, parents) // (Set[NodeWithParent], boolean)
+      if(!foundPath){
+        List.empty
+      } else {
+        //TODO: reconstruct path from parent list
+        ???
+      }
+    }
   }
+
+
 
 }
