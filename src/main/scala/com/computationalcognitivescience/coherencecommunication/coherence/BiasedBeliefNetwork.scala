@@ -51,10 +51,9 @@ class BiasedBeliefNetwork(
 }
 
 object RandomBiasedBeliefNetwork {
-  /** Generate a belief network from a fixed number of vertices, but a (semi) random number of edges based
-   * on an edge density and a (semi) random number of negative edges. Edges are generated with probability
-   * equal to density and the positive-negative ratio determines how many of these will be considered
-   * negative constraints.
+  /** Generate a belief network from a fixed number of vertices, a (semi) random number of edges based
+   * on an edge density, and a (semi) random number of negative edges. Additionally randomly chooses biased nodes and
+   * (semi-)randomly assigns truth values and weights to biases
    *
    * [KNOWN BUG]: Generated networks allow for duplicate edges (A, B) (B,A) and self edges (A, A)
    *
@@ -87,7 +86,7 @@ object RandomBiasedBeliefNetwork {
     // Generate the vertices and edges of the network
     val network: WUnDiGraph[String] = WUnDiGraph.random(size-1, density) // Call built-in graph generator
     val nrNegativeConstraints: Int = network.edges.size * (1 - ratioPosNeg).intValue // Calculate number of negative constraints
-    val negativeConstraints: Set[WUnDiEdge[Node[String]]] = Random.shuffle(network.edges).take(nrNegativeConstraints) // Determine which edges become negative constraints
+    val negativeConstraints: Set[WUnDiEdge[Node[String]]] = Random.shuffle(network.edges.toList).take(nrNegativeConstraints).toSet // Determine which edges become negative constraints
 
     // Generate biased beliefs
     val nrBiasBeliefs: Int = (ratioBiased*size).intValue // Calculate number of biased beliefs
@@ -101,7 +100,9 @@ object RandomBiasedBeliefNetwork {
   }
 
   /** Generate a belief network from a fixed number of vertices, edges and negative constraints
-   * with edges having random (uniformly drawn) weights between 0 and 1.
+   * with edges having random (uniformly drawn) weights between 0 and 1. Additionally chooses a fixed number of biased nodes and
+   * (semi-)randomly assigns a fixed number of false truth-values, the rest will be true truth-biased, and randomly assigns
+   * weights between 0 and 1.
    *
    * @param size
    *  The number of vertices in the network
