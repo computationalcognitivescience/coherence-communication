@@ -40,7 +40,7 @@ class BeliefNetwork(
   // Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and psychology Chapter 5
   // Standard coherence
 
-  /** Calculates the optimal truth-value assignment of this BeliefNetwork
+  /** Calculate the optimal truth-value assignment of this BeliefNetwork
    *
    * @return
    *  A truth-value assignment over vertices that results in maximum coherence
@@ -98,7 +98,7 @@ class BeliefNetwork(
    *  The weighted sum over all satisfied constraints
    */
   def coh(assignment: Map[Node[String], Boolean]): Double =
-    cohPlus + cohMin
+    cohPlus(assignment) + cohMin(assignment)
 }
 
 // NOTES:
@@ -107,6 +107,8 @@ object RandomBeliefNetwork {
    * on an edge density and a (semi) random number of negative edges. Edges are generated with probability
    * equal to density and the positive-negative ratio determines how many of these will be considered
    * negative constraints.
+   *
+   * [KNOWN BUG]: Generated networks allow for duplicate edges (A, B) (B,A) and self edges (A, A)
    *
    * @param size
    *  The number of edges in the network
@@ -123,8 +125,10 @@ object RandomBeliefNetwork {
               ratioPosNeg: Double,
 //              we: Option[Double] = None,
             ): BeliefNetwork = {
-    val network: WUnDiGraph[String] = WUnDiGraph.random(size, density)
-    val nrNegativeConstraints: Int = network.edges.size * (1 - ratioPosNeg).intValue
+    assert(0 <= density && density <= 1)
+    assert(0 <= ratioPosNeg && ratioPosNeg <= 1)
+    val network: WUnDiGraph[String] = WUnDiGraph.random(size-1, density)
+    val nrNegativeConstraints: Int = (network.edges.size * (1 - ratioPosNeg)).intValue
     val negativeConstraints: Set[WUnDiEdge[Node[String]]] = Random.shuffle(network.edges).take(nrNegativeConstraints)
 
     new BeliefNetwork(network, negativeConstraints)
@@ -149,6 +153,7 @@ object RandomBeliefNetwork {
               nrNegativeEdges: Int,
               //              we: Option[Double] = None,
             ): BeliefNetwork = {
+    assert(nrEdges <= size*size)
     assert(nrNegativeEdges <= nrEdges)
 
     // Remove edge candidates that result int self-edges or are reversed duplicates of other edge candidates
@@ -157,11 +162,11 @@ object RandomBeliefNetwork {
     }
 
     // Generate vertex and edge candidates (candidates stay as Int for easier processing)
-    val vertexCandidates: Set[Int] = (0 to size).toSet
+    val vertexCandidates: Set[Int] = (0 until size).toSet
     val edgeCandidates: Set[(Int, Int)] = (vertexCandidates x vertexCandidates).filter(noDuplicateEdges)
 
     // Generate vertices and edges
-    val vertices: Set[Node[String]] = vertexCandidates.map("N" + _).map(Node[_])
+    val vertices: Set[Node[String]] = vertexCandidates.map("N" + _).map(Node(_))
     val edges: Set[WUnDiEdge[Node[String]]] = edgeCandidates.take(nrEdges)
       .map((e: (Int, Int)) => ("N" + e._1, "N" + e._2))
       .map((e: (String, String)) => (Node(e._1), Node(e._2)))
