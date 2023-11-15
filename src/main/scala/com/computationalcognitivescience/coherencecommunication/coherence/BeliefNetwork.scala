@@ -10,16 +10,42 @@ class BeliefNetwork(
 ) extends WUnDiGraph[String](network.vertices, network.edges) {
 
   val positiveConstraints: Set[WUnDiEdge[Node[String]]] = network.edges \ negativeConstraints
+
+  /** Check if in the given truth-value assignment a positive constraint is satisfied
+   *
+   * @param assignment
+   *  The truth-value assignment over vertices
+   * @param edge
+   *  A positive constraint
+   * @return
+   *  True if the constraint is satisfied, false otherwise
+   */
   protected def isSatisfiedPositiveConstraint(assignment: Map[Node[String], Boolean])(
       edge: WUnDiEdge[Node[String]]
   ): Boolean = assignment(edge.left) == assignment(edge.right)
 
+  /** Check if in the given truth-value assignment a negative constraint is satisfied
+   *
+   * @param assignment
+   *  The truth-value assignment over vertices
+   * @param edge
+   *  A negative constraint
+   * @return
+   *  True if the constraint is satisfied, false otherwise
+   */
   protected def isSatisfiedNegativeConstraint(assignment: Map[Node[String], Boolean])(
       edge: WUnDiEdge[Node[String]]
   ): Boolean = assignment(edge.left) != assignment(edge.right)
 
   // Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and psychology Chapter 5
   // Standard coherence
+
+  /** Calculates the optimal truth-value assignment of this BeliefNetwork
+   *
+   * @return
+   *  A truth-value assignment over vertices that results in maximum coherence
+   *  If multiple maximal truth-value assignments exists, get a random maximal one.
+   */
   def coherence(): Map[Node[String], Boolean] = {
 
     // Output
@@ -32,6 +58,13 @@ class BeliefNetwork(
       .get // Return the truth-value assignment that maximizes coherence value
   }
 
+  /** Calculate the coherence-value from positive constraints with a given truth-value assignment
+   *
+   * @param assignment
+   *  A truth-value assignment over vertices
+   * @return
+   *  The weighted sum over satisfied positive constraints
+   */
   protected def cohPlus(assignment: Map[Node[String], Boolean]): Double = {
     val satisfiedPositiveConstraints: Set[WUnDiEdge[Node[String]]] =
       positiveConstraints.filter(isSatisfiedPositiveConstraint(assignment))
@@ -41,6 +74,13 @@ class BeliefNetwork(
       .sum                                                 // Sum weights
   }
 
+  /** Calculate the coherence-value from negative constraints with a given truth-value assignment
+   *
+   * @param assignment
+   *  A truth-value assignment over vertices
+   * @return
+   *  The weighted sum over satisfied negative constraints
+   */
   protected def cohMin(assignment: Map[Node[String], Boolean]): Double = {
     val satisfiedNegativeConstraints: Set[WUnDiEdge[Node[String]]] =
       negativeConstraints.filter(isSatisfiedNegativeConstraint(assignment))
@@ -50,23 +90,89 @@ class BeliefNetwork(
       .sum                                                 // Sum weights
   }
 
-  // Calculate the coherence value as the weighted sum of satisfied edges
+  /** Calculate the coherence-value from all constraints with given truth-value assignment
+   *
+   * @param assignment
+   *  A truth-value assignment over vertices
+   * @return
+   *  The weighted sum over all satisfied constraints
+   */
   def coh(assignment: Map[Node[String], Boolean]): Double =
     cohPlus + cohMin
 }
 
-object BeliefNetwork {
+// NOTES:
+object RandomBeliefNetwork {
+  /** Generate a belief network from a fixed number of vertices, but a (semi) random number of edges based
+   * on an edge density and a (semi) random number of negative edges. Edges are generated with probability
+   * equal to density and the positive-negative ratio determines how many of these will be considered
+   * negative constraints.
+   *
+   * @param size
+   *  The number of edges in the network
+   * @param density
+   *  The (expected) density of edges in the network
+   * @param ratioPosNeg
+   *  The target ratio of positive edges to negative edges
+   * @return
+   *  A randomly generated BeliefNetwork
+   */
   def random(
               size: Int,
               density: Double,
               ratioPosNeg: Double,
-              we: Option[Double] = None,
+//              we: Option[Double] = None,
             ): BeliefNetwork = {
-    val network = WUnDiGraph.random(size, density)
-    val nrNegativeConstraints = network.edges.size - (network.edges.size * ratioPosNeg).intValue
-    val negativeConstraints = Random.shuffle(network.edges).take(nrNegativeConstraints)
-    if(we.isDefined) ???
-    else ???
-    ???
-  })
+    val network: WUnDiGraph[String] = WUnDiGraph.random(size, density)
+    val nrNegativeConstraints: Int = network.edges.size * (1 - ratioPosNeg).intValue
+    val negativeConstraints: Set[WUnDiEdge[Node[String]]] = Random.shuffle(network.edges).take(nrNegativeConstraints)
+
+    new BeliefNetwork(network, negativeConstraints)
+  }
+
+  /** Generate a belief network from a fixed number of vertices, edges and negative constraints
+   * with edges having random (uniformly drawn) weights between 0 and 1.
+   *
+   * @param size
+   *  The number of vertices in the network
+   * @param nrEdges
+   *  The number of edges in the network
+   * @param nrNegativeEdges
+   *  The number of negative constraints in the belief network where
+   *  The number of negative constraints must be smaller than or equal to the total number of edges
+   * @return
+   *  A randomly generated BeliefNetwork
+   */
+  def random(
+              size: Int,
+              nrEdges: Int,
+              nrNegativeEdges: Int,
+              //              we: Option[Double] = None,
+            ): BeliefNetwork = {
+    assert(nrNegativeEdges <= nrEdges)
+
+    // Remove edge candidates that result int self-edges or are reversed duplicates of other edge candidates
+    def noDuplicateEdges(endpoints: (Int, Int)): Boolean = {
+      endpoints._1 < endpoints._2
+    }
+
+    // Generate vertex and edge candidates (candidates stay as Int for easier processing)
+    val vertexCandidates: Set[Int] = (0 to size).toSet
+    val edgeCandidates: Set[(Int, Int)] = (vertexCandidates x vertexCandidates).filter(noDuplicateEdges)
+
+    // Generate vertices and edges
+    val vertices: Set[Node[String]] = vertexCandidates.map("N" + _).map(Node[_])
+    val edges: Set[WUnDiEdge[Node[String]]] = edgeCandidates.take(nrEdges)
+      .map((e: (Int, Int)) => ("N" + e._1, "N" + e._2))
+      .map((e: (String, String)) => (Node(e._1), Node(e._2)))
+      .map((e: (Node[String], Node[String])) => WUnDiEdge(e._1, e._2, Random.nextDouble()))
+
+    // Determine which edges are negative
+    val negativeConstraints: Set[WUnDiEdge[Node[String]]] = edges.take(nrNegativeEdges)
+
+    // Generate graph and belief network
+    val network: WUnDiGraph[String] = WUnDiGraph(vertices, edges)
+    new BeliefNetwork(network, negativeConstraints)
+  }
 }
+
