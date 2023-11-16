@@ -14,6 +14,8 @@ class FoundationalBeliefNetwork(
   override   def coherence(): Map[Node[String], Boolean] = {
     // Output
     // Get the truth-assignment that maximizes coherence
+
+    // TODO: fix foundational nodes and generate others
     val allAssignments =
     vertices allMappings Set(true, false) // Generate all possible truth-value assignments
     allAssignments

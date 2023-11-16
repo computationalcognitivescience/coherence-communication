@@ -13,6 +13,9 @@ class BiasedBeliefNetwork(
     val biasWeights: Map[Node[String], Double]
 ) extends BeliefNetwork(network, negativeConstraints) {
 
+  // TODO: add asserts for biased beliefs in network
+  // TODO: Refactor 'network' to 'graph'
+
   /** Calculate the coherence-value from biased beliefs with a given truth-value assignment
    *
    * @param assignment
@@ -99,6 +102,8 @@ object RandomBiasedBeliefNetwork {
     new BiasedBeliefNetwork(network, negativeConstraints, biasBeliefs.toSet, biasAssignment, biasWeights)
   }
 
+
+  // TODO: Add weight distribution option to different sets of weights
   /** Generate a belief network from a fixed number of vertices, edges and negative constraints
    * with edges having random (uniformly drawn) weights between 0 and 1. Additionally chooses a fixed number of biased nodes and
    * (semi-)randomly assigns a fixed number of false truth-values, the rest will be true truth-biased, and randomly assigns
