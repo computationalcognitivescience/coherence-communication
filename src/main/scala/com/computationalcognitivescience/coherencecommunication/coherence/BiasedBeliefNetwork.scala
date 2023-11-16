@@ -36,18 +36,32 @@ class BiasedBeliefNetwork(
     sum(biasBeliefs, biasWeight _)
   }
 
-  /**
-   * Calculate the coherence-value from communicated beliefs with a given truth-value assignment
-   * @param assignment
-   * A truth-value assignment over vertices
-   * @return
-   * The weighted sum over satisfied communicated beliefs
-   */
-  protected def cohComm(assignment: Map[Node[String], Boolean]): Double = {
-    0.0
-    // TO DO: fill in, this is a place holder
-  }
+  /** Calculate the coherence-value from communicated beliefs with a given truth-value assignment
+    * @param assignment
+    *   A truth-value assignment over vertices
+    * @return
+    *   The weighted sum over satisfied communicated beliefs
+    */
+  def cohComm(
+      assignment: Map[Node[String], Boolean],
+      communicatedBeliefs: Set[Node[String]],
+      communicatedAssignment: Map[Node[String], Boolean],
+      communicatedWeights: Map[Node[String], Double]
+  ): Double = {
 
+    /** Return the communicated belief's weight if the belief is satisfied
+      *
+      * @param belief
+      *   A vertex in the network, must be a communicated belief
+      * @return
+      *   The weight of the bias if the communicated belief is satisfied, 0.0 otherwise
+      */
+    def commWeight(belief: Node[String]): Double =
+      if (assignment(belief) == communicatedAssignment(belief)) communicatedWeights(belief)
+      else 0.0
+
+    sum(communicatedBeliefs, commWeight _)
+  }
 
   /** Calculate the coherence-value from all constraints and biased beliefs with the given
     * truth-value assignment.
@@ -62,19 +76,27 @@ class BiasedBeliefNetwork(
   ): Double =
     cohPlus(assignment) + cohMin(assignment) + cohBias(assignment)
 
-  /**
-   * Calculate the coherence-value from all constraints and biased beliefs with the given
-   * truth-value assignment, taking into account the truth value assignment about the communicated beliefs.
-   *
-   * @param assignment
-   * A truth-value assignment over vertices
-   * @return
-   * The weighted sum over all satisfied constraints including weights on vertices
-   */
+  /** Calculate the coherence-value from all constraints and biased beliefs with the given
+    * truth-value assignment, taking into account the truth value assignment about the communicated
+    * beliefs.
+    *
+    * @param assignment
+    *   A truth-value assignment over vertices
+    * @return
+    *   The weighted sum over all satisfied constraints including weights on vertices
+    */
   def coh_communicated(
-      assignment: Map[Node[String], Boolean]
+      assignment: Map[Node[String], Boolean],
+      communicatedBeliefs: Set[Node[String]],
+      communicatedAssignment: Map[Node[String], Boolean],
+      communicatedWeights: Map[Node[String], Double]
   ): Double =
-    cohPlus(assignment) + cohMin(assignment) + cohBias(assignment) + cohComm(assignment)
+    cohPlus(assignment) + cohMin(assignment) + cohBias(assignment) + cohComm(
+      assignment,
+      communicatedBeliefs,
+      communicatedAssignment,
+      communicatedWeights
+    )
 
 }
 
