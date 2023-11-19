@@ -3,15 +3,30 @@ package com.computationalcognitivescience.coherencecommunication
 import mathlib.set.SetTheory._
 import mathlib.graph._
 import coherence._
-import mathlib.graph.GraphImplicits.{EdgeImpl2, WUnDiEdgeImpl}
+import mathlib.graph.GraphImplicits.{EdgeImpl2, WDiEdgeImpl, WUnDiEdgeImpl}
 
 import scala.util.Random
 
 object Main {
   def main(args: Array[String]): Unit = {
 
-//    val network: BiasedBeliefNetwork = RandomBiasedBeliefNetwork.random(10, 10, 2, 4, 3)
+    val customVertices: Set[Node[String]] = Set(Node("A"), Node("B"), Node("C"), Node("D"), Node("E"), Node("a"), Node("r"))
+    val customEdges: Set[WDiEdge[Node[String]]] = Set(
+      "A" ~> "B" % 1,
+      "A" ~> "C" % 1,
+      "B" ~> "C" % 1,
+      "C" ~> "D" % 1,
+      "D" ~> "E" % 1,
+      "a" ~> "A" % 1,
+      "E" ~> "r" % 1
+    )
+    val graph: WDiGraph[String] = WDiGraph(customVertices, customEdges)
     val network: BeliefNetwork = RandomBeliefNetwork.random(10, 0.5, 0.8)
+
+    println(network.bfs(graph, Node("a"), Node("r")))
+
+//    val network: BiasedBeliefNetwork = RandomBiasedBeliefNetwork.random(10, 10, 2, 4, 3)
+//    val network: BeliefNetwork = RandomBeliefNetwork.random(10, 0.5, 0.8)
     println("Vertices: ", network.vertices)
     println("Positive Constraints: ", network.positiveConstraints)
     println("Negative Constraints: ", network.negativeConstraints)

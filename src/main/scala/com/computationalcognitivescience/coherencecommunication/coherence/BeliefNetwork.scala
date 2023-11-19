@@ -392,7 +392,7 @@ class BeliefNetwork(
 
   }
 
-  // Find shortest path from startNode to targetNode O(|E| + |V|)
+  // Find shortest path from startNode ("a") to targetNode ("r") O(|E| + |V|)
   def bfs(
       network: WDiGraph[String],
       startNode: Node[String],
@@ -401,7 +401,9 @@ class BeliefNetwork(
     assert(network.vertices.contains(startNode))
     assert(network.vertices.contains(targetNode))
 
-    class NodeWithParent(val self: Node[String], val parent: Node[String])
+    class NodeWithParent(val self: Node[String], val parent: Node[String]){
+      override def toString: String = "NodeWithParent(" + self.label + "," + parent.label + ")"
+    }
 
     def findNeighboursInGraph(
         network: WDiGraph[String],
@@ -418,7 +420,7 @@ class BeliefNetwork(
         else Set.empty
       }
 
-      network.edges.map(getNeighbourIfIncident(_, node))
+      network.edges.flatMap(getNeighbourIfIncident(_, node))
     }
 
     @tailrec
@@ -438,7 +440,7 @@ class BeliefNetwork(
       // If the target has been found
       if (neighbours.contains(targetNode)) {
         // Return the list of parents
-        (parents + new NodeWithParent(startNode, targetNode), true)
+        (parents + new NodeWithParent(targetNode, startNode), true)
       } else {
         // Keep track of the neighbours' parents
         val newParents: Set[NodeWithParent] =
@@ -447,7 +449,7 @@ class BeliefNetwork(
         val newExplored: Set[Node[String]] = explored + startNode
         // Add neighbours to the end of the queue
         val newQueue: List[NodeWithParent] =
-          queue + neighbours.map(new NodeWithParent(_, startNode)).toList
+          queue ++ neighbours.map(new NodeWithParent(_, startNode)).toList
 
         // If the queue is empty at this point, there is no more path from startNode to targetNode
         if (newQueue.isEmpty) {
@@ -466,7 +468,7 @@ class BeliefNetwork(
       }
     }
 
-    val parents = findNeighboursInGraph(network, startNode)
+    val parents: Set[NodeWithParent] = Set(new NodeWithParent(startNode, startNode)) ++ findNeighboursInGraph(network, startNode)
       .map(new NodeWithParent(_, startNode))
     val explored: Set[Node[String]] = Set(startNode)
     val queue: List[NodeWithParent] = parents.toList
@@ -477,7 +479,7 @@ class BeliefNetwork(
     else if (queue.head.self == targetNode) List(startNode, targetNode)
     // Continue searching from next node
     else {
-      val (parentsPrime, foundPath) = bfsPrime(
+      val (parentsPrime, foundPath): (Set[NodeWithParent], Boolean) = bfsPrime(
         network,
         queue.head.self,
         targetNode,
@@ -489,7 +491,17 @@ class BeliefNetwork(
         List.empty
       } else {
         // TODO: reconstruct path from parent list
-        ???
+        def reconstructPath(targetNode: Node[String], parentSet: Set[NodeWithParent]): List[Node[String]] = {
+          assert(parentSet.exists((node: NodeWithParent) => node.self == node.parent)) // source node exists
+          assert(parentSet.exists((node: NodeWithParent) => node.self == targetNode))
+          val targetNodePrime: NodeWithParent = parentsPrime.filter((p: NodeWithParent) => p.self == targetNode).random.get
+          if(targetNodePrime.self == targetNodePrime.parent) List(targetNode)
+          else if (parentSet.isEmpty) List[Node[String]]().empty
+          else {
+            List(targetNode) ++ reconstructPath(targetNodePrime.parent, parentSet - targetNodePrime)
+          }
+        }
+        reconstructPath(targetNode, parentsPrime)
       }
     }
   }
