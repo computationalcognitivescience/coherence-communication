@@ -449,6 +449,8 @@ class BeliefNetwork(
     finalGraph
   }
 
+  private case class Path(nodes: List[Node[String]], edges: List[WDiEdge[Node[String]]])
+
   // Find shortest path from startNode ("a") to targetNode ("r") O(|E| + |V|)
   def bfs(
            graph: WDiGraph[String],
@@ -457,7 +459,7 @@ class BeliefNetwork(
   ): List[Node[String]] = {
     assert(graph.vertices.contains(startNode))
     assert(graph.vertices.contains(targetNode))
-
+//TODO: Construct both list[nodes] and list[edges] datastructure representing the path.
     class NodeWithParent(val self: Node[String], val parent: Node[String]){
       override def toString: String = "NodeWithParent(" + self.label + "," + parent.label + ")"
     }
