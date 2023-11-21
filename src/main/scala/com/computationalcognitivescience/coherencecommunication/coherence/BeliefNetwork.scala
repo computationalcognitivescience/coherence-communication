@@ -2,6 +2,7 @@ package com.computationalcognitivescience.coherencecommunication.coherence
 
 import mathlib.graph._
 import mathlib.set.SetTheory._
+import sun.security.provider.certpath.AdjacencyList
 
 import scala.annotation.tailrec
 import scala.util.Random
@@ -124,33 +125,69 @@ class BeliefNetwork(
 
     // Get all vertices incident to a negative constraint
     val unassignedMinus: Set[Node[String]] = negativeConstraints.flatMap(e => Set(e.left, e.right))
-    // Get all vertices incident to a positive constraint
-    val unassignedPlus: Set[Node[String]] = positiveConstraints.flatMap(e => Set(e.left, e.right))
 
     // Apply AC1 exhaustively
+    // Effectively: Get all possible truth-value assignments over the vertices incident to a negative constraint
     val assignmentMinusSet: Set[Map[Node[String], Boolean]] = ac1(unassignedMinus)
 
     // Apply AC2 where possible
+    // For each truth-value assignment:
+    // create a new graph wherein all edges that have a pre-determined truth-value assignment are removed
     val (graphPrime, assignmentCoherence)
         : (WUnDiGraph[String], Set[(Map[Node[String], Boolean], Double)]) = ac2(assignmentMinusSet)
 
-    //    // Select the instance that has the highest coherence value already satisfied
-    //    val highestCoherence = argMax(determinedEdgeRemoved, (instance: (CoherenceNetwork, Double)) => -instance._2)
-
     // Apply AC3 where possible
-    val maxFlowGraphs: Set[(WUnDiGraph[String], Double)] =
-      // Apply AC3 to the graph, pass the coherence value as is
+    // Remove all nodes that have a pre-assigned truth-value assignment and replace them with a single true node and a single false node
+    // with each of the edges that went to a removed node being replace with an edge with the same weight going to the single true/false nodes.
+    val maxFlowGraphs: Set[(WUnDiGraph[String], Map[Node[String], Boolean], Double)] =
+      // Apply AC3 to the graph, pass the truth-value assignment and coherence value as is
       assignmentCoherence.map((instance: (Map[Node[String], Boolean], Double)) =>
-        (ac3(graphPrime, instance._1), instance._2)
+        (ac3(graphPrime, instance._1), instance._1, instance._2)
       )
 
     // Get the optimal truth-value distribution and coherence value of all graphs
+
+    /** Get the truth-value assignment and coherence of this graph
+     *
+     * @param graph
+     *  Weighted Directed Graph with exactly 2 connected components
+     * @param determinedAssignment
+     *  Truth-value assignment as pre-determined in ac1
+     * @param determinedCoh
+     *  Coherence value from pre-determined constraints satisfied as calculated in ac2
+     * @return
+     *  A truth-value assignment and its coherence value
+     */
     def getPartition(
-        instance: (WUnDiGraph[String], Double)
+        graph: WUnDiGraph[String],
+        determinedAssignment: Map[Node[String], Boolean],
+        determinedCoh: Double
     ): (Map[Node[String], Boolean], Double) = {
+
+      /** Get all Nodes connected to the startNode
+       *
+       * @param graph
+       *  Weighted Directed Graph
+       * @param startNode
+       *  Starting node from which to determine the connected component (usually Node("a"))
+       * @return
+       *  A set of nodes connected to the start Node
+       */
       def getConnected(graph: WDiGraph[String],
-                       node: Node[String],
+                       startNode: Node[String],
                       ): Set[Node[String]] ={
+
+        /** For a given Node, find all its neighbours in the given Graph
+         *
+         * @param graph
+         *  Weighted Directed Graph
+         * @param node
+         *  Node to find neighbours of
+         * @param ignore
+         *  Set of nodes to ignore (do not return these nodes as neighbours)
+         * @return
+         *  Set of neighbouring Nodes
+         */
         def findNeighboursInGraph(
                                    graph: WDiGraph[String],
                                    node: Node[String],
@@ -158,6 +195,17 @@ class BeliefNetwork(
                                  ): Set[Node[String]] = {
           assert(graph.vertices.contains(node))
 
+          /** For a given Edge, if Self is incident to that edge AND the weight of the edges is larger than 0, return the other Node
+           *
+           * @param edge
+           *  Weighted Directed Edge
+           * @param self
+           *  Node
+           * @param ignore
+           *  Set of nodes to ignore (do not return these nodes as neighbours)
+           * @return
+           *  Th other Node of this edge if Self is incident to the edge and it has weight > 0
+           */
           def getNeighbourIfIncident(
                                       edge: WDiEdge[Node[String]],
                                       self: Node[String],
@@ -166,39 +214,61 @@ class BeliefNetwork(
             if (edge.left == self && edge.weight > 0 && !ignore.contains(edge.right)) Set(edge.right)
             else Set.empty
           }
-
-          graph.edges.flatMap(getNeighbourIfIncident(_, node))
+          // For all edges in the graph, check if node is incident to the edge and what its neighbour would be
+          graph.edges.flatMap(getNeighbourIfIncident(_, node, ignore))
         }
 
+        /** Recursive call of getConnected
+         *
+         * @param graph
+         *  Weighted Directed Graph
+         * @param node
+         *  Node
+         * @param connected
+         *  Set of Nodes already found to be connected
+         * @param queue
+         *  List of Nodes still waiting to be explored
+         * @return
+         *  Set of Nodes connected to Node
+         */
         @tailrec
-        def getConnectedPrime(graph: WDiGraph[String], head: Node[String], connected: Set[Node[String]], queue: List[Node[String]]): Set[Node[String]] = {
+        def getConnectedPrime(graph: WDiGraph[String], node: Node[String], connected: Set[Node[String]], queue: List[Node[String]]): Set[Node[String]] = {
           val neighbours = findNeighboursInGraph(graph, node, connected ++ queue.toSet)
           val newQueue = queue ++ neighbours
           if(queue.isEmpty) connected + node
           else {
-            getConnectedPrime(graph, newQueue.head, connected + node, newQueue)
+            getConnectedPrime(graph, newQueue.head, connected + node, newQueue.tail)
           }
         }
-        val connected: Set[Node[String]] = Set(Node)
-        val queue: List[Node[String]] = findNeighboursInGraph(graph, node).toList
+        val connected: Set[Node[String]] = Set(startNode) // Usually Node("a")
+        val queue: List[Node[String]] = findNeighboursInGraph(graph, startNode).toList // Neighbours of Node("a")
 
+        // if startNode has no Neighbours, return it by itself
         if (queue.isEmpty) connected
+        // Otherwise, keep searching from its neighbours
         else {
-          getConnectedPrime(graph, queue.head, connected, queue)
+          getConnectedPrime(graph, queue.head, connected, queue.tail)
         }
       }
 
-      val residualGraph = maxFlow(instance._1)
-      val trueComponent: Set[Node[String]] = getConnected(residualGraph, Node('a'))
-      val falseComponent: Set[Node[String]] = network.vertices -- trueComponent
+      // residualGraph is the graph after running the Edmonds-Karp algorithm on the graph
+      val residualGraph: WDiGraph[String] = maxFlow(graph)
+
+      // residualGraph should have only 2 connected components
+      val trueComponent: Set[Node[String]] = getConnected(residualGraph, Node("a")) // Nodes connected to "a" are set to True
+      val falseComponent: Set[Node[String]] = graph.vertices -- trueComponent // Nodes connected to "r" are set to False
+
+      // Combine the found truth-value assignments
       val assignment: Map[Node[String], Boolean] = trueComponent.map((_,true)).toMap ++ falseComponent.map((_,false)).toMap
-      // TODO: Get coherence value for leftover nodes, map residual graph to undirected graph and create new belief network
-      // TODO: OR = Make coherence also be able to calculate coherence only over a subset of nodes
-      val coherenceValue: Double = coh(assignment)
-//      (partition, coh + instance._2)
-      ???
+
+      // Calculate coherence over the max-flow subgraph
+      val tempBeliefNet: BeliefNetwork = new BeliefNetwork(graph, Set.empty)
+      val coherenceValue: Double = tempBeliefNet.coh(assignment)
+
+      // Return the full assignment plus the coherence value
+      (assignment ++ determinedAssignment, coherenceValue + determinedCoh)
     }
-    val partitions = maxFlowGraphs.map(getPartition)
+    val partitions = maxFlowGraphs.map(instance => getPartition(instance._1, instance._2,instance._3))
 
     // Get the partition with the highest coherence value
     partitions.argMax((e: (Map[Node[String], Boolean], Double)) => e._2).random.get
@@ -209,12 +279,26 @@ class BeliefNetwork(
   // Therefore, branch on unassigned vertices incident to a negative constraint such that we have 2 graphs
   // On graph where the vertex is accepted, and one where it is rejected
   // Effectively this generates all possible truth-value assignments over vertices incident to a negative edge
+
+  /** Generate all possible truth-value assignments over nodes incident to a negative constraint O(pow(2,unassignedMinus))
+   *
+   *  Branching rule
+   *  Observation: for an optimal partition, any vertex that is connected by a negative constraint must either be accepted or rejected
+   *  Therefore, branch on unassigned vertices incident to a negative constraint such that we have 2 graphs
+   *  On graph where the vertex is accepted, and one where it is rejected
+   *  Effectively this generates all possible truth-value assignments over vertices incident to a negative edge
+   * @param unassignedMinus
+   *  Set of nodes incident to a negative constraint
+   * @return
+   *  All possible truth value assignments over unassignedMinus
+   */
   def ac1(
       unassignedMinus: Set[Node[String]] // All nodes incident to a negative constraint
   ): Set[Map[Node[String], Boolean]] =
     unassignedMinus.allMappings(Set(true, false))
 
   // Remove determined constraints rule
+  // TODO: Continue commenting from here
   def ac2(
       assignmentSet: Set[Map[Node[String], Boolean]]
   ): (WUnDiGraph[String], Set[(Map[Node[String], Boolean], Double)]) = {
@@ -274,18 +358,18 @@ class BeliefNetwork(
 
   // Merge Accepted and Rejected vertices rule
   def ac3(
-      network: WUnDiGraph[String],
+      graph: WUnDiGraph[String],
       assignment: Map[Node[String], Boolean]
   ): WUnDiGraph[String] = {
     val acceptedNode: Node[String] = Node("a")
     val rejectedNode: Node[String] = Node("r")
 
-    def sortIncidentEdges(network: WUnDiGraph[String], assignment: Map[Node[String], Boolean]): (
+    def sortIncidentEdges(graph: WUnDiGraph[String], assignment: Map[Node[String], Boolean]): (
         Set[WUnDiEdge[Node[String]]],
         Set[WUnDiEdge[Node[String]]],
         Set[WUnDiEdge[Node[String]]]
     ) = {
-      val edgeList: List[WUnDiEdge[Node[String]]]   = network.edges.toList
+      val edgeList: List[WUnDiEdge[Node[String]]]   = graph.edges.toList
       val incidentToA: Set[WUnDiEdge[Node[String]]] = Set.empty
       val incidentToR: Set[WUnDiEdge[Node[String]]] = Set.empty
       val notIncident: Set[WUnDiEdge[Node[String]]] = Set.empty
@@ -339,7 +423,7 @@ class BeliefNetwork(
         Set[WUnDiEdge[Node[String]]],
         Set[WUnDiEdge[Node[String]]]
     ) =
-      sortIncidentEdges(network, assignment)
+      sortIncidentEdges(graph, assignment)
 
     // Replace a constraint that is incident to an accepted node with one that is connected to new node 'a'
     def replaceConstraintAPrime(
@@ -381,12 +465,9 @@ class BeliefNetwork(
   }
 
   // Ford-Fulkerson
-  def maxFlow(network: WUnDiGraph[String]): WDiGraph[String] = {
-    val sourceNode: Node[String] =
-      network.vertices.filter((v: Node[String]) => v.label == "a").random.get // {a}
-    val targetNode: Node[String] =
-      network.vertices.filter((v: Node[String]) => v.label == "r").random.get // {r}
-
+  def maxFlow(graph: WUnDiGraph[String]): WDiGraph[String] = {
+    val sourceNode: Node[String] = Node("a")
+    val targetNode: Node[String] = Node("r")
     // Create directed edges from an undirected edge
     def createDirectedEdges(
         edge: WUnDiEdge[Node[String]]
@@ -397,10 +478,9 @@ class BeliefNetwork(
     }
 
     // Create directed graph
-    val edges: Set[WDiEdge[Node[String]]] = network.edges.flatMap(createDirectedEdges)
-    val dirGraph: WDiGraph[String]        = WDiGraph(network.vertices, edges)
+    val edges: Set[WDiEdge[Node[String]]] = graph.edges.flatMap(createDirectedEdges)
+    val dirGraph: WDiGraph[String]        = WDiGraph(graph.vertices, edges)
 
-    // TODO: Make this recursive until no more path can be found
     @tailrec
     def recursiveFindAugmentingPath(
         graph: WDiGraph[String],
@@ -408,38 +488,31 @@ class BeliefNetwork(
         targetNode: Node[String] = targetNode
     ): WDiGraph[String] = {
       // Find path from a to r
-      val augmentingPath: List[Node[String]] = bfs(graph, sourceNode, targetNode)
+      val aList: Map[Node[String], Set[NodeWeightPair[String]]] = graph.adjacencyList
+      val augmentingPath: List[WDiEdge[Node[String]]] = bfs(graph, sourceNode, targetNode, aList)
       if (augmentingPath.isEmpty) graph
       else {
         // TODO: Implement some way to make this faster (A trait of network that maps a node 2-tuple to an edge?)
-
-        // Get all edges on this path
-        val reversePathNodes: Set[(Node[String], Node[String])] =
-          Range(0, augmentingPath.length - 1)
-            .map((i: Int) => (augmentingPath(i), augmentingPath(i + 1)))
-            .toSet // get (leftNode, RightNode tuples)
-        val reversePathEdges: Set[WDiEdge[Node[String]]] = {
-          // Check for each edge if its endpoints are part of the nodes in the path
-          graph.edges.filter((e: WDiEdge[Node[String]]) => reversePathNodes.contains((e.left, e.right)))
-        }
-
+        // TODO: or perhaps a map from edge to edge that just maps to its reverse counterpart?
         // Get reverse path
-        val forwardPathEdges: Set[WDiEdge[Node[String]]] = {
+        val reversePath: List[WDiEdge[Node[String]]] = {
           // Check for each edge if its endpoints are part of the nodes in the path
-          graph.edges.filter((e: WDiEdge[Node[String]]) => reversePathNodes.contains((e.right, e.left)))
+          val reversePathNodes: List[Node[String]] = Range(augmentingPath.size-1, 0, -1).inclusive.map(i => augmentingPath(i).right).toList ++ List(sourceNode)
+          Range(0, augmentingPath.size, 1).map((i: Int) => WDiEdge(reversePathNodes(i), reversePathNodes(i+1), aList(reversePathNodes(i)).filter(_.node == reversePathNodes(i+1)).random.get.weight)).toList
+          // WDiEdge(left, right, aList(left).filter(_.node == right).random.get.weight)
         }
 
         // Find the minimum capacity through this path
-        val minCapacity: Double = forwardPathEdges.map(_.weight).min
+        val minCapacity: Double = augmentingPath.map(_.weight).min
 
         // Adjust all path capacities
         // Reduce weight of forward edges
-        val newForwardEdges: Set[WDiEdge[Node[String]]] = forwardPathEdges.map((e: WDiEdge[Node[String]]) => WDiEdge(e.left, e.right, e.weight-minCapacity))
+        val newForwardEdges: Set[WDiEdge[Node[String]]] = augmentingPath.map((e: WDiEdge[Node[String]]) => WDiEdge(e.left, e.right, e.weight-minCapacity)).toSet
 
         // Increase weight of backward edges
-        val newReverseEdges: Set[WDiEdge[Node[String]]] = reversePathEdges.map((e: WDiEdge[Node[String]]) => WDiEdge(e.left, e.right, e.weight + minCapacity))
+        val newReverseEdges: Set[WDiEdge[Node[String]]] = reversePath.map((e: WDiEdge[Node[String]]) => WDiEdge(e.left, e.right, e.weight + minCapacity)).toSet
 
-        val newGraph =  WDiGraph(graph.vertices, graph.edges -- forwardPathEdges -- reversePathEdges ++ newForwardEdges ++ newReverseEdges)
+        val newGraph =  WDiGraph(graph.vertices, graph.edges -- augmentingPath -- reversePath ++ newForwardEdges ++ newReverseEdges)
 
         recursiveFindAugmentingPath(newGraph)
       }
@@ -449,117 +522,93 @@ class BeliefNetwork(
     finalGraph
   }
 
-  private case class Path(nodes: List[Node[String]], edges: List[WDiEdge[Node[String]]])
-
   // Find shortest path from startNode ("a") to targetNode ("r") O(|E| + |V|)
   def bfs(
            graph: WDiGraph[String],
            startNode: Node[String],
-           targetNode: Node[String]
-  ): List[Node[String]] = {
+           targetNode: Node[String],
+           aList: Map[Node[String], Set[NodeWeightPair[String]]]
+  ): List[WDiEdge[Node[String]]] = {
     assert(graph.vertices.contains(startNode))
     assert(graph.vertices.contains(targetNode))
-//TODO: Construct both list[nodes] and list[edges] datastructure representing the path.
     class NodeWithParent(val self: Node[String], val parent: Node[String]){
       override def toString: String = "NodeWithParent(" + self.label + "," + parent.label + ")"
     }
 
-    def findNeighboursInGraph(
-                               graph: WDiGraph[String],
-                               node: Node[String]
-    ): Set[Node[String]] = {
-      assert(graph.vertices.contains(node))
-
-      def getNeighbourIfIncident(
-          edge: WDiEdge[Node[String]],
-          self: Node[String]
-      ): Set[Node[String]] = {
-        if (edge.left == self && edge.weight > 0) Set(edge.right)
-        else Set.empty
-      }
-
-      graph.edges.flatMap(getNeighbourIfIncident(_, node))
+    def getEdgeFromNodes(left: Node[String], right: Node[String], aList: Map[Node[String], Set[NodeWeightPair[String]]]): WDiEdge[Node[String]] = {
+      WDiEdge(left, right, aList(left).filter(_.node == right).random.get.weight)
     }
 
     @tailrec
     def bfsPrime(
                   graph: WDiGraph[String],
+                  aList: Map[Node[String], Set[NodeWeightPair[String]]],
+                  pathToNode: Map[Node[String], List[WDiEdge[Node[String]]]],
                   startNode: Node[String],
                   targetNode: Node[String],
-                  queue: List[NodeWithParent],
-                  explored: Set[Node[String]],
-                  parents: Set[NodeWithParent]
-    ): (Set[NodeWithParent], Boolean) = {
+                  queue: List[Node[String]],
+                  explored: Set[Node[String]]
+    ): List[WDiEdge[Node[String]]] = {
 
-      val neighbours: Set[Node[String]] = findNeighboursInGraph(graph, startNode)
+      val neighbours: Set[Node[String]] = aList(startNode).map(_.node)
         .filterNot(queue.contains) // Remove nodes that are already in the queue
         .diff(explored)            // Remove nodes that have already been explored
 
+      // Update path to found neighbours
+      val newPathToNode: Map[Node[String], List[WDiEdge[Node[String]]]] =
+        pathToNode ++
+          neighbours
+            .map(n => n -> (pathToNode(startNode) ++ List(getEdgeFromNodes(startNode, targetNode, aList)))).toMap
+
       // If the target has been found
       if (neighbours.contains(targetNode)) {
-        // Return the list of parents
-        (parents + new NodeWithParent(targetNode, startNode), true)
+        newPathToNode(targetNode)
       } else {
-        // Keep track of the neighbours' parents
-        val newParents: Set[NodeWithParent] =
-          parents ++ neighbours.map(new NodeWithParent(_, startNode))
         // We've explored the current node
         val newExplored: Set[Node[String]] = explored + startNode
         // Add neighbours to the end of the queue
-        val newQueue: List[NodeWithParent] =
-          queue ++ neighbours.map(new NodeWithParent(_, startNode)).toList
+        val newQueue: List[Node[String]] =
+          queue.tail ++ neighbours.toList
 
-        // If the queue is empty at this point, there is no more path from startNode to targetNode
+        // If the queue is empty at this point, there is no path from startNode to targetNode
         if (newQueue.isEmpty) {
-          (newParents, false)
+          List.empty
         } else {
           // Keep searching
           bfsPrime(
             graph,            // network
-            newQueue.head.self, // startNode
+            aList,              // adjacencyList
+            pathToNode,         // map from node to path
+            newQueue.head, // startNode
             targetNode,         // targetNode
-            newQueue.tail,      // queue
+            newQueue,      // queue
             newExplored,        // explored
-            newParents          // parents
           )
         }
       }
     }
 
-    val parents: Set[NodeWithParent] = Set(new NodeWithParent(startNode, startNode)) ++ findNeighboursInGraph(graph, startNode)
-      .map(new NodeWithParent(_, startNode))
+    val neighbours: Set[Node[String]] = aList(startNode).map(_.node)
+    val pathToNode: Map[Node[String], List[WDiEdge[Node[String]]]] = neighbours
+      .map(n => n -> List(WDiEdge(startNode, n, aList(startNode).filter(_.node == n).random.get.weight))).toMap
     val explored: Set[Node[String]] = Set(startNode)
-    val queue: List[NodeWithParent] = parents.toList
+    val queue: List[Node[String]] = neighbours.tail.toList
 
     // No path can be found
     if (queue.isEmpty) List.empty
     // The target has been immediately found
-    else if (queue.head.self == targetNode) List(startNode, targetNode)
+    else if (queue.head == targetNode) pathToNode(targetNode)
     // Continue searching from next node
     else {
-      val (parentsPrime, foundPath): (Set[NodeWithParent], Boolean) = bfsPrime(
-        graph,
-        queue.head.self,
-        targetNode,
-        queue,
-        explored,
-        parents
-      ) // (Set[NodeWithParent], boolean)
-      if (!foundPath) {
-        List.empty
-      } else {
-        def reconstructPath(targetNode: Node[String], parentSet: Set[NodeWithParent]): List[Node[String]] = {
-          assert(parentSet.exists((node: NodeWithParent) => node.self == node.parent)) // source node exists
-          assert(parentSet.exists((node: NodeWithParent) => node.self == targetNode))
-          val targetNodePrime: NodeWithParent = parentsPrime.filter((p: NodeWithParent) => p.self == targetNode).random.get
-          if(targetNodePrime.self == targetNodePrime.parent) List(targetNode)
-          else if (parentSet.isEmpty) List[Node[String]]().empty
-          else {
-            List(targetNode) ++ reconstructPath(targetNodePrime.parent, parentSet - targetNodePrime)
-          }
-        }
-        reconstructPath(targetNode, parentsPrime)
-      }
+      bfsPrime(
+        graph,            // network
+        aList,              // adjacencyList
+        pathToNode,         // map from node to path
+        queue.head, // startNode
+        targetNode,         // targetNode
+        queue,      // queue
+        explored,        // explored
+      )
     }
   }
 }

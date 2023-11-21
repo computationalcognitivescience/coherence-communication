@@ -10,6 +10,7 @@ import scala.util.Random
 object Main {
   def main(args: Array[String]): Unit = {
 
+    // TODO: bug-fix FPT-algorithm
     val customVertices: Set[Node[String]] = Set(Node("A"), Node("B"), Node("C"), Node("D"), Node("E"), Node("a"), Node("r"))
     val customEdges: Set[WUnDiEdge[Node[String]]] = Set(
       "A" ~ "B" % 1,
