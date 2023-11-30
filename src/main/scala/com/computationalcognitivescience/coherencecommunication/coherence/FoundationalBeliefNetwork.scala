@@ -3,6 +3,7 @@ package com.computationalcognitivescience.coherencecommunication.coherence
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
+import scala.collection.immutable
 import scala.util.Random
 class FoundationalBeliefNetwork(
     network: WUnDiGraph[String],
@@ -11,15 +12,26 @@ class FoundationalBeliefNetwork(
     val foundationalAssignment: Map[Node[String], Boolean]
 ) extends BeliefNetwork(network, negativeConstraints) {
 
+  /** Calculate the optimal truth-value assignment of this FoundationalBeliefNetwork
+   *
+   * Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and
+   * psychology Chapter 5
+   *
+   * @return
+   *   A truth-value assignment over vertices that results in maximum coherence If multiple maximal
+   *   truth-value assignments exists, get a random maximal one.
+   */
   override def coherence(): Map[Node[String], Boolean] = {
-    // Output
-    // Get the truth-assignment that maximizes coherence
 
-    // TODO: fix foundational nodes and generate others
-    val allAssignments =
-      vertices allMappings Set(true, false) // Generate all possible truth-value assignments
+    // Get truth-value assignment over non-foundational nodes
+    val notFoundationalBeliefs: Set[Node[String]] = network.vertices -- foundationalBeliefs
+    val otherAssignments: Set[Map[Node[String], Boolean]] = notFoundationalBeliefs allMappings  Set(true, false)
+
+    // Add foundational truth-value assignments
+    val allAssignments: Set[Map[Node[String], Boolean]] = otherAssignments.map(_ ++ foundationalAssignment)
+
+    // Get highest coherence
     allAssignments
-      .filter(isValidAssignment)
       .argMax(coh)
       .random
       .get // Return the truth-value assignment that maximizes coherence value

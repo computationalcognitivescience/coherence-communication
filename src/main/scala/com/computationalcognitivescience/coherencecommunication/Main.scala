@@ -90,7 +90,7 @@ object Main {
     val trueCoh: Map[Node[String], Boolean] = capitalCityBeliefNet.coherence()
     println((System.nanoTime() - t1) / 1e9d)
     val t2 = System.nanoTime()
-    val fptCoh: (Map[Node[String], Boolean], Double) = capitalCityBeliefNet.cMinusCoherence()
+    val fptCoh: Map[Node[String], Boolean] = capitalCityBeliefNet.cMinusCoherence()
     println((System.nanoTime() - t2) / 1e9d)
 
 //    val customAssignment = Map(
@@ -106,13 +106,16 @@ object Main {
 //    )
 //    println(capitalCityBeliefNet.coh(customAssignment))
     println()
-
+    println(trueCoh == fptCoh)
     println(trueCoh)
     println(capitalCityBeliefNet.coh(trueCoh))
-    println(fptCoh._1)
-    println(fptCoh._2)
-    println(trueCoh == fptCoh._1)
-    println(capitalCityBeliefNet.coh(trueCoh) == fptCoh._2)
+    println(fptCoh)
+    println(capitalCityBeliefNet.coh(fptCoh))
+//    println(capitalCityBeliefNet.coh(trueCoh))
+//    println(fptCoh._1)
+//    println(fptCoh._2)
+//    println(trueCoh == fptCoh._1)
+//    println(capitalCityBeliefNet.coh(trueCoh) == fptCoh._2)
 
 //    val network: FoundationalBeliefNetwork = RandomFoundationalBeliefNetwork.random(10, 10, 2, 4, 3)
 ////    val network: BeliefNetwork = RandomBeliefNetwork.random(10, 0.5, 0.8)

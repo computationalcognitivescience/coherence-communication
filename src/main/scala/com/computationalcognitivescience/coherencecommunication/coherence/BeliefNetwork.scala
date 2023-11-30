@@ -1,8 +1,8 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
+import mathlib.graph.GraphImplicits.{EdgeImpl2, WUnDiEdgeImpl}
 import mathlib.graph._
 import mathlib.set.SetTheory._
-import sun.security.provider.certpath.AdjacencyList
 
 import scala.annotation.tailrec
 import scala.util.Random
@@ -48,30 +48,9 @@ class BeliefNetwork(
     * @return
     *   True if both endpoints of the edge have been assigned, false otherwise
     */
-  def isDeterminedConstraint(assignment: Map[Node[String], Boolean])(
+  protected def isDeterminedConstraint(assignment: Map[Node[String], Boolean])(
       edge: WUnDiEdge[Node[String]]
   ): Boolean = assignment.keySet.contains(edge.left) && assignment.keySet.contains(edge.right)
-
-  /** Calculate the optimal truth-value assignment of this BeliefNetwork
-    *
-    * Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and
-    * psychology Chapter 5
-    *
-    * @return
-    *   A truth-value assignment over vertices that results in maximum coherence If multiple maximal
-    *   truth-value assignments exists, get a random maximal one.
-    */
-  def coherence(): Map[Node[String], Boolean] = {
-
-    // Output
-    // Get the truth-assignment that maximizes coherence
-    val allAssignments =
-      vertices allMappings Set(true, false) // Generate all possible truth-value assignments
-    allAssignments
-      .argMax(coh)
-      .random
-      .get // Return the truth-value assignment that maximizes coherence value
-  }
 
   /** Calculate the coherence-value from positive constraints with a given truth-value assignment
     *
@@ -116,65 +95,28 @@ class BeliefNetwork(
   def coh(assignment: Map[Node[String], Boolean]): Double =
     cohPlus(assignment) + cohMin(assignment)
 
-  /** {C-}-FPT algorithm for coherence as presented by van Rooij (1998)
+  /** Calculate the optimal truth-value assignment of this BeliefNetwork
+    *
+    * Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and
+    * psychology Chapter 5
     *
     * @return
     *   A truth-value assignment over vertices that results in maximum coherence If multiple maximal
     *   truth-value assignments exists, get a random maximal one.
     */
-  def cMinusCoherence(): (Map[Node[String], Boolean], Double) = {
+  def coherence(): Map[Node[String], Boolean] = {
 
-    // Get all vertices incident to a negative constraint
-    val unassignedMinus: Set[Node[String]] = negativeConstraints.flatMap(e => Set(e.left, e.right))
-
-    // Apply AC1 exhaustively
-    // Effectively: Get all possible truth-value assignments over the vertices incident to a negative constraint
-    val assignmentMinusSet: Set[Map[Node[String], Boolean]] = ac1(unassignedMinus)
-
-    // Apply AC2 where possible
-    // For each truth-value assignment:
-    // create a new graph wherein all edges that have a pre-determined truth-value assignment are removed
-    val (graphPrime, assignmentCoherence)
-        : (WUnDiGraph[String], Set[(Map[Node[String], Boolean], Double)]) = ac2(assignmentMinusSet)
-
-    // Apply AC3 where possible
-    // Remove all nodes that have a pre-assigned truth-value assignment and replace them with a single true node and a single false node
-    // with each of the edges that went to a removed node being replace with an edge with the same weight going to the single true/false nodes.
-    val maxFlowGraphs: Set[
-      (
-          WUnDiGraph[String],         // Graph
-          Map[Node[String], Boolean], // Truth-value assignment of determined Nodes
-          Double
-      )
-    ] = // Coherence value of determined constraints
-      // Apply AC3 to the graph, pass the truth-value assignment and coherence value as is
-      assignmentCoherence.map(
-        (instance: (
-            Map[Node[String], Boolean], // Truth-value assignment of determined Nodes
-            Double
-        )) => // Coherence value of determined constraints
-          (ac3(graphPrime, instance._1), instance._1, instance._2)
-      )
-
-    def combinePartitionWithPredetermined(
-        maxFlowGraph: WUnDiGraph[String],
-        predeterminedAssignment: Map[Node[String], Boolean],
-        predeterminedCoherence: Double
-    ): (Map[Node[String], Boolean], Double) = {
-      val (assignment: Map[Node[String], Boolean], coherenceValue: Double) = getPartition(
-        maxFlowGraph
-      )
-      (assignment ++ predeterminedAssignment - Node("sourceNode") - Node("targetNode"), coherenceValue + predeterminedCoherence)
-    }
-
-    val partitionCoherenceTuples: Set[(Map[Node[String], Boolean], Double)] =
-      maxFlowGraphs.map(instance =>
-        combinePartitionWithPredetermined(instance._1, instance._2, instance._3)
-      )
-
-    // Get the partition with the highest coherence value
-    partitionCoherenceTuples.argMax((e: (Map[Node[String], Boolean], Double)) => e._2).random.get
+    // Output
+    // Get the truth-assignment that maximizes coherence
+    val allAssignments =
+      vertices allMappings Set(true, false) // Generate all possible truth-value assignments
+    allAssignments
+      .argMax(coh)
+      .random
+      .get // Return the truth-value assignment that maximizes coherence value
   }
+
+  //// FPT-ALGORITHM BLOW ////
 
   /** Generate all possible truth-value assignments over nodes incident to a negative constraint
     * O(pow(2,unassignedMinus))
@@ -214,7 +156,7 @@ class BeliefNetwork(
 
     // Because the set of *determined* constraints (positive or negative) is the same for all truth-value assignments
     // We can take a any truth-value assignment to determine the determined constraints
-    val randomAssignment: Map[Node[String], Boolean] = assignmentSet.iterator.next()
+    val randomAssignment: Map[Node[String], Boolean] = assignmentSet.random.get
 
     // For positive constraints we need to check if they've been determined already
     val dPosConstraints: Set[WUnDiEdge[Node[String]]] =
@@ -270,16 +212,16 @@ class BeliefNetwork(
     val edgesPrime = edges -- dPosConstraints -- dNegConstraints
 
     // Create new graph with new edge set
-    val networkPrime: WUnDiGraph[String] = WUnDiGraph(vertices, edgesPrime)
+    val graphPrime: WUnDiGraph[String] = WUnDiGraph(vertices, edgesPrime)
 
-    (networkPrime, assignmentCoherence)
+    (graphPrime, assignmentCoherence)
   }
 
   /** Merge accepted and rejected Nodes
     *
     * Merge Accepted and Rejected vertices rule Merge all determined rejected Nodes into a single
-    * {"targetNode"} rejected Node, and all accepted Nodes into a single {"sourceNode"} accepted Node. Edges going to
-    * the determined (removed) nodes are also transferred to the new nodes.
+    * {"targetNode"} rejected Node, and all accepted Nodes into a single {"sourceNode"} accepted
+    * Node. Edges going to the determined (removed) nodes are also transferred to the new nodes.
     *
     * @param graph
     *   Weighted Undirected Graph
@@ -352,16 +294,43 @@ class BeliefNetwork(
           // if the left Node is assigned
           if (assignment.contains(edge.left)) {
             if (assignment(edge.left)) // if the left Node is true
-              sortIncidentEdgesPrime(edgeList.tail, incidentToA + edge, incidentToR, notIncident) // Assign edge to incidentToA
-            else sortIncidentEdgesPrime(edgeList.tail, incidentToA, incidentToR + edge, notIncident) // else it must be false and therefore assign the edge to incident to R
+              sortIncidentEdgesPrime(
+                edgeList.tail,
+                incidentToA + edge,
+                incidentToR,
+                notIncident
+              ) // Assign edge to incidentToA
+            else
+              sortIncidentEdgesPrime(
+                edgeList.tail,
+                incidentToA,
+                incidentToR + edge,
+                notIncident
+              ) // else it must be false and therefore assign the edge to incident to R
 
             // if the right Node is assigned
           } else if (assignment.contains(edge.right)) {
             if (assignment(edge.right)) // if the right Node is true
-              sortIncidentEdgesPrime(edgeList.tail, incidentToA + edge, incidentToR, notIncident) // Assign edge to incidentToA
-            else sortIncidentEdgesPrime(edgeList.tail, incidentToA, incidentToR + edge, notIncident) // else it must be false and therefore assign the edge to incident to R
-          }
-          else sortIncidentEdgesPrime(edgeList.tail, incidentToA, incidentToR, notIncident + edge) // else neither left or right is assigned, assign the edge to notIncident
+              sortIncidentEdgesPrime(
+                edgeList.tail,
+                incidentToA + edge,
+                incidentToR,
+                notIncident
+              ) // Assign edge to incidentToA
+            else
+              sortIncidentEdgesPrime(
+                edgeList.tail,
+                incidentToA,
+                incidentToR + edge,
+                notIncident
+              ) // else it must be false and therefore assign the edge to incident to R
+          } else
+            sortIncidentEdgesPrime(
+              edgeList.tail,
+              incidentToA,
+              incidentToR,
+              notIncident + edge
+            ) // else neither left or right is assigned, assign the edge to notIncident
         }
       }
 
@@ -429,43 +398,49 @@ class BeliefNetwork(
       }
     }
 
-    /** Combine duplicate edges (add their weights together)
-     *
-     * @param edgeList
-     *  List of edges
-     * @param targetNode
-     *  Node that all edges connect to
-     * @return
-     *  Set of edges
-     */
+    /** Combine duplicate edges (add their weights together) itteratively builds a map containing
+      * the (combined) weight of all edges incident to a Node an the TargetNode
+      *
+      * @param edgeList
+      *   List of edges
+      * @param targetNode
+      *   Node that all edges connect to
+      * @return
+      *   Set of edges
+      */
     def combineDuplicateEdges(
-                              edgeList: List[WUnDiEdge[Node[String]]],
-                              targetNode: Node[String]
-                            ): Set[WUnDiEdge[Node[String]]] = {
+        edgeList: List[WUnDiEdge[Node[String]]],
+        targetNode: Node[String]
+    ): Set[WUnDiEdge[Node[String]]] = {
+
       /** Recursive call of combineDuplicateEdges
-       *
-       * @param edgeList
-       *  list of edges
-       * @param weightMap
-       *  Map of Nodes to (found) edge weights
-       * @param targetNode
-       *  Node that all edges connect to
-       * @return
-       *  Set of edges
-       */
+        *
+        * @param edgeList
+        *   list of edges
+        * @param weightMap
+        *   Map of Nodes to (found) edge weights
+        * @param targetNode
+        *   Node that all edges connect to
+        * @return
+        *   Set of edges
+        */
       @tailrec
       def combineDuplicateEdgesRecursive(
-                                          edgeList: List[WUnDiEdge[Node[String]]],
-                                          weightMap: Map[Node[String], Double],
-                                          targetNode: Node[String],
-                                        ): Set[WUnDiEdge[Node[String]]] = {
+          edgeList: List[WUnDiEdge[Node[String]]],
+          weightMap: Map[Node[String], Double],
+          targetNode: Node[String]
+      ): Set[WUnDiEdge[Node[String]]] = {
         if (edgeList.isEmpty) {
-          weightMap.map((nodeWeightPair: (Node[String], Double)) => WUnDiEdge(nodeWeightPair._1, targetNode, nodeWeightPair._2)).toSet
-        }
-        else {
+          weightMap
+            .map((nodeWeightPair: (Node[String], Double)) =>
+              WUnDiEdge(nodeWeightPair._1, targetNode, nodeWeightPair._2)
+            )
+            .toSet
+        } else {
           val edge: WUnDiEdge[Node[String]] = edgeList.head
           if (weightMap.contains(edge.left)) {
-            val newMap: Map[Node[String], Double] = weightMap + (edge.left -> (weightMap(edge.left) + edge.weight))
+            val newMap: Map[Node[String], Double] =
+              weightMap + (edge.left -> (weightMap(edge.left) + edge.weight))
             combineDuplicateEdgesRecursive(edgeList.tail, newMap, targetNode)
           } else {
             val newMap: Map[Node[String], Double] = weightMap + (edge.left -> edge.weight)
@@ -477,19 +452,26 @@ class BeliefNetwork(
       val weightMap: Map[Node[String], Double] = Map.empty
       if (edgeList.isEmpty) Set.empty
       else {
-        val edge: WUnDiEdge[Node[String]] = edgeList.head
+        val edge: WUnDiEdge[Node[String]]     = edgeList.head
         val newMap: Map[Node[String], Double] = weightMap + (edge.left -> edge.weight)
         combineDuplicateEdgesRecursive(edgeList.tail, newMap, targetNode)
       }
     }
 
     // Replace a constraint from A-Prime with a new constraint in A-Star (A-star is a subset of P' x {a})
-    val newConstraintsA: Set[WUnDiEdge[Node[String]]] = combineDuplicateEdges(constraintsAPrime.toList.map(replaceConstraintAPrime(assignment, _)), acceptedNode)
+    val newConstraintsA: Set[WUnDiEdge[Node[String]]] = combineDuplicateEdges(
+      constraintsAPrime.toList.map(replaceConstraintAPrime(assignment, _)),
+      acceptedNode
+    )
     // Replace a constraint from R-Prime with a new constraint in R-Star (R-star is a subset of P' x {r})
-    val newConstraintsR: Set[WUnDiEdge[Node[String]]] = combineDuplicateEdges(constraintsRPrime.toList.map(replaceConstraintRPrime(assignment, _)), rejectedNode)
+    val newConstraintsR: Set[WUnDiEdge[Node[String]]] = combineDuplicateEdges(
+      constraintsRPrime.toList.map(replaceConstraintRPrime(assignment, _)),
+      rejectedNode
+    )
 
     // The new graph only has the old unassigned nodes plus the "sourceNode" and "targetNode" nodes
-    val newNodes: Set[Node[String]] = network.vertices -- assignment.keySet ++ Set(acceptedNode, rejectedNode)
+    val newNodes: Set[Node[String]] =
+      network.vertices -- assignment.keySet ++ Set(acceptedNode, rejectedNode)
 
     // Replace all constraints that were incident to A' and R' with their replacing constraints connecting to 'a' and 'r'.
     val newConstraints: Set[WUnDiEdge[Node[String]]] =
@@ -498,11 +480,87 @@ class BeliefNetwork(
     WUnDiGraph(newNodes, newConstraints)
   }
 
+  /** {C-}-FPT algorithm for coherence as presented by van Rooij (1998) {C-} representing the number
+    * of negatively constrained edges
+    *
+    * @return
+    *   A truth-value assignment over vertices that results in maximum coherence If multiple maximal
+    *   truth-value assignments exists, get a random maximal one.
+    */
+  def cMinusCoherence(): Map[Node[String], Boolean] = {
+
+    // Get all vertices incident to a negative constraint
+    val unassignedMinus: Set[Node[String]] = negativeConstraints.flatMap(e => Set(e.left, e.right))
+
+    // Apply AC1 exhaustively
+    // Effectively: Get all possible truth-value assignments over the vertices incident to a negative constraint
+    val assignmentMinusSet: Set[Map[Node[String], Boolean]] = ac1(unassignedMinus)
+
+    // Apply AC2 where possible
+    // For each truth-value assignment:
+    // create a new graph wherein all edges that have a pre-determined truth-value assignment are removed
+    val (graphPrime, assignmentCoherence)
+        : (WUnDiGraph[String], Set[(Map[Node[String], Boolean], Double)]) = ac2(assignmentMinusSet)
+
+    // Apply AC3 where possible
+    // Remove all nodes that have a pre-assigned truth-value assignment and replace them with a single true node and a single false node
+    // with each of the edges that went to a removed node being replace with an edge with the same weight going to the single true/false nodes.
+    val maxFlowGraphs: Set[
+      (
+          WUnDiGraph[String],         // Graph
+          Map[Node[String], Boolean], // Truth-value assignment of determined Nodes
+          Double                      // Coherence value of determined edges
+      )
+    ] = // Coherence value of determined constraints
+      // Apply AC3 to the graph, pass the truth-value assignment and coherence value as is
+      assignmentCoherence.map(
+        (instance: (
+            Map[Node[String], Boolean], // Truth-value assignment of determined Nodes
+            Double
+        )) => // Coherence value of determined constraints
+          (ac3(graphPrime, instance._1), instance._1, instance._2)
+      )
+
+    /** Combine the results of getPartition (which applies maxFlow to maxFlowGraph) with
+      * pre-determined assignments and coherence values
+      *
+      * @param maxFlowGraph
+      *   Weighted Undirected Graph (representing the belief network after AC3 has been applied)
+      * @param predeterminedAssignment
+      *   Truth-value assignment of determined Nodes
+      * @param predeterminedCoherence
+      *   Coherence value of determined edges
+      * @return
+      *   Tuple of (Truth-value assignment, Coherence-value)
+      */
+    def combinePartitionWithPredetermined(
+        maxFlowGraph: WUnDiGraph[String],
+        predeterminedAssignment: Map[Node[String], Boolean],
+        predeterminedCoherence: Double
+    ): (Map[Node[String], Boolean], Double) = {
+      val (assignment: Map[Node[String], Boolean], coherenceValue: Double) = getPartition(
+        maxFlowGraph
+      )
+      (
+        assignment ++ predeterminedAssignment - Node("sourceNode") - Node("targetNode"),
+        coherenceValue + predeterminedCoherence
+      )
+    }
+
+    val partitionCoherenceTuples: Set[(Map[Node[String], Boolean], Double)] =
+      maxFlowGraphs.map(instance =>
+        combinePartitionWithPredetermined(instance._1, instance._2, instance._3)
+      )
+
+    // Get the partition with the highest coherence value
+    partitionCoherenceTuples.argMax((e: (Map[Node[String], Boolean], Double)) => e._2).map(_._1).random.get
+  }
+
   /** Perform the Edmonds-Karp algorithm on the given graph
     *
     * @param graph
-    *   Weighted Undirected Graph with exactly 1 Node {"sourceNode"} (source node) and 1 Node {"targetNode"} target
-    *   Node
+    *   Weighted Undirected Graph with exactly 1 Node {"sourceNode"} (source node) and 1 Node
+    *   {"targetNode"} target Node
     * @return
     *   Final residual Graph (Weighted Directed graph)
     */
@@ -534,20 +592,23 @@ class BeliefNetwork(
       *
       * @param graph
       *   Weighted Directed Graph
+      * @param aList
+      *   Adjacency list
       * @param sourceNode
       *   Start Node of the path
       * @param targetNode
       *   End Node of the path
       * @return
+      *   Weighted Directed Graph
       */
     @tailrec
     def recursiveFindAugmentingPath(
         graph: WDiGraph[String],
+        aList: Map[Node[String], Set[NodeWeightPair[String]]],
         sourceNode: Node[String] = sourceNode,
         targetNode: Node[String] = targetNode
     ): WDiGraph[String] = {
       // Find path from a to r
-      val aList: Map[Node[String], Set[NodeWeightPair[String]]] = graph.adjacencyList
       val augmentingPath: List[WDiEdge[Node[String]]] = bfs(graph, sourceNode, targetNode, aList)
       if (augmentingPath.isEmpty) graph
       else {
@@ -572,38 +633,72 @@ class BeliefNetwork(
               )
             )
             .toList
-          // WDiEdge(left, right, aList(left).filter(_.node == right).random.get.weight)
         }
 
         // Find the minimum capacity through this path
         val minCapacity: Double = augmentingPath.map(_.weight).min
 
+        /** Recursively traverse list of edges to update the adjacency list
+         *
+         * @param aList
+         *  adjacency list
+         * @param edgeList
+         *  list of updated edges
+         * @return
+         *  updated adjacency list
+         */
+        @tailrec
+        def updateAdjacencyList(
+            aList: Map[Node[String], Set[NodeWeightPair[String]]],
+            edgeList: List[WDiEdge[Node[String]]]
+        ): Map[Node[String], Set[NodeWeightPair[String]]] = {
+          // Base case
+          if (edgeList.isEmpty) aList
+          else {
+            val edge = edgeList.head
+
+            // Take the old adjacency list but ignore the values that needs to be updated
+            val newNeighbours: Set[NodeWeightPair[String]] = aList(edge.left)
+              .filter((nodeWeightPair: NodeWeightPair[String]) =>
+                nodeWeightPair.node != edge.right
+              ) + // Add updated weight to the set
+              NodeWeightPair[String](edge.right, edge.weight)
+            // Update adjacencyList
+            val newAList: Map[Node[String], Set[NodeWeightPair[String]]] = aList + (edge.left -> newNeighbours)
+            updateAdjacencyList(newAList, edgeList.tail)
+          }
+
+        }
+
         // Adjust all path capacities
         // Reduce weight of forward edges
-        val newForwardEdges: Set[WDiEdge[Node[String]]] = augmentingPath
+        val newForwardEdges: List[WDiEdge[Node[String]]] = augmentingPath
           .map((e: WDiEdge[Node[String]]) => WDiEdge(e.left, e.right, e.weight - minCapacity))
-          .toSet
 
         // Increase weight of backward edges
-        val newReverseEdges: Set[WDiEdge[Node[String]]] = reversePath
+        val newReverseEdges: List[WDiEdge[Node[String]]] = reversePath
           .map((e: WDiEdge[Node[String]]) => WDiEdge(e.left, e.right, e.weight + minCapacity))
-          .toSet
+
+        val newEdges: List[WDiEdge[Node[String]]] = newForwardEdges ++ newReverseEdges
+
+        // Update adjacencyList
+        val newAList: Map[Node[String], Set[NodeWeightPair[String]]] = updateAdjacencyList(aList, newEdges)
 
         val newGraph = WDiGraph(
           graph.vertices,
-          graph.edges -- augmentingPath -- reversePath ++ newForwardEdges ++ newReverseEdges
+          graph.edges -- augmentingPath.toSet -- reversePath.toSet  ++ newEdges.toSet
         )
 
-        recursiveFindAugmentingPath(newGraph)
+        recursiveFindAugmentingPath(newGraph, newAList)
       }
     }
 
-    val finalGraph = recursiveFindAugmentingPath(dirGraph)
+    val finalGraph = recursiveFindAugmentingPath(dirGraph, dirGraph.adjacencyList)
     finalGraph
   }
 
-  /** Use Breadth-First Search to find the shortest path from startNode ("sourceNode") to targetNode ("targetNode")
-    * O(|E| + |V|)
+  /** Use Breadth-First Search to find the shortest path from startNode ("sourceNode") to targetNode
+    * ("targetNode") O(|E| + |V|)
     *
     * @param graph
     *   Weighted Directed Graph
@@ -614,6 +709,7 @@ class BeliefNetwork(
     * @param aList
     *   adjacency list
     * @return
+    *   Path of edges
     */
   private def bfs(
       graph: WDiGraph[String],
@@ -627,6 +723,17 @@ class BeliefNetwork(
       override def toString: String = "NodeWithParent(" + self.label + "," + parent.label + ")"
     }
 
+    /** Search through adjacency list to construct edge with the appropriate weight
+      *
+      * @param left
+      *   Left Node
+      * @param right
+      *   Right Node
+      * @param aList
+      *   Adjacency list
+      * @return
+      *   Weighted Directed Edge
+      */
     def getEdgeFromNodes(
         left: Node[String],
         right: Node[String],
@@ -668,6 +775,7 @@ class BeliefNetwork(
       ): List[WDiEdge[Node[String]]] = {
 
         val neighbours: Set[Node[String]] = aList(startNode)
+          .filter(_.weight != 0)
           .map(_.node)
           .filterNot(queue.contains) // Remove nodes that are already in the queue
           .diff(explored)            // Remove nodes that have already been explored
@@ -707,7 +815,7 @@ class BeliefNetwork(
         }
       }
 
-      val neighbours: Set[Node[String]] = aList(startNode).map(_.node)
+      val neighbours: Set[Node[String]] = aList(startNode).filter(_.weight != 0).map(_.node)
       val pathToNode: Map[Node[String], List[WDiEdge[Node[String]]]] = neighbours
         .map(n =>
           n -> List(WDiEdge(startNode, n, aList(startNode).filter(_.node == n).random.get.weight))
@@ -844,7 +952,10 @@ class BeliefNetwork(
 
     // residualGraph should have only 2 connected components
     val trueComponent: Set[Node[String]] =
-      getConnected(residualGraph, Node("sourceNode")) // Nodes connected to "sourceNode" are set to True
+      getConnected(
+        residualGraph,
+        Node("sourceNode")
+      ) // Nodes connected to "sourceNode" are set to True
     val falseComponent: Set[Node[String]] =
       graph.vertices -- trueComponent // Nodes connected to "targetNode" are set to False
 
