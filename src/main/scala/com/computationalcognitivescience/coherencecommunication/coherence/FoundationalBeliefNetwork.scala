@@ -56,7 +56,26 @@ class FoundationalBeliefNetwork(
 
     foundationalBeliefs.forall(isSatisfied)
   }
-}
+
+  /** Generate all possible truth-value assignments over nodes incident to a negative constraint
+   * O(pow(2,unassignedMinus))
+   *
+   * Branching rule Observation: for an optimal partition, any vertex that is connected by a
+   * negative constraint must either be accepted or rejected Therefore, branch on unassigned
+   * vertices incident to a negative constraint such that we have 2 graphs On graph where the
+   * vertex is accepted, and one where it is rejected Effectively this generates all possible
+   * truth-value assignments over vertices incident to a negative edge
+   *
+   * @param unassignedMinus
+   * Set of nodes incident to a negative constraint
+   * @return
+   * All possible truth value assignments over unassignedMinus [PLUS the foundational assignment set]
+   */
+  override def ac1(
+                    unassignedMinus: Set[Node[String]] // All nodes incident to a negative constraint
+                  ): Set[Map[Node[String], Boolean]] =
+    unassignedMinus.allMappings(Set(true, false)).map(_ ++ foundationalAssignment)
+  }
 
 object RandomFoundationalBeliefNetwork {
 

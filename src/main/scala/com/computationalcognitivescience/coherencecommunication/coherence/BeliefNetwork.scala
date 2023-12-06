@@ -8,11 +8,11 @@ import scala.annotation.tailrec
 import scala.util.Random
 
 class BeliefNetwork(
-                     val network: WUnDiGraph[String],
+                     val graph: WUnDiGraph[String],
                      val negativeConstraints: Set[WUnDiEdge[Node[String]]]
-                   ) extends WUnDiGraph[String](network.vertices, network.edges) {
+                   ) extends WUnDiGraph[String](graph.vertices, graph.edges) {
 
-  val positiveConstraints: Set[WUnDiEdge[Node[String]]] = network.edges \ negativeConstraints
+  val positiveConstraints: Set[WUnDiEdge[Node[String]]] = graph.edges \ negativeConstraints
 
   /** Check if in the given truth-value assignment a positive constraint is satisfied
    *
@@ -133,7 +133,7 @@ class BeliefNetwork(
    * @return
    * All possible truth value assignments over unassignedMinus
    */
-  private def ac1(
+  protected def ac1(
                    unassignedMinus: Set[Node[String]] // All nodes incident to a negative constraint
                  ): Set[Map[Node[String], Boolean]] =
     unassignedMinus.allMappings(Set(true, false))
@@ -151,7 +151,7 @@ class BeliefNetwork(
    *   1. A Weighted Undirected Graph with determined constraints removed 2. The truth-value
    *      assignment over Nodes 3. The sum coherence value of satisfied constraints
    */
-  private def ac2(
+  protected def ac2(
                    assignmentSet: Set[Map[Node[String], Boolean]]
                  ): (WUnDiGraph[String], Set[(Map[Node[String], Boolean], Double)]) = {
 
@@ -231,7 +231,7 @@ class BeliefNetwork(
    * @return
    * Weighted Undirected Graph
    */
-  private def ac3(
+  protected def ac3(
                    graph: WUnDiGraph[String],
                    assignment: Map[Node[String], Boolean]
                  ): WUnDiGraph[String] = {
@@ -472,7 +472,7 @@ class BeliefNetwork(
 
     // The new graph only has the old unassigned nodes plus the "sourceNode" and "targetNode" nodes
     val newNodes: Set[Node[String]] =
-      network.vertices -- assignment.keySet ++ Set(acceptedNode, rejectedNode)
+      graph.vertices -- assignment.keySet ++ Set(acceptedNode, rejectedNode)
 
     // Replace all constraints that were incident to A' and R' with their replacing constraints connecting to 'a' and 'r'.
     val newConstraints: Set[WUnDiEdge[Node[String]]] =
@@ -565,7 +565,7 @@ class BeliefNetwork(
    * @return
    * Final residual Graph (Weighted Directed graph)
    */
-  private def maxFlow(graph: WUnDiGraph[String]): WDiGraph[String] = {
+  protected def maxFlow(graph: WUnDiGraph[String]): WDiGraph[String] = {
     val sourceNode: Node[String] = Node("sourceNode")
     val targetNode: Node[String] = Node("targetNode")
 
@@ -848,7 +848,7 @@ class BeliefNetwork(
    * @return
    * A truth-value assignment and its coherence value
    */
-  private def getPartition(
+  protected def getPartition(
                             graph: WUnDiGraph[String]
                           ): (Map[Node[String], Boolean], Double) = {
 
