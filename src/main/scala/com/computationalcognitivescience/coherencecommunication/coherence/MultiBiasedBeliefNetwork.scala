@@ -1,14 +1,7 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
 import mathlib.graph.{Node, WUnDiEdge, WUnDiGraph}
-import mathlib.set.SetTheory.{ImplAny, sum}
-
-case class BeliefBias(
-    valueAssignment: Map[Node[String], Boolean],
-    weights: Map[Node[String], Double]
-) {
-  val beliefs: Set[Node[String]] = valueAssignment.keys.toSet
-}
+import mathlib.set.SetTheory.sum
 
 class MultiBiasedBeliefNetwork(
     network: WUnDiGraph[String],
