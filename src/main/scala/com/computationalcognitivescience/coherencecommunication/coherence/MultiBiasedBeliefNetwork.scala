@@ -1,7 +1,7 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
 import mathlib.graph.{Node, WUnDiEdge, WUnDiGraph}
-import mathlib.set.SetTheory.sum
+import mathlib.set.SetTheory._
 
 class MultiBiasedBeliefNetwork(
     network: WUnDiGraph[String],
@@ -16,6 +16,10 @@ class MultiBiasedBeliefNetwork(
       multiBeliefBiases
         .map(beliefBias => cohBias(assignment, beliefBias))
         .sum
+
+  def allOptimalTruthValueAssignments: Set[Map[Node[String], Boolean]] =
+    (vertices allMappings Set(true, false)) // Generate all possible truth-value assignments
+      .argMax(coh)                          // Take all that maximize coh()
 
   private def cohBias(
       assignment: Map[Node[String], Boolean],

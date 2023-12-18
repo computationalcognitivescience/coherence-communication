@@ -43,6 +43,6 @@ object MultiBiasedBeliefNetworkDemo {
       multiBeliefBiases = biases
     )
 
-    mbbnet.coherence().foreach(println)
+    mbbnet.allOptimalTruthValueAssignments.foreach(println)
   }
 }
