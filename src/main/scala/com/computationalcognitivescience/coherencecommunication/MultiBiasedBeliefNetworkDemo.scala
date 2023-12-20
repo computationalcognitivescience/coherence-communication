@@ -1,6 +1,6 @@
 package com.computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.coherence.{BeliefBias, MultiBiasedBeliefNetwork}
+import com.computationalcognitivescience.coherencecommunication.coherence.{BeliefBias, MultiBiasedBeliefNetwork, Simulation}
 import mathlib.graph.GraphImplicits.{EdgeImpl2, N, WUnDiEdgeImpl}
 import mathlib.graph.WUnDiGraph
 import mathlib.set.SetTheory._
@@ -84,6 +84,8 @@ object MultiBiasedBeliefNetworkDemo {
     tvas_communicated.foreach(tva => {
       println(f"Max TVA assignment: ${mbbnet.coh(tva)} \n $tva ")
     })
+
+    val simulation = new Simulation()
 
   }
 }
