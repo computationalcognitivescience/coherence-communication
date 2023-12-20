@@ -16,7 +16,7 @@ class Interpreter(
    * A network of beliefs
    * @param inferredBeliefs
    * A truth-value assignment over all beliefs (inferred + prior + communicated)
-   * @param communicatedBeliefs
+   * @param communicationHistory
    * A truth-value assignment over communicated beliefs
    * @param previousCoherence
    * The coherence value of the previous truth-value assignment
@@ -25,13 +25,13 @@ class Interpreter(
    */
   def troubleIdentification(beliefNetwork: BeliefNetwork = this.beliefNet,
                             inferredBeliefs: Map[Node[String], Boolean],
-                            communicatedBeliefs: Map[Node[String],Boolean],
+                            communicationHistory: Map[Node[String],Boolean],
                             previousCoherence: Double
                            ): Map[Node[String], Boolean] = {
     val currentCoherence = beliefNetwork.coh(inferredBeliefs) // Calculate current coherence
     // If current coherence is lower than previous coherence, formulate a repair request
     if (currentCoherence < previousCoherence)
-      repairFormulation(beliefNetwork, inferredBeliefs, communicatedBeliefs)
+      repairFormulation(beliefNetwork, inferredBeliefs, communicationHistory)
     // If current coherence is equal to or higher than previous coherence, all is well :) (do nothing)
     else
       Map.empty
@@ -44,20 +44,20 @@ class Interpreter(
    * A network of beliefs
    * @param inferredBeliefs
    * A truth-value assignment over all beliefs (inferred + prior + communicated)
-   * @param communicatedBeliefs
+   * @param communicationHistory
    * A truth-value assignment over communicated beliefs
    * @return
    *  The the most efficient set of truth values for which a flip maximizes coherence
    */
   private def repairFormulation(beliefNetwork: BeliefNetwork = this.beliefNet,
                                 inferredBeliefs: Map[Node[String], Boolean],
-                                communicatedBeliefs: Map[Node[String], Boolean]
+                                communicationHistory: Map[Node[String], Boolean]
                        ): Map[Node[String], Boolean] = {
     assert(beliefNetwork.vertices == inferredBeliefs.keySet)
 
     // calculate V_request = V \ V_communicated
     val vRequest: Set[Node[String]] =
-      inferredBeliefs.keySet -- communicatedBeliefs.keySet
+      inferredBeliefs.keySet -- communicationHistory.keySet
 
     // Generate all possible repair requests
     val allPossibleRequests: Set[Map[Node[String], Boolean]] = {

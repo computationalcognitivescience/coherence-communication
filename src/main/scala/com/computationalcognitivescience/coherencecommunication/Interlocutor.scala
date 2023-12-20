@@ -14,8 +14,8 @@ class Interlocutor(
    * A network of beliefs
    * @param priorBeliefs
    * A truth-value assignment over prior beliefs
-   * @param communicatedBeliefs
-   * A truth-value assignment over communicated beliefs
+   * @param communicationHistory
+   * A truth-value assignment over all already communicated beliefs
    * @return
    * A truth value assignment over all nodes (inferred + prior + communicated) such that the prior and communicated beliefs are satisfied
    * (Communicated beliefs take precedence over prior beliefs) and coherence is maximized
@@ -23,14 +23,14 @@ class Interlocutor(
   def beliefRevision(
                       beliefNet: BeliefNetwork = this.beliefNet,
                       priorBeliefs: Map[Node[String], Boolean] = this.priorBeliefs,
-                      communicatedBeliefs: Map[Node[String], Boolean], // utterance + previously communicated beliefs
+                      communicationHistory: Map[Node[String], Boolean], // utterance + previously communicated beliefs
                     ): Map[Node[String], Boolean] = {
-    val foundationalAssignment = priorBeliefs ++ communicatedBeliefs // Nodes in priorBeliefs are overwritten by those in utterance
+    val foundationalAssignment = priorBeliefs ++ communicationHistory // Nodes in priorBeliefs are overwritten by those in utterance
     val foundationalNet = new FoundationalBeliefNetwork( // Creating a foundational coherence instance
       beliefNet.graph, // Graph
       beliefNet.negativeConstraints, // negativeConstraints
       foundationalAssignment.keySet, // foundationalBeliefs
       foundationalAssignment) // foundationalAssignment
-    foundationalNet.coherence() // Inferred beliefs
+    foundationalNet.cMinusCoherence() // Inferred beliefs
   }
 }

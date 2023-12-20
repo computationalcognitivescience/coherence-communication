@@ -12,6 +12,20 @@ class Producer(
 
   val inferredBeliefs: Map[Node[String], Boolean] = beliefRevision(beliefNet, priorBeliefs, communicativeIntent)
 
+  /** Based on (van Arkel, 2021, p. 28)
+   *
+   * @param beliefNet
+   * A network of beliefs
+   * @param priorBeliefs
+   * A truth-value assignment over prior beliefs
+   * @param communicativeIntent
+   * A truth-value assignment over beliefs to be communicated
+   * @param communicationHistory
+   * A truth-value assignment over all already communicated beliefs
+   * @return
+   * A truth-value assignment over any set of non-prior, non-already communicated beliefs that will most efficiently
+   * communicate the intent
+   */
   def communicateBeliefs(
                           beliefNet: BeliefNetwork = this.beliefNet,
                           priorBeliefs: Map[Node[String], Boolean] = this.priorBeliefs,
@@ -20,7 +34,6 @@ class Producer(
                         ): Map[Node[String], Boolean] = {
     assert(priorBeliefs.keySet /\ communicativeIntent.keySet == Set.empty)
 
-    // TODO: Ask mark about including the already communicated history
     val allPossibleUtterances: Set[Map[Node[String], Boolean]] =
       powerset(beliefNet.vertices -- communicationHistory.keySet)
         // Map each set of beliefs to its current truth-value mapping
@@ -40,12 +53,15 @@ class Producer(
         })
       )
 
+    // Calculate structural similarity between two truth-value assignments
     def sim(assignment: Map[Node[String], Boolean], otherAssignment: Map[Node[String], Boolean], V: Set[Node[String]]): Int = {
       V.toList.map((v: Node[String]) =>
         if (assignment(v) == otherAssignment(v)) 1
         else 0).sum
     }
 
+    // Get utterance which will make the interpreter's
+    // beliefs most similar to our communicative intent
     simulatedAssignments
       .argMax(_._2)
       .random
@@ -53,6 +69,22 @@ class Producer(
       ._1
   }
 
+  /** Based on (van Arkel, 2021, p.31)
+   *
+   * @param beliefNet
+   * A network of beliefs
+   * @param priorBeliefs
+   * A truth-value assignment over prior beliefs
+   * @param communicativeIntent
+   * A truth-value assignment over beliefs to be communicated
+   * @param communicationHistory
+   * A truth-value assignment over all already communicated beliefs
+   * @param repairRequest
+   * Incoming truth-value assignment from the interpreter
+   * @return
+   * A correction, in the form of a truth-value assignment, if the repairRequest is faulty (beliefs have been assigned wrong)
+   * or an empty map otherwise.
+   */
   def repairSolution(
                       beliefNet: BeliefNetwork = this.beliefNet,
                       priorBeliefs: Map[Node[String], Boolean] = this.priorBeliefs,
@@ -62,12 +94,12 @@ class Producer(
                     ): Map[Node[String], Boolean] = {
     assert(repairRequest.keySet /\ communicationHistory.keySet == Set.empty)
 
-    val correctRequest: Boolean =
+    val isCorrectRequest: Boolean =
       repairRequest.keySet
         .forall((belief: Node[String]) =>
           repairRequest(belief) == inferredBeliefs(belief))
 
-    if (correctRequest) Map.empty
+    if (isCorrectRequest) Map.empty
     else {
       repairRequest.keySet
         .map((belief: Node[String]) =>
@@ -76,6 +108,18 @@ class Producer(
     }
   }
 
+  /** Based on (van Arkel, 2021, p.33)
+   *
+   * @param communicativeIntent
+   * A truth-value assignment over beliefs to be communicated
+   * @param communicationHistory
+   * A truth-value assignment over all already communicated beliefs
+   * @param repairRequest
+   * Incoming truth-value assignment from the interpreter
+   * @return
+   * 'true' if the producer beliefs the interpreter has taken over the communicativeIntent, and there is no repairRequest
+   * 'false' otherwise
+   */
   def endConversation(
                        communicativeIntent: Map[Node[String], Boolean] = this.communicativeIntent,
                        communicationHistory: Map[Node[String], Boolean],
