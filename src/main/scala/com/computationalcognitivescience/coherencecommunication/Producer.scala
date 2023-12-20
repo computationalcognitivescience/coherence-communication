@@ -7,10 +7,12 @@ import mathlib.graph._
 class Producer(
                 beliefNet: BeliefNetwork,
                 priorBeliefs: Map[Node[String], Boolean],
-                communicativeIntent: Map[Node[String], Boolean]
+                communicativeIntent: Map[Node[String], Boolean],
+                private val utteranceLength: Option[Int] = None
               ) extends Interlocutor(beliefNet, priorBeliefs) {
 
   val inferredBeliefs: Map[Node[String], Boolean] = beliefRevision(beliefNet, priorBeliefs, communicativeIntent)
+  val maxUtteranceLength: Int = if(utteranceLength.isDefined) utteranceLength.get else beliefNet.vertices.size
 
   /** Based on (van Arkel, 2021, p. 28)
    *
@@ -35,7 +37,7 @@ class Producer(
     assert(priorBeliefs.keySet /\ communicativeIntent.keySet == Set.empty)
 
     val allPossibleUtterances: Set[Map[Node[String], Boolean]] =
-      powerset(beliefNet.vertices -- communicationHistory.keySet)
+      powersetUp(beliefNet.vertices -- communicationHistory.keySet, maxUtteranceLength)
         // Map each set of beliefs to its current truth-value mapping
         .map((utterance: Set[Node[String]]) =>
           utterance // Take the set of beliefs

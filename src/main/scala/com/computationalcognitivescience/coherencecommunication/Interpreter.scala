@@ -6,9 +6,11 @@ import mathlib.set.SetTheory._
 
 class Interpreter(
                    beliefNet: BeliefNetwork,
-                   priorBeliefs: Map[Node[String], Boolean]
+                   priorBeliefs: Map[Node[String], Boolean],
+                   private val utteranceLength: Option[Int] = None
                  ) extends Interlocutor(beliefNet, priorBeliefs) {
 
+  val maxUtteranceLength: Int = if (utteranceLength.isDefined) utteranceLength.get else beliefNet.vertices.size
 
   /** Based on (van Arkel, 2021, p. 22)
    *
@@ -61,7 +63,7 @@ class Interpreter(
 
     // Generate all possible repair requests
     val allPossibleRequests: Set[Map[Node[String], Boolean]] = {
-      powerset(vRequest) // Take the powerset over beliefs that may be requested
+      powersetUp(vRequest, maxUtteranceLength) // Take the upperbounded powerset over beliefs that may be requested
         // Map each set of beliefs to the truth-value mapping opposite of its current truth-value mapping
         .map((vRequest: Set[Node[String]]) =>
           vRequest // Take the set of requested beliefs
