@@ -10,9 +10,9 @@ import scala.util.Random.shuffle
 class Simulation {
 
   val w_constraints = 1
-  val w_prior = 1
+  val w_prior = 0.6
   val w_intention = 1000
-  val w_communicated = 1
+  val w_communicated = 2
 
   val N_vertices = 8 // Random.between(3,6) //TODO: give correct range
   val N_pc : Int = Random.between(1,4) //TODO: give correct range
@@ -60,6 +60,8 @@ class Simulation {
       conversation = false
     }
   }
+
+  compareInitiatorResponderTVAs(initiator, responder)
 
 
   def randomPositiveConstraints(N_pc : Int, w_constraints : Int, vertices : Set[Node[String]]): Set[WUnDiEdge[Node[String]]] = {
@@ -111,6 +113,37 @@ class Simulation {
 
   }
 
+
+  def compareInitiatorResponderTVAs(initiator: Initiator, responder: Responder): Unit = {
+    val tvaInitiator : Map[Node[String], Boolean] = initiator.getTVA()
+    val tvaResponder : Map[Node[String], Boolean] = responder.getTVA()
+    var entireNetworkCount : Int = 0
+    var intentionCount : Int = 0
+
+    vertices.foreach(v => {
+      if(tvaInitiator.get(v) == tvaResponder.get(v)){
+        entireNetworkCount = entireNetworkCount+1
+        if(intentionBeliefsInitiator.contains(v)){
+          intentionCount = intentionCount+1
+        }
+      }
+    })
+    println("\nNETWORK INFO")
+    println(f"N_vertices: $N_vertices")
+    println(f"N_pc: $N_pc")
+    println(f"N_nc: $N_nc")
+    println(f"N_priorInitiator: $N_priorInitiator")
+    println(f"N_intentionInitiator: $N_intentionInitiator")
+    println(f"N_priorResponder: $N_priorResponder")
+    println(f"priorBeliefsInitiator: $priorBeliefsInitiator")
+    println(f"intentionBeliefsInitiator: $intentionBeliefsInitiator")
+    println(f"priorBeliefsResponder: $priorBeliefsResponder")
+
+    println("\nCOMPARING TVA'S")
+    println(f"entireNetworkCount: $entireNetworkCount out of $N_vertices")
+    println(f"intentionCount: $intentionCount out of $N_intentionInitiator")
+
+  }
 
 
 }

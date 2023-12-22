@@ -68,7 +68,7 @@ class Initiator(
         // Combine communicated beliefs with proposed utterance (V_utterance and T_utterance)
         // Will always take the value of the second map (T_utterance) in case of a node being present in both maps
         val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ T_utterance
-        val commAndUtterance = BeliefBias(commAndUtteranceNodes, commAndUtteranceNodes.map { case (node, value) => node -> w_communicated })
+        val commAndUtterance = BeliefBias(commAndUtteranceNodes, w_communicated)
 
         // Simulate the belief network given proposed utterance
         val simulatedNetwork = new MultiBiasedBeliefNetwork(
@@ -117,7 +117,7 @@ class Initiator(
 
     // update own list of communcitaed nodes
     val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ result
-    val commAndUtterance = BeliefBias(commAndUtteranceNodes, commAndUtteranceNodes.map { case (node, value) => node -> w_communicated })
+    val commAndUtterance = BeliefBias(commAndUtteranceNodes, w_communicated)
     communicatedByInitiator = commAndUtterance
 
     result
@@ -170,7 +170,7 @@ class Initiator(
   def updateNetwork(T_repair: Map[Node[String], Boolean]): Unit = {
     // Will always take the value of the second map (T_repair) in case of a node being present in both maps
     val commAndUtteranceNodes = communicatedByProducer.valueAssignment ++ T_repair
-    val commAndUtterance = BeliefBias(commAndUtteranceNodes, commAndUtteranceNodes.map { case (node, value) => node -> w_communicated })
+    val commAndUtterance = BeliefBias(commAndUtteranceNodes, w_communicated)
     communicatedByProducer = commAndUtterance
 
     BeliefNetwork = new MultiBiasedBeliefNetwork(
@@ -182,5 +182,9 @@ class Initiator(
     val allTVAs = BeliefNetwork.allOptimalTruthValueAssignments
     val mostSimilarTVA = allTVAs.groupBy(n => n.count(m => n.get(m._1) == T_complete.get(m._1)))
     T_complete = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
+  }
+
+  def getTVA(): Map[Node[String], Boolean] = {
+    T_complete
   }
 }

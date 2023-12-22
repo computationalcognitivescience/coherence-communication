@@ -124,7 +124,7 @@ class Responder (
         })
       }
     })
-
+  println(f"maxT_repair: $maxT_repair")
   maxT_repair
   }
 
@@ -136,7 +136,7 @@ class Responder (
   def updateNetwork(T_utterance : Map[Node[String], Boolean]): Unit = {
     // Will always take the value of the second map (T_utterance) in case of a node being present in both maps
     val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ T_utterance
-    val commAndUtterance = BeliefBias(commAndUtteranceNodes, commAndUtteranceNodes.map { case (node, value) => node -> w_communicated })
+    val commAndUtterance = BeliefBias(commAndUtteranceNodes, w_communicated)
     communicatedByInitiator = commAndUtterance
 
     BeliefNetwork = new MultiBiasedBeliefNetwork(
@@ -148,5 +148,9 @@ class Responder (
     val allTVAs = BeliefNetwork.allOptimalTruthValueAssignments
     val mostSimilarTVA = allTVAs.groupBy(n => n.count(m => n.get(m._1) == T_complete.get(m._1)))
     T_complete = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
+  }
+
+  def getTVA(): Map[Node[String], Boolean] = {
+    T_complete
   }
 }
