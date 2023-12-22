@@ -38,6 +38,4 @@ class MultiBiasedBeliefNetwork(
     sum(beliefBias.beliefs, consistentWithBias _)
   }
 
-
-
 }

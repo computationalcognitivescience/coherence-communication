@@ -1,22 +1,19 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
-import mathlib.graph.GraphImplicits.N
 import mathlib.graph.{Node, WUnDiEdge, WUnDiGraph}
-import mathlib.set.SetTheory.P
-import mathlib.set.SetTheory._
+import mathlib.set.SetTheory.{P, _}
 
 class Responder (
                   net : WUnDiGraph[String],
                   pc : Set[WUnDiEdge[Node[String]]],
                   nc : Set[WUnDiEdge[Node[String]]],
+                  priorBeliefs : Map[Node[String], Boolean],
                   w_prior : Double,
                   w_communicated : Double
                 ) {
 
   private val prior = BeliefBias(
-    Map(
-      N("a") -> true
-    ),
+    priorBeliefs,
     w_prior
   )
 
@@ -44,6 +41,7 @@ class Responder (
   var T_complete: Map[Node[String], Boolean] = BeliefNetwork.allOptimalTruthValueAssignments.head
 
   def utteranceProcessing(T_utterance: Map[Node[String], Boolean]): Boolean = {
+    println("Utterance Processing")
     // Update the network with the new utterance and update the current TVA
     updateNetwork(T_utterance)
 
@@ -56,8 +54,11 @@ class Responder (
     val BDcommunicatedSize = BigDecimal(communicatedByInitiator.valueAssignment.size)
     val BDcommRatio = (BDcommCount / BDcommunicatedSize).setScale(3, BigDecimal.RoundingMode.HALF_UP)
 
+    println(f"BDcommCount: $BDcommCount")
+    println(f"BDcommunicatedSize: $BDcommunicatedSize")
+    println(f"BDcommRatio: $BDcommRatio")
+
     var initiateRepair: Boolean = false
-    println(BDcommRatio)
     if (BDcommRatio < 0.5) {
       initiateRepair = true
     }
@@ -65,6 +66,7 @@ class Responder (
   }
 
   def repairProduction(): Map[Node[String], Boolean] = {
+    println("Repair Production")
     var maxNormalisedCoherence: Double = 0.0
     var maxSimulatedFlipped : Map[Node[String], Boolean] = null
     var maxT_repair : Map[Node[String], Boolean] = null

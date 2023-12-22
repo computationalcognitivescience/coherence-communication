@@ -44,46 +44,46 @@ object MultiBiasedBeliefNetworkDemo {
 //    mbbnet.allOptimalTruthValueAssignments.foreach(println)
 
 
-
-    // COHERENCE CALCULATIONS
-
-    // TVA(s) with maximal coherence (WITH weight on communicated nodes)
-    val tvas_communicated = mbbnet.allOptimalTruthValueAssignments
-
-
-    // Printing out network information
-    println("NETWORK INFO =============================")
-
-    // Vertices
-    print(f"Vertices: ")
-    mbbnet.vertices.foreach(v => {
-      print(f"${v.label} ")
-    })
-    println("\n----------")
-
-    // Positive constraints
-    mbbnet.positiveConstraints.foreach(pc => {
-      println(f"Positive constraint: ${pc.left.label} - ${pc.right.label}, ${pc.weight}")
-    })
-    println("----------")
-
-    // Negative constraints
-    mbbnet.negativeConstraints.foreach(nc => {
-      println(f"Negative constraint: ${nc.left.label} - ${nc.right.label}, ${nc.weight}")
-    })
-    println("----------")
-
-    // Sets of biased beliefs (nodes, assigned value and weight)
-    println(f"Biased Beliefs: ")
-    mbbnet.multiBeliefBiases.foreach(bias => {
-      println(f"\t${bias} ")
-    })
-    println("----------")
-
-    // TVA's with maximal coherence
-    tvas_communicated.foreach(tva => {
-      println(f"Max TVA assignment: ${mbbnet.coh(tva)} \n $tva ")
-    })
+//
+//    // COHERENCE CALCULATIONS
+//
+//    // TVA(s) with maximal coherence (WITH weight on communicated nodes)
+//    val tvas_communicated = mbbnet.allOptimalTruthValueAssignments
+//
+//
+//    // Printing out network information
+//    println("NETWORK INFO =============================")
+//
+//    // Vertices
+//    print(f"Vertices: ")
+//    mbbnet.vertices.foreach(v => {
+//      print(f"${v.label} ")
+//    })
+//    println("\n----------")
+//
+//    // Positive constraints
+//    mbbnet.positiveConstraints.foreach(pc => {
+//      println(f"Positive constraint: ${pc.left.label} - ${pc.right.label}, ${pc.weight}")
+//    })
+//    println("----------")
+//
+//    // Negative constraints
+//    mbbnet.negativeConstraints.foreach(nc => {
+//      println(f"Negative constraint: ${nc.left.label} - ${nc.right.label}, ${nc.weight}")
+//    })
+//    println("----------")
+//
+//    // Sets of biased beliefs (nodes, assigned value and weight)
+//    println(f"Biased Beliefs: ")
+//    mbbnet.multiBeliefBiases.foreach(bias => {
+//      println(f"\t${bias} ")
+//    })
+//    println("----------")
+//
+//    // TVA's with maximal coherence
+//    tvas_communicated.foreach(tva => {
+//      println(f"Max TVA assignment: ${mbbnet.coh(tva)} \n $tva ")
+//    })
 
     val simulation = new Simulation()
 

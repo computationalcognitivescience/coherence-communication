@@ -1,6 +1,5 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
-import mathlib.graph.GraphImplicits.N
 import mathlib.graph.{Node, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
@@ -8,23 +7,20 @@ class Initiator(
                  net : WUnDiGraph[String],
                  pc : Set[WUnDiEdge[Node[String]]],
                  nc : Set[WUnDiEdge[Node[String]]],
+                 priorBeliefs : Map[Node[String], Boolean],
+                 intentionBeliefs : Map[Node[String], Boolean],
                  w_prior : Double,
                  w_intention : Double,
                  w_communicated : Double
 ) {
 
   private val prior = BeliefBias(
-    Map(
-      N("a") -> true
-    ),
+    priorBeliefs,
     w_prior
   )
 
   private val intention = BeliefBias(
-    Map(
-      N("b") -> true,
-      N("c") -> false
-    ),
+    intentionBeliefs,
     w_intention
   )
 
@@ -58,7 +54,7 @@ class Initiator(
    * @return A truth-value assignment for the utterance beliefs
    */
   def utteranceProduction(): Map[Node[String], Boolean] = {
-
+    println("Utterance Production")
     var currentMaxRatio = BigDecimal(0)
     var maxSimulatedTVA : Map[Node[String], Boolean] = null
     var maxV_utterance : Set[Node[String]] = null
@@ -133,6 +129,7 @@ class Initiator(
    * @return The tva for the beliefs in the repair request according to own belief network
    */
   def repairProcessing(T_repair: Map[Node[String], Boolean]): Map[Node[String], Boolean] = {
+    println("Repair Processing")
     // Responder gives the flipped tva of their own truth-value for these beliefs, thus flip back to update network
     val T_repairFlipped = T_repair.map(n => n._1 -> !n._2)
     updateNetwork(T_repairFlipped)
@@ -143,6 +140,7 @@ class Initiator(
   }
 
   def endConversation(T_repair : Map[Node[String], Boolean]) : Boolean = {
+    println("End Conversation")
     val simulatedNetwork = new MultiBiasedBeliefNetwork(
       network = net,
       negativeConstraints = nc,
