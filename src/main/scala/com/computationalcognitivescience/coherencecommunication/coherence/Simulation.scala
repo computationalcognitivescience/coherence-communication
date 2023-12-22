@@ -24,9 +24,38 @@ class Simulation {
   val w_communicated = 1
 
   val initiator = new Initiator(net, pc, nc, w_prior, w_intention, w_communicated)
+  val responder = new Responder(net, pc, nc, w_prior, w_communicated)
 
-  println("--------------------UTTERANCE PRODUCTION--------------------")
-  val T_utterance: Map[Node[String], Boolean] = initiator.utteranceProduction()
-  println(T_utterance)
+  var conversation = true
+  var T_utterance : Map[Node[String], Boolean] = null
+  var T_repair : Map[Node[String], Boolean] = null
+  var i: Int = 0
+
+  while(conversation){
+    println(i)
+    i = i+1
+
+    T_utterance = initiator.utteranceProduction()
+
+    val initiateRepair: Boolean = responder.utteranceProcessing(T_utterance)
+
+    if(initiateRepair){
+      println("repair initiated")
+      T_repair = responder.repairProduction()
+      val repairResponse: Map[Node[String], Boolean] = initiator.repairProcessing(T_repair)
+      responder.updateNetwork(repairResponse)
+    }
+
+    val endConversation : Boolean = initiator.endConversation(T_repair)
+    if (endConversation){
+      conversation = false
+    }
+  }
+
+
+
+
+
+
 
 }

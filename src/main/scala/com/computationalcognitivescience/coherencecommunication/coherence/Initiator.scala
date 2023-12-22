@@ -17,8 +17,7 @@ class Initiator(
     Map(
       N("a") -> true
     ),
-    Map(
-      N("a") -> w_prior)
+    w_prior
   )
 
   private val intention = BeliefBias(
@@ -26,24 +25,23 @@ class Initiator(
       N("b") -> true,
       N("c") -> false
     ),
-    Map(
-      N("b") -> w_intention,
-      N("c") -> w_intention)
+    w_intention
   )
 
-  private val communicated = BeliefBias(
-    Map(
-      N("c") -> false
-    ),
-    Map(
-      N("c") -> w_communicated
-    )
+  private var communicatedByInitiator = BeliefBias(
+    Map(),
+    w_communicated
+  )
+
+  private var communicatedByProducer = BeliefBias(
+    Map(),
+    w_communicated
   )
 
   private val biases = Seq(
     prior,
     intention,
-    communicated
+    communicatedByProducer
   )
 
   var BeliefNetwork = new MultiBiasedBeliefNetwork(
@@ -73,7 +71,7 @@ class Initiator(
 
         // Combine communicated beliefs with proposed utterance (V_utterance and T_utterance)
         // Will always take the value of the second map (T_utterance) in case of a node being present in both maps
-        val commAndUtteranceNodes = communicated.valueAssignment ++ T_utterance
+        val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ T_utterance
         val commAndUtterance = BeliefBias(commAndUtteranceNodes, commAndUtteranceNodes.map { case (node, value) => node -> w_communicated })
 
         // Simulate the belief network given proposed utterance
@@ -120,7 +118,71 @@ class Initiator(
     })
     // return the TVA of the utterance nodes that provided the best TVA
     val result = maxSimulatedTVA.filter(n => maxV_utterance.contains(n._1))
+
+    // update own list of communcitaed nodes
+    val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ result
+    val commAndUtterance = BeliefBias(commAndUtteranceNodes, commAndUtteranceNodes.map { case (node, value) => node -> w_communicated })
+    communicatedByInitiator = commAndUtterance
+
     result
   }
 
+  /**
+   * Take the repair request, update own beliefs and then answer with own tva of these beliefs
+   * @param T_repair The tva of the responder for the beliefs in the repair request
+   * @return The tva for the beliefs in the repair request according to own belief network
+   */
+  def repairProcessing(T_repair: Map[Node[String], Boolean]): Map[Node[String], Boolean] = {
+    // Responder gives the flipped tva of their own truth-value for these beliefs, thus flip back to update network
+    val T_repairFlipped = T_repair.map(n => n._1 -> !n._2)
+    updateNetwork(T_repairFlipped)
+
+    // Retrieve own tva about the beliefs in the repair request
+    val answer = T_complete.filter(n => T_repair.keySet.contains(n._1))
+    answer
+  }
+
+  def endConversation(T_repair : Map[Node[String], Boolean]) : Boolean = {
+    val simulatedNetwork = new MultiBiasedBeliefNetwork(
+      network = net,
+      negativeConstraints = nc,
+      multiBeliefBiases = Seq(prior, communicatedByInitiator))
+
+    // Get simulated TVA most similar to current T_complete
+    val allTVAs = simulatedNetwork.allOptimalTruthValueAssignments
+    val mostSimilarTVA = allTVAs.groupBy(n => n.count(m => n.get(m._1) == T_complete.get(m._1)))
+    val T_simulated = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
+
+    var result : Boolean = false
+    val simulatedIntention = T_simulated.filter(n => intention.valueAssignment.contains(n._1))
+    val intentionCount = simulatedIntention.count(n => simulatedIntention.get(n._1) == intention.valueAssignment.get(n._1))
+    val Nintention = intention.valueAssignment.size
+
+    if (intentionCount == Nintention && T_repair == null){
+        result = true
+    }
+    result
+  }
+
+
+  /**
+   * Combine the communicated beliefs with the repair request (V_repair and T_repair)
+   * @param T_repair The TVA of the utterance
+   */
+  def updateNetwork(T_repair: Map[Node[String], Boolean]): Unit = {
+    // Will always take the value of the second map (T_repair) in case of a node being present in both maps
+    val commAndUtteranceNodes = communicatedByProducer.valueAssignment ++ T_repair
+    val commAndUtterance = BeliefBias(commAndUtteranceNodes, commAndUtteranceNodes.map { case (node, value) => node -> w_communicated })
+    communicatedByProducer = commAndUtterance
+
+    BeliefNetwork = new MultiBiasedBeliefNetwork(
+      network = net,
+      negativeConstraints = nc,
+      multiBeliefBiases = Seq(prior, intention, commAndUtterance))
+
+    // Get new TVA most similar to current T_complete
+    val allTVAs = BeliefNetwork.allOptimalTruthValueAssignments
+    val mostSimilarTVA = allTVAs.groupBy(n => n.count(m => n.get(m._1) == T_complete.get(m._1)))
+    T_complete = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
+  }
 }
