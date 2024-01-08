@@ -117,6 +117,35 @@ class BeliefNetwork(
       .get // Return the truth-value assignment that maximizes coherence value
   }
 
+  /** Auxiliary function for calculating the maximal coherence, given a pre-assigned set of nodes
+   * Functionally equivalent to an instance of foundational coherence
+   * For doing calculations with foundational coherence networks, using the class FoundationalBeliefNetwork is recommended
+   *
+   * @param preAssigned
+   * Truth-value assignment over nodes that must be satisfied
+   * @return
+   * A truth-value assignment over vertices that results in maximum coherence If multiple maximal
+   * truth-value assignments exists, get a random maximal one.
+   */
+  def fCoherence(
+                  preAssigned: Map[Node[String], Boolean]
+                ): Map[Node[String], Boolean] = {
+
+    assert(preAssigned.keySet.forall(vertices.contains))
+
+    // Output
+    // Get the truth-assignment that maximizes coherence
+    val otherAssignments =
+    (vertices -- preAssigned.keySet) allMappings Set(true, false) // Generate all possible truth-value assignments
+    val allAssignments =
+      otherAssignments.map(_ ++ preAssigned)
+
+    allAssignments
+      .argMax(coh)
+      .random
+      .get // Return the truth-value assignment that maximizes coherence value
+  }
+
   //// FPT-ALGORITHM BLOW ////
 
   /** Generate all possible truth-value assignments over nodes incident to a negative constraint

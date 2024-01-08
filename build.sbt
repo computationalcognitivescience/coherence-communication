@@ -5,5 +5,5 @@ ThisBuild / scalaVersion := "2.13.12"
 lazy val root = (project in file("."))
   .settings(
     name := "coherence-communication",
-    libraryDependencies += "com.markblokpoel" %% "mathlib" % "0.9.1"
+    libraryDependencies += "com.markblokpoel" %% "mathlib" % "0.9.2-b1"
   )

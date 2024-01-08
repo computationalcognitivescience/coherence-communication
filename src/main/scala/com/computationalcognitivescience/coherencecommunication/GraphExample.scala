@@ -18,6 +18,9 @@ object GraphExample {
     println(powerset(s))
     println(powerset(s, 3))
 
+    val bla = WUnDiGraph.preferentialAttachment(10, 3)
+    println(bla.toDOTString)
+
 
   }
 
