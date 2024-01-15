@@ -57,20 +57,6 @@ class Producer(
             .toMap
         )
 
-    // Calculate structural similarity between two truth-value assignments
-    def sim(
-        assignment: Map[Node[String], Boolean],
-        otherAssignment: Map[Node[String], Boolean],
-        V: Set[Node[String]]
-    ): Int = {
-      V.toList
-        .map((v: Node[String]) =>
-          if (assignment(v) == otherAssignment(v)) 1
-          else 0
-        )
-        .sum
-    }
-
     // Simulate the inferred beliefs of the interpreter
     val simulatedAssignments: Set[(Map[Node[String], Boolean], Double)] = allPossibleUtterances
       .map((utterance: Map[Node[String], Boolean]) =>
@@ -79,11 +65,7 @@ class Producer(
           utterance, {
             val simulatedBeliefs =
               beliefRevision(priorBeliefs, beliefNet, communicationHistory ++ utterance)
-            sim(
-              inferredBeliefs,
-              simulatedBeliefs,
-              communicativeIntent.keySet
-            ) / (utterance.size.doubleValue + 1)
+            structuralSim(inferredBeliefs, simulatedBeliefs, communicativeIntent.keySet) / (utterance.size.doubleValue + 1)
           }
         )
       )
@@ -161,4 +143,5 @@ class Producer(
 
     allBeliefsCommunicated && repairRequest.isEmpty
   }
+
 }

@@ -10,7 +10,7 @@ class Interpreter(
     private val utteranceLength: Option[Int] = None
 ) extends Interlocutor(beliefNet, priorBeliefs) {
 
-
+// The maximum length a single utterance may have
   val maxUtteranceLength: Int =
     if (utteranceLength.isDefined) utteranceLength.get else beliefNet.vertices.size
 
@@ -72,6 +72,7 @@ class Interpreter(
         maxUtteranceLength
       ) // Take the upperbounded powerset over beliefs that may be requested
         // Map each set of beliefs to the truth-value mapping opposite of its current truth-value mapping
+        .filterNot(_.isEmpty) // Remove empty
         .map((vRequest: Set[Node[String]]) =>
           vRequest // Take the set of requested beliefs
             .map((node: Node[String]) =>
@@ -87,7 +88,8 @@ class Interpreter(
         .map((request: Map[Node[String], Boolean]) =>
           // Overwrite those mappings in inferredBeliefs with the request
           // and calculate the coherence
-          (request, beliefNetwork.coh(inferredBeliefs ++ request) / request.size)
+          (request,
+            beliefNetwork.coh(inferredBeliefs ++ request) / (request.size + 1))
         )
     }
     // Get the best repair request

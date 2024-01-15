@@ -37,9 +37,9 @@ object Main {
       "cold" ~ "outside" % 1,
     )
 
-    val network = new BeliefNetwork(graph, negConstraints)
+    val network: BeliefNetwork = new BeliefNetwork(graph, negConstraints)
 
-    val producer = new Producer(network,
+    val producer: Producer = new Producer(network,
       priorBeliefs = Map(
         Node("Australia") -> true,
         Node("winter") -> false,
@@ -51,51 +51,47 @@ object Main {
         Node("beach")
       ))
 
-    val interpreter = new Interpreter(network,
+    val interpreter: Interpreter = new Interpreter(network,
       priorBeliefs = Map(
         Node("Australia") -> false,
         Node("winter") -> true,
       ))
+    
+    val repairSimulation: repairSimulation = new repairSimulation(producer, interpreter)
+    
+    val results: Seq[Any] = repairSimulation.run()
 
-    val utterance: Map[Node[String], Boolean] = producer.communicateBeliefs(Map.empty)
-    print("Utterance: ")
-    println(utterance)
+    printResults(results)
 
-    val startingBeliefs = interpreter.beliefRevision(Map.empty)
-    val revisedBeliefs = interpreter.beliefRevision(utterance)
+    def printResults(results: Seq[Any]): Any = {
+      print("Producer beliefs: ")
+      println(results(0))
+      print("Interpreter predicted beliefs: ")
+      println(results(1))
+      print("Interpreter true beliefs: ")
+      println(results(2))
+      print("Predicted overall structural similarity: ")
+      println(results(3))
+      print("True overall structural similarity: ")
+      println(results(4))
+      print("Predicted communicative intent structural similarity: ")
+      println(results(5))
+      print("True communicative intent structural similarity: ")
+      println(results(6))
+      print("Number of communication rounds: ")
+      println(results(7))
+    }
 
-    print("startingBeliefs: ")
-    println(startingBeliefs)
+//    val randomBeliefNet: BeliefNetwork = RandomBeliefNetwork.random(size = 10, density = 0.4, ratioPosNeg = 0.6)
+//    val nrPriorBeliefs1: Int = 3
+//    val priorTruthValues: List[Boolean] = List.fill(nrPriorBeliefs1)(Random.nextDouble())
+//      .map((v: Double) => if(v > 0.5) true else false)
+//    val randomPriorBeliefs1: Map[Node[String], Boolean] =  Random.shuffle(randomBeliefNet.vertices.toList)
+//      .take(nrPriorBeliefs1)
+//      .zip(priorTruthValues)
+//      .toMap
 
-    print("RevisedBeliefs: ")
-    println(revisedBeliefs)
 
-    val prevCoh = interpreter.beliefNet.coh(startingBeliefs)
-    val newCoh =  interpreter.beliefNet.coh(revisedBeliefs)
-    val trouble = interpreter.troubleIdentification(revisedBeliefs, utterance, prevCoh)
 
-    print("prevCoh: ")
-    print(prevCoh)
-    print(", newCoh: ")
-    println(newCoh)
-    println(trouble)
-
-//    val assignment = Map(
-//      Node("A") -> true,
-//      Node("B") -> false,
-//      Node("C") -> true,
-//    )
-//    println(assignment)
-//
-//    val newAssignment = assignment ++ Map(
-//      Node("B") -> true,
-//      Node("C") -> false,
-//    )
-//    println(newAssignment)
-//    val V: Set[Node[String]] = ('A' to 'C').map((x: Char) => Node(x.toString)).toSet
-//    println(V.size)
-//    val requests: Set[Map[Node[String], Boolean]] = powerset(V).flatMap(_ allMappings Set(true, false))
-//    println(requests.size)
-//    requests.foreach(println(_))
   }
 }

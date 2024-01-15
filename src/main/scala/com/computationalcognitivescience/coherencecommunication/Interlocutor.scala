@@ -37,4 +37,23 @@ class Interlocutor(
       )                               // foundationalAssignment
     foundationalNet.cMinusCoherence() // Inferred beliefs
   }
+
+  /** Calculate structural similarity between two truth-value assignments
+   *
+   * @param assignment
+   * The first truth-value assignment
+   * @param otherAssignment
+   * The second truth-value assignment
+   * @param V
+   * The set of Nodes to calculate similarity over
+   * if V contains a node not in assignment or otherAssignment, an error will occur
+   * @return
+   * The number of nodes in V which have the same truth-value in both assignments
+   */
+  def structuralSim(
+                     assignment: Map[Node[String], Boolean],
+                     otherAssignment: Map[Node[String], Boolean],
+                     V: Set[Node[String]]
+                   ): Int =
+    V.count((v: Node[String]) => assignment(v) == otherAssignment(v))
 }
