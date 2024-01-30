@@ -9,8 +9,10 @@ class Responder (
                   nc : Set[WUnDiEdge[Node[String]]],
                   priorBeliefs : Map[Node[String], Boolean],
                   w_prior : Double,
-                  w_communicated : Double
+                  weight_communication : Double
                 ) {
+
+  private val w_communicated = weight_communication
 
   private val prior = BeliefBias(
     priorBeliefs,
@@ -41,7 +43,6 @@ class Responder (
   var T_complete: Map[Node[String], Boolean] = BeliefNetwork.allOptimalTruthValueAssignments.head
 
   def utteranceProcessing(T_utterance: Map[Node[String], Boolean]): Boolean = {
-    println("Utterance Processing")
     // Update the network with the new utterance and update the current TVA
     updateNetwork(T_utterance)
 
@@ -54,19 +55,14 @@ class Responder (
     val BDcommunicatedSize = BigDecimal(communicatedByInitiator.valueAssignment.size)
     val BDcommRatio = (BDcommCount / BDcommunicatedSize).setScale(3, BigDecimal.RoundingMode.HALF_UP)
 
-    println(f"BDcommCount: $BDcommCount")
-    println(f"BDcommunicatedSize: $BDcommunicatedSize")
-    println(f"BDcommRatio: $BDcommRatio")
-
     var initiateRepair: Boolean = false
-    if (BDcommRatio < 0.5) {
+    if (BDcommRatio <= 0.75) {
       initiateRepair = true
     }
     initiateRepair
   }
 
   def repairProduction(): Map[Node[String], Boolean] = {
-    println("Repair Production")
     var maxNormalisedCoherence: Double = 0.0
     var maxSimulatedFlipped : Map[Node[String], Boolean] = null
     var maxT_repair : Map[Node[String], Boolean] = null
@@ -76,55 +72,52 @@ class Responder (
         val allMappings = V_repair allMappings Set(true, false)
 
         allMappings.foreach(T_repair => {
-          // Combine communicated beliefs with proposed repair (V_repair and T_repair)
-          // Will always take the value of the second map (T_utterance) in case of a node being present in both maps
-          val commAndRepairNodes = communicatedByInitiator.valueAssignment ++ T_repair
-          val commAndRepair = BeliefBias(commAndRepairNodes, commAndRepairNodes.map { case (node, value) => node -> w_communicated })
+          if(T_repair.nonEmpty){
+            // Combine communicated beliefs with proposed repair (V_repair and T_repair)
+            // Will always take the value of the second map (T_utterance) in case of a node being present in both maps
+            val commAndRepairNodes = communicatedByInitiator.valueAssignment ++ T_repair
+            val commAndRepair = BeliefBias(commAndRepairNodes, commAndRepairNodes.map { case (node, value) => node -> w_communicated })
 
-          val simulatedNetwork = new MultiBiasedBeliefNetwork(
-            network = net,
-            negativeConstraints = nc,
-            multiBeliefBiases = Seq(prior, commAndRepair))
+            val simulatedNetwork = new MultiBiasedBeliefNetwork(
+              network = net,
+              negativeConstraints = nc,
+              multiBeliefBiases = Seq(prior, commAndRepair))
 
-          val allTVAs = simulatedNetwork.allOptimalTruthValueAssignments
-          val mostSimilarTVA = allTVAs.groupBy(n => n.count(m => n.get(m._1) == T_complete.get(m._1)))
-          val T_flipped = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
+            val allTVAs = simulatedNetwork.allOptimalTruthValueAssignments
+            val mostSimilarTVA = allTVAs.groupBy(n => n.count(m => n.get(m._1) == T_complete.get(m._1)))
+            val T_flipped = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
 
-          val countNonFlippedBeliefs = T_flipped.filter(n => V_repair.contains(n._1)).count(n => T_flipped.get(n._1) == T_complete.get(n._1))
-          val countNonTakenCommunicated = T_flipped.filter(n => communicatedByInitiator.valueAssignment.contains(n._1))
-            .count(n => T_flipped.get(n._1) != communicatedByInitiator.valueAssignment.get(n._1))
+            val countNonFlippedBeliefs = T_flipped.filter(n => V_repair.contains(n._1)).count(n => T_flipped.get(n._1) == T_complete.get(n._1))
+            val countNonTakenCommunicated = T_flipped.filter(n => communicatedByInitiator.valueAssignment.contains(n._1))
+              .count(n => T_flipped.get(n._1) != communicatedByInitiator.valueAssignment.get(n._1))
 
 
-          // TODO: if I call manually it returns null, because the clause below is never true (because countNonFlippedBeliefs is never 0 and
-          // TODO: countNonTakenCommunicated is never NOT 0). check if this is still a problem when the entire function is
-          // TODO: called by the utteranceProcessing function
+            if (countNonFlippedBeliefs == 0 && countNonTakenCommunicated != 0 || maxT_repair == null) {
+              val normalisedCoherence = simulatedNetwork.coh(T_flipped) / V_repair.size
 
-          // TODO: Check if these cases do what is supposed to happen (with taking the most similiar tva to T_complete when multiple equal normalise coh)
-          if (countNonFlippedBeliefs == 0 && countNonTakenCommunicated != 0) {
-            val normalisedCoherence = simulatedNetwork.coh(T_flipped) / V_repair.size
-
-            if (normalisedCoherence >= maxNormalisedCoherence) {
-              if (normalisedCoherence > maxNormalisedCoherence || maxSimulatedFlipped == null) {
-                maxNormalisedCoherence = normalisedCoherence
-                maxSimulatedFlipped = T_flipped
-                maxT_repair = T_repair
-              }
-              else{
-                val T_simulatedCount = T_flipped.count(n => T_flipped.get(n._1) == T_complete.get(n._1))
-                val maxSimulatedFlippedCount = maxSimulatedFlipped.count(n => maxSimulatedFlipped.get(n._1) == T_complete.get(n._1))
-
-                if (T_simulatedCount > maxSimulatedFlippedCount) {
+              if (normalisedCoherence >= maxNormalisedCoherence || maxNormalisedCoherence == 0.0) {
+                if (normalisedCoherence > maxNormalisedCoherence || maxSimulatedFlipped == null) {
                   maxNormalisedCoherence = normalisedCoherence
                   maxSimulatedFlipped = T_flipped
                   maxT_repair = T_repair
                 }
+                else {
+                  val T_simulatedCount = T_flipped.count(n => T_flipped.get(n._1) == T_complete.get(n._1))
+                  val maxSimulatedFlippedCount = maxSimulatedFlipped.count(n => maxSimulatedFlipped.get(n._1) == T_complete.get(n._1))
+
+                  if (T_simulatedCount > maxSimulatedFlippedCount) {
+                    maxNormalisedCoherence = normalisedCoherence
+                    maxSimulatedFlipped = T_flipped
+                    maxT_repair = T_repair
+                  }
+                }
               }
             }
           }
+
         })
       }
     })
-  println(f"maxT_repair: $maxT_repair")
   maxT_repair
   }
 
@@ -152,5 +145,9 @@ class Responder (
 
   def getTVA(): Map[Node[String], Boolean] = {
     T_complete
+  }
+
+  def get_w_communicated(): Double = {
+    w_communicated
   }
 }

@@ -29,7 +29,7 @@ class MultiBiasedBeliefNetwork(
       if (
         assignment.isDefinedAt(belief) &&
         beliefBias.beliefs.contains(belief) &&
-        assignment(belief) == beliefBias.beliefs(belief)
+        assignment(belief) == beliefBias.valueAssignment(belief)
       )
         beliefBias.weights.getOrElse(belief, 0.0)
       else 0.0

@@ -9,10 +9,16 @@ class Initiator(
                  nc : Set[WUnDiEdge[Node[String]]],
                  priorBeliefs : Map[Node[String], Boolean],
                  intentionBeliefs : Map[Node[String], Boolean],
-                 w_prior : Double,
-                 w_intention : Double,
-                 w_communicated : Double
+                 weight_prior : Double,
+                 weight_intention : Double,
+                 weight_communication : Double
 ) {
+
+  private val w_prior = weight_prior
+
+  private val w_intention = weight_intention
+
+  private val w_communicated = weight_communication
 
   private val prior = BeliefBias(
     priorBeliefs,
@@ -46,7 +52,8 @@ class Initiator(
     multiBeliefBiases = biases
   )
 
-  var T_complete: Map[Node[String], Boolean] = BeliefNetwork.allOptimalTruthValueAssignments.head
+  var T_complete : Map[Node[String], Boolean] = BeliefNetwork.allOptimalTruthValueAssignments.head
+
 
   /**
    * Creates the shortest possible utterance such that the responder taking over the beliefs in the utterance, leads to
@@ -54,51 +61,63 @@ class Initiator(
    * @return A truth-value assignment for the utterance beliefs
    */
   def utteranceProduction(): Map[Node[String], Boolean] = {
-    println("Utterance Production")
     var currentMaxRatio = BigDecimal(0)
     var maxSimulatedTVA : Map[Node[String], Boolean] = null
     var maxV_utterance : Set[Node[String]] = null
 
     // Go over all possible subsets of vertices (excluding the empty set)
-    P(BeliefNetwork.vertices).foreach(V_utterance => {
-      if (V_utterance.nonEmpty){
+    P(BeliefNetwork.vertices)
+      .filter(!_.isEmpty)
+      .foreach(V_utterance => {
         // TVA for current beliefs in V_utterance
         val T_utterance = T_complete.filter(n => V_utterance.contains(n._1))
 
-        // Combine communicated beliefs with proposed utterance (V_utterance and T_utterance)
-        // Will always take the value of the second map (T_utterance) in case of a node being present in both maps
-        val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ T_utterance
-        val commAndUtterance = BeliefBias(commAndUtteranceNodes, w_communicated)
+        // REPETITION: remove if do want repetition
+        var communicatedPreviously = false
 
-        // Simulate the belief network given proposed utterance
-        val simulatedNetwork = new MultiBiasedBeliefNetwork(
-          network = net,
-          negativeConstraints = nc,
-          multiBeliefBiases = Seq(prior, commAndUtterance))
-
-        // Get simulated TVA most similar to current T_complete
-        val allTVAs = simulatedNetwork.allOptimalTruthValueAssignments
-        val mostSimilarTVA = allTVAs.groupBy(n => n.count(m => n.get(m._1) == T_complete.get(m._1)))
-        val T_simulated = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
-
-        // Count how many of the intention beliefs are correct in T_simulated
-        val simulatedIntention = T_simulated.filter(n => intention.valueAssignment.contains(n._1))
-        val intentionCount = simulatedIntention.count(n => simulatedIntention.get(n._1) == intention.valueAssignment.get(n._1))
-
-        // Normalise the count with the length of the utterance
-        val BDintentionCount = BigDecimal(intentionCount)
-        val BDutteranceSize = BigDecimal(V_utterance.size)
-        val BDratio = (BDintentionCount/BDutteranceSize).setScale(3, BigDecimal.RoundingMode.HALF_UP)
-
-        // Save TVA when T_simulated normalised with the length of V_utterance is better than current saved TVA
-        if (BDratio >= currentMaxRatio){
-          if (BDratio > currentMaxRatio || maxSimulatedTVA == null){
-            currentMaxRatio = BDratio
-            maxSimulatedTVA = T_simulated
-            maxV_utterance = V_utterance
+        V_utterance.foreach(node => {
+          if (communicatedByInitiator.beliefs.contains(node)){
+            if(communicatedByInitiator.valueAssignment(node) == T_utterance(node)){
+              communicatedPreviously = true
+            }
           }
-          // When equal score to current TVA compare entire network on similarity to T_complete
-          else{
+        })
+
+        if(!communicatedPreviously) {
+          // Combine communicated beliefs with proposed utterance (V_utterance and T_utterance)
+          // Will always take the value of the second map (T_utterance) in case of a node being present in both maps
+          val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ T_utterance
+          val commAndUtterance = BeliefBias(commAndUtteranceNodes, w_communicated)
+
+          // Simulate the belief network given proposed utterance
+          val simulatedNetwork = new MultiBiasedBeliefNetwork(
+            network = net,
+            negativeConstraints = nc,
+            multiBeliefBiases = Seq(prior, commAndUtterance))
+
+          // Get simulated TVA most similar to current T_complete
+          val allTVAs = simulatedNetwork.allOptimalTruthValueAssignments
+          val mostSimilarTVA = allTVAs.groupBy(n => n.count(m => n.get(m._1) == T_complete.get(m._1)))
+          val T_simulated = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
+
+          // Count how many of the intention beliefs are correct in T_simulated
+          val simulatedIntention = T_simulated.filter(n => intention.valueAssignment.contains(n._1))
+          val intentionCount = simulatedIntention.count(n => simulatedIntention.get(n._1) == intention.valueAssignment.get(n._1))
+
+          // Normalise the count with the length of the utterance
+          val BDintentionCount = BigDecimal(intentionCount)
+          val BDutteranceSize = BigDecimal(V_utterance.size)
+          val BDratio = (BDintentionCount / BDutteranceSize).setScale(3, BigDecimal.RoundingMode.HALF_UP)
+
+          // Save TVA when T_simulated normalised with the length of V_utterance is better than current saved TVA
+          if (BDratio >= currentMaxRatio) {
+            if (BDratio > currentMaxRatio || maxSimulatedTVA == null) {
+              currentMaxRatio = BDratio
+              maxSimulatedTVA = T_simulated
+              maxV_utterance = V_utterance
+            }
+            // When equal score to current TVA compare entire network on similarity to T_complete
+            else {
               val T_simulatedCount = T_simulated.count(n => T_simulated.get(n._1) == T_complete.get(n._1))
               val maxSimulatedTVACount = maxSimulatedTVA.count(n => maxSimulatedTVA.get(n._1) == T_complete.get(n._1))
 
@@ -107,20 +126,25 @@ class Initiator(
                 maxSimulatedTVA = T_simulated
                 maxV_utterance = V_utterance
               }
+            }
           }
         }
-
-      }
     })
-    // return the TVA of the utterance nodes that provided the best TVA
-    val result = maxSimulatedTVA.filter(n => maxV_utterance.contains(n._1))
 
-    // update own list of communcitaed nodes
-    val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ result
-    val commAndUtterance = BeliefBias(commAndUtteranceNodes, w_communicated)
-    communicatedByInitiator = commAndUtterance
+    if(maxV_utterance != null) {
+      // return the TVA of the utterance nodes that provided the best TVA
+      val result = T_complete.filter(n => maxV_utterance.contains(n._1))
 
-    result
+      // update own list of communicated nodes
+      val commAndUtteranceNodes = communicatedByInitiator.valueAssignment ++ result
+      val commAndUtterance = BeliefBias(commAndUtteranceNodes, w_communicated)
+      communicatedByInitiator = commAndUtterance
+
+      result
+    }
+    else {
+      null
+    }
   }
 
   /**
@@ -129,18 +153,19 @@ class Initiator(
    * @return The tva for the beliefs in the repair request according to own belief network
    */
   def repairProcessing(T_repair: Map[Node[String], Boolean]): Map[Node[String], Boolean] = {
-    println("Repair Processing")
     // Responder gives the flipped tva of their own truth-value for these beliefs, thus flip back to update network
     val T_repairFlipped = T_repair.map(n => n._1 -> !n._2)
     updateNetwork(T_repairFlipped)
 
     // Retrieve own tva about the beliefs in the repair request
     val answer = T_complete.filter(n => T_repair.keySet.contains(n._1))
+    val commAndAnswerNodes = communicatedByInitiator.valueAssignment ++ answer
+    val commAndAnswer = BeliefBias(commAndAnswerNodes, w_communicated)
+    communicatedByInitiator = commAndAnswer
     answer
   }
 
-  def endConversation(T_repair : Map[Node[String], Boolean]) : Boolean = {
-    println("End Conversation")
+  def endConversation(T_repair : Map[Node[String], Boolean]) : (Boolean, Boolean, Boolean) = {
     val simulatedNetwork = new MultiBiasedBeliefNetwork(
       network = net,
       negativeConstraints = nc,
@@ -156,10 +181,11 @@ class Initiator(
     val intentionCount = simulatedIntention.count(n => simulatedIntention.get(n._1) == intention.valueAssignment.get(n._1))
     val Nintention = intention.valueAssignment.size
 
+
     if (intentionCount == Nintention && T_repair == null){
         result = true
     }
-    result
+    (result, intentionCount==Nintention, T_repair==null)
   }
 
 
@@ -186,5 +212,17 @@ class Initiator(
 
   def getTVA(): Map[Node[String], Boolean] = {
     T_complete
+  }
+
+  def get_w_prior(): Double = {
+    w_prior
+  }
+
+  def get_w_intention(): Double = {
+    w_intention
+  }
+
+  def get_w_communicated(): Double = {
+    w_communicated
   }
 }
