@@ -56,6 +56,7 @@ case object Simulation {
       finalPriorBeliefsResponder: Map[Node[String], Boolean],
       finalInitiatorTVA: Map[Node[String], Boolean],
       finalCoherenceInitiator: Double,
+      finalIntentionBeliefsInitiator: Map[Node[String], Boolean],
       finalResponderTVA: Map[Node[String], Boolean],
       finalCoherenceResponder: Double,
       finalSharedBeliefs: Map[Node[String], Boolean],
@@ -100,11 +101,11 @@ case object Simulation {
       val allBeliefsResponder_initialVSfinal = structuralSimilarity(initialResponderTVA, finalResponderTVA)
       val priorBeliefsInitiator_initialVSfinal = structuralSimilarity(initialPriorBeliefsInitiator, finalPriorBeliefsInitiator)
       val priorBeliefsResponder_initialVSfinal = structuralSimilarity(initialPriorBeliefsResponder, finalPriorBeliefsResponder)
+      val intentionBeliefsInitiator_initialVSfinal = structuralSimilarity(intentionBeliefsInitiator, finalIntentionBeliefsInitiator)
 
       val overlappingPriors = (initialPriorBeliefsInitiator.keySet /\ initialPriorBeliefsResponder.keySet).size
       val overlappingPriors_StructuralSimilarity = structuralSimilarity(initialPriorBeliefsInitiator, initialPriorBeliefsResponder)
       val overlappingIntention = (intentionBeliefsInitiator.keySet /\ initialResponderTVA.keySet).size
-      val overlappingIntention_StructuralSimilarity = structuralSimilarity(intentionBeliefsInitiator, initialResponderTVA)
 
       Seq(
         n_vertices,
@@ -127,11 +128,12 @@ case object Simulation {
         allBeliefsResponder_initialVSfinal,
         priorBeliefsInitiator_initialVSfinal,
         priorBeliefsResponder_initialVSfinal,
+        intentionBeliefsInitiator_initialVSfinal,
         overlappingPriors,
         overlappingPriors_StructuralSimilarity,
         overlappingIntention,
-        overlappingIntention_StructuralSimilarity,
         allUtterances.size,
+        allUtterances.tail,
         allRepairRequests.size,
         allUtterances.map(n => n.size)
       )
@@ -154,11 +156,11 @@ case object Simulation {
   }
 
 
-  private val N_vertices = 12
+  private val N_vertices = 10
   private val N_priorInitiator : Int = 3
   private val N_intentionInitiator : Int = 3
   private val N_priorResponderList: List[Int] = List(3, 6)
-  private val numberOfAgentPairsPerCondition: Int = 1
+  private val numberOfAgentPairsPerCondition: Int = 100
 
   val w_intention : Double = 100.0
   val w_constraintsList : List[Double] = List(0.7, 1.3)
@@ -202,11 +204,12 @@ case object Simulation {
       "allBeliefsResponder_initialVSfinal",
       "priorBeliefsInitiator_initialVSfinal",
       "priorBeliefsResponder_initialVSfinal",
+      "intentionBeliefsInitiator_initialVSfinal",
       "overlappingPriors",
       "overlappingPriors_StructuralSimilarity",
       "overlappingIntention",
-      "overlappingIntention_StructuralSimilarity",
       "n_utterances",
+      "last_utterance",
       "n_repairRequests",
       "utteranceLengthPerTurn"
 //      "initialPriorBeliefsInitiator",
@@ -338,7 +341,6 @@ case object Simulation {
       }
     }
 
-
     val finalInitiatorPriorBeliefsComparison = initialPriorBeliefsInitiator.keySet.map(n => n -> (initialInitiatorTVA.get(n) == true, initialResponderTVA.get(n) == true))
     val finalResponderPriorBeliefsComparison = initialPriorBeliefsResponder.keySet.map(n => n -> (initialInitiatorTVA.get(n) == true, initialResponderTVA.get(n) == true))
     val finalPriorBeliefsComparison = (finalInitiatorPriorBeliefsComparison ++ finalResponderPriorBeliefsComparison).toMap
@@ -377,6 +379,7 @@ case object Simulation {
       responder.BeliefNetwork.multiBeliefBiases(0).valueAssignment,
       initiator.getTVA(),
       initiator.BeliefNetwork.coh(initialInitiatorTVA),
+      initiator.BeliefNetwork.multiBeliefBiases(1).valueAssignment,
       responder.getTVA(),
       initiator.BeliefNetwork.coh(initialResponderTVA),
       initialInitiatorTVA.filter(n => initialInitiatorTVA.get(n._1) == initialResponderTVA.get(n._1)),
