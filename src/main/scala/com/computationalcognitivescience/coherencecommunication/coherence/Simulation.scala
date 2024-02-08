@@ -31,10 +31,13 @@ case object Simulation {
       w_communicatedInitiator: Double,
       w_communicatedResponder: Double,
       w_intention: Double,
-      initialPriorBeliefsInitiator: Map[Node[String], Boolean],
+      preferredPriorBeliefsInitiator : Map[Node[String], Boolean],
       n_priorBeliefsInitiator: Int,
-      intentionBeliefsInitiator: Map[Node[String], Boolean],
+      preferredIntentionBeliefsInitiator : Map[Node[String], Boolean],
       n_intentionBeliefsInitiator: Int,
+      preferredPriorBeliefsResponder : Map[Node[String], Boolean],
+      initialPriorBeliefsInitiator: Map[Node[String], Boolean],
+      initialIntentionBeliefsInitiator: Map[Node[String], Boolean],
       initialPriorBeliefsResponder: Map[Node[String], Boolean],
       initialInitiatorTVA: Map[Node[String], Boolean],
       initialCoherenceInitiator: Double,
@@ -94,18 +97,26 @@ case object Simulation {
     def toSeq(): Seq[Any] = {
       val allBeliefsInitial = structuralSimilarity(initialInitiatorTVA, initialResponderTVA)
       val allBeliefsFinal = structuralSimilarity(finalInitiatorTVA, finalResponderTVA)
-      val intentionBeliefsInitial = structuralSimilarity(intentionBeliefsInitiator, initialResponderTVA)
-      val intentionBeliefsFinal = structuralSimilarity(intentionBeliefsInitiator, finalResponderTVA)
+      val intentionBeliefsPreferredInitial = structuralSimilarity(preferredIntentionBeliefsInitiator, initialResponderTVA)
+      val intentionBeliefsInitial = structuralSimilarity(initialIntentionBeliefsInitiator, initialResponderTVA)
+      val intentionBeliefsPreferredFinal = structuralSimilarity(preferredIntentionBeliefsInitiator, finalResponderTVA)
+      val intentionBeliefsFinal = structuralSimilarity(finalIntentionBeliefsInitiator, finalResponderTVA)
 
       val allBeliefsInitiator_initialVSfinal = structuralSimilarity(initialInitiatorTVA, finalInitiatorTVA)
       val allBeliefsResponder_initialVSfinal = structuralSimilarity(initialResponderTVA, finalResponderTVA)
+      val priorBeliefsInitiator_preferredVSinitial = structuralSimilarity(preferredPriorBeliefsInitiator, initialPriorBeliefsInitiator)
       val priorBeliefsInitiator_initialVSfinal = structuralSimilarity(initialPriorBeliefsInitiator, finalPriorBeliefsInitiator)
+      val priorBeliefsResponder_preferredVSinitial = structuralSimilarity(preferredPriorBeliefsResponder, initialPriorBeliefsResponder)
       val priorBeliefsResponder_initialVSfinal = structuralSimilarity(initialPriorBeliefsResponder, finalPriorBeliefsResponder)
-      val intentionBeliefsInitiator_initialVSfinal = structuralSimilarity(intentionBeliefsInitiator, finalIntentionBeliefsInitiator)
+      val intentionBeliefsInitiator_preferredVSinitial = structuralSimilarity(preferredIntentionBeliefsInitiator, initialIntentionBeliefsInitiator)
+      val intentionBeliefsInitiator_initialVSfinal = structuralSimilarity(initialIntentionBeliefsInitiator, finalIntentionBeliefsInitiator)
 
+      val overlappingPreferredPriors = (preferredPriorBeliefsInitiator.keySet /\ preferredPriorBeliefsResponder.keySet).size
       val overlappingPriors = (initialPriorBeliefsInitiator.keySet /\ initialPriorBeliefsResponder.keySet).size
+      val overlappingPreferredPriors_StructuralSimilarity = structuralSimilarity(preferredPriorBeliefsInitiator, preferredPriorBeliefsResponder)
       val overlappingPriors_StructuralSimilarity = structuralSimilarity(initialPriorBeliefsInitiator, initialPriorBeliefsResponder)
-      val overlappingIntention = (intentionBeliefsInitiator.keySet /\ initialResponderTVA.keySet).size
+      val overlappingPreferredIntention = (preferredIntentionBeliefsInitiator.keySet /\ initialResponderTVA.keySet).size
+      val overlappingIntention = (initialIntentionBeliefsInitiator.keySet /\ initialResponderTVA.keySet).size
 
       Seq(
         n_vertices,
@@ -120,22 +131,30 @@ case object Simulation {
         w_intention,
         allBeliefsInitial,
         allBeliefsFinal,
+        intentionBeliefsPreferredInitial,
         intentionBeliefsInitial,
+        intentionBeliefsPreferredFinal,
         intentionBeliefsFinal,
-        (allBeliefsInitial - intentionBeliefsInitial) ,
-        (allBeliefsFinal - intentionBeliefsFinal),
+        allBeliefsInitial - intentionBeliefsInitial,
+        allBeliefsFinal - intentionBeliefsFinal,
         allBeliefsInitiator_initialVSfinal,
         allBeliefsResponder_initialVSfinal,
+        priorBeliefsInitiator_preferredVSinitial,
         priorBeliefsInitiator_initialVSfinal,
+        priorBeliefsResponder_preferredVSinitial,
         priorBeliefsResponder_initialVSfinal,
+        intentionBeliefsInitiator_preferredVSinitial,
         intentionBeliefsInitiator_initialVSfinal,
+        overlappingPreferredPriors,
         overlappingPriors,
+        overlappingPreferredPriors_StructuralSimilarity,
         overlappingPriors_StructuralSimilarity,
+        overlappingPreferredIntention,
         overlappingIntention,
         allUtterances.size,
         allUtterances.tail,
         allRepairRequests.size,
-        allUtterances.map(n => n.size)
+        allUtterances.map(n => n.size),
       )
     }
    
@@ -196,17 +215,25 @@ case object Simulation {
       "w_intention",
       "allBeliefsInitial",
       "allBeliefsFinal",
+      "intentionBeliefsPreferredInitial",
       "intentionBeliefsInitial",
+      "intentionBeliefsPreferredFinal",
       "intentionBeliefsFinal",
       "nonIntentionBeliefsInitial",
       "nonIntentionBeliefsFinal",
       "allBeliefsInitiator_initialVSfinal",
       "allBeliefsResponder_initialVSfinal",
+      "priorBeliefsInitiator_preferredVSinitial",
       "priorBeliefsInitiator_initialVSfinal",
+      "priorBeliefsResponder_preferredVSinitial",
       "priorBeliefsResponder_initialVSfinal",
+      "intentionBeliefsInitiator_preferredVSinitial",
       "intentionBeliefsInitiator_initialVSfinal",
+      "overlappingPreferredPriors",
       "overlappingPriors",
+      "overlappingPreferredPriors_StructuralSimilarity",
       "overlappingPriors_StructuralSimilarity",
+      "overlappingPreferredIntention",
       "overlappingIntention",
       "n_utterances",
       "last_utterance",
@@ -280,18 +307,24 @@ case object Simulation {
     var T_utterance: Map[Node[String], Boolean] = null
     var T_repair: Map[Node[String], Boolean] = null
 
-    val initialPriorBeliefsInitiator = initiator.BeliefNetwork.multiBeliefBiases(0).valueAssignment
-    val n_priorBeliefsInitiator = initialPriorBeliefsInitiator.size
-    val intentionBeliefsInitiator = initiator.BeliefNetwork.multiBeliefBiases(1).valueAssignment
-    val n_intentionBeliefsInitiator = intentionBeliefsInitiator.size
-    val initialPriorBeliefsResponder = responder.BeliefNetwork.multiBeliefBiases(0).valueAssignment
+    val preferredPriorBeliefsInitiator = initiator.BeliefNetwork.multiBeliefBiases(0).valueAssignment
+    val n_priorBeliefsInitiator = preferredPriorBeliefsInitiator.size
+    val preferredIntentionBeliefsInitiator = initiator.BeliefNetwork.multiBeliefBiases(1).valueAssignment
+    val n_intentionBeliefsInitiator = preferredIntentionBeliefsInitiator.size
+    val preferredPriorBeliefsResponder = responder.BeliefNetwork.multiBeliefBiases(0).valueAssignment
+    val n_priorBeliefsResponder = preferredPriorBeliefsResponder.size
+
     val initialInitiatorTVA = initiator.getTVA()
-    val initialCoherenceInitiator = initiator.BeliefNetwork.coh(initialInitiatorTVA)
     val initialResponderTVA = responder.getTVA()
+
+    val initialPriorBeliefsInitiator = initialInitiatorTVA.filter(n => preferredPriorBeliefsInitiator.contains(n._1))
+    val initialIntentionBeliefsInitiator = initialInitiatorTVA.filter(n => preferredIntentionBeliefsInitiator.contains(n._1))
+    val initialPriorBeliefsResponder = initialResponderTVA.filter(n => preferredPriorBeliefsResponder.contains(n._1))
+    val initialCoherenceInitiator = initiator.BeliefNetwork.coh(initialInitiatorTVA)
     val initialCoherenceResponder = initiator.BeliefNetwork.coh(initialResponderTVA)
     val initialSharedBeliefs = initialInitiatorTVA.filter(n => initialInitiatorTVA.get(n._1) == initialResponderTVA.get(n._1))
     val n_initialSharedBeliefs = initialInitiatorTVA.size
-    val initialSharedIntentionBeliefs = intentionBeliefsInitiator.filter(n => initialInitiatorTVA.get(n._1) == initialResponderTVA.get(n._1))
+    val initialSharedIntentionBeliefs = initialIntentionBeliefsInitiator.filter(n => initialInitiatorTVA.get(n._1) == initialResponderTVA.get(n._1))
     val n_initialSharedIntentionBeliefs = initialSharedIntentionBeliefs.size
     val initiatorPriorBeliefsComparison = initialPriorBeliefsInitiator.keySet.map(n => n->(initialInitiatorTVA.get(n)==true, initialResponderTVA.get(n)==true))
     val responderPriorBeliefsComparison = initialPriorBeliefsResponder.keySet.map(n => n->(initialInitiatorTVA.get(n)==true, initialResponderTVA.get(n)==true))
@@ -344,22 +377,28 @@ case object Simulation {
     val finalInitiatorPriorBeliefsComparison = initialPriorBeliefsInitiator.keySet.map(n => n -> (initialInitiatorTVA.get(n) == true, initialResponderTVA.get(n) == true))
     val finalResponderPriorBeliefsComparison = initialPriorBeliefsResponder.keySet.map(n => n -> (initialInitiatorTVA.get(n) == true, initialResponderTVA.get(n) == true))
     val finalPriorBeliefsComparison = (finalInitiatorPriorBeliefsComparison ++ finalResponderPriorBeliefsComparison).toMap
+    val finalInitiatorTVA = initiator.getTVA()
+    val finalResponderTVA = responder.getTVA()
+    val finalIntentionBeliefsInitiator = finalInitiatorTVA.filter(n => preferredIntentionBeliefsInitiator.contains(n._1))
 
     Results(
       N_vertices,
       initiator.BeliefNetwork.edges.size,
       initiator.BeliefNetwork.positiveConstraints.size,
       initiator.BeliefNetwork.negativeConstraints.size,
-      responder.BeliefNetwork.multiBeliefBiases(0).valueAssignment.size,
+      n_priorBeliefsResponder,
       initiator.BeliefNetwork.positiveConstraints.head.weight,
       initiator.get_w_prior(),
       initiator.get_w_communicated(),
       responder.get_w_communicated(),
       initiator.get_w_intention(),
-      initialPriorBeliefsInitiator,
+      preferredPriorBeliefsInitiator,
       n_priorBeliefsInitiator,
-      intentionBeliefsInitiator,
+      preferredIntentionBeliefsInitiator,
       n_intentionBeliefsInitiator,
+      preferredPriorBeliefsResponder,
+      initialPriorBeliefsInitiator,
+      initialIntentionBeliefsInitiator,
       initialPriorBeliefsResponder,
       initialInitiatorTVA,
       initialCoherenceInitiator,
@@ -371,21 +410,23 @@ case object Simulation {
       n_initialSharedIntentionBeliefs,
       initialPriorBeliefsComparison,
       n_initialPriorBeliefsComparison,
+
       allUtterances,
       allRepairRequests,
       allRepairAnswers,
       allEndConversationChecks,
-      initiator.BeliefNetwork.multiBeliefBiases(0).valueAssignment,
-      responder.BeliefNetwork.multiBeliefBiases(0).valueAssignment,
-      initiator.getTVA(),
-      initiator.BeliefNetwork.coh(initialInitiatorTVA),
-      initiator.BeliefNetwork.multiBeliefBiases(1).valueAssignment,
-      responder.getTVA(),
-      initiator.BeliefNetwork.coh(initialResponderTVA),
-      initialInitiatorTVA.filter(n => initialInitiatorTVA.get(n._1) == initialResponderTVA.get(n._1)),
-      initialInitiatorTVA.count(n => initialInitiatorTVA.get(n._1) == initialResponderTVA.get(n._1)),
-      intentionBeliefsInitiator.filter(n => initialInitiatorTVA.get(n._1) == initialResponderTVA.get(n._1)),
-      intentionBeliefsInitiator.count(n => initialInitiatorTVA.get(n._1) == initialResponderTVA.get(n._1)),
+
+      finalInitiatorTVA.filter(n => preferredPriorBeliefsInitiator.contains(n._1)),
+      finalResponderTVA.filter(n => preferredPriorBeliefsResponder.contains(n._1)),
+      finalInitiatorTVA,
+      initiator.BeliefNetwork.coh(finalInitiatorTVA),
+      finalIntentionBeliefsInitiator,
+      finalResponderTVA,
+      responder.BeliefNetwork.coh(finalResponderTVA),
+      finalInitiatorTVA.filter(n => finalInitiatorTVA.get(n._1) == finalResponderTVA.get(n._1)),
+      finalInitiatorTVA.count(n => finalInitiatorTVA.get(n._1) == finalResponderTVA.get(n._1)),
+      finalIntentionBeliefsInitiator.filter(n => finalInitiatorTVA.get(n._1) == finalResponderTVA.get(n._1)),
+      finalIntentionBeliefsInitiator.count(n => finalInitiatorTVA.get(n._1) == finalResponderTVA.get(n._1)),
       finalPriorBeliefsComparison,
       finalPriorBeliefsComparison.size
     )
