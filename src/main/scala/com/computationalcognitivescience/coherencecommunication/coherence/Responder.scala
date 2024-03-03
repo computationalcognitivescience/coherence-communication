@@ -3,6 +3,16 @@ package com.computationalcognitivescience.coherencecommunication.coherence
 import mathlib.graph.{Node, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory.{P, _}
 
+/**
+ * The responder wants to reach mutual understanding during the conversation.
+ * This class holds all functions the initiator needs to have a conversation and update their beliefs accordingly.
+ * @param net The belief network.
+ * @param pc A set of edges that are the positive constraints.
+ * @param nc A set of edges that are the negative constraints.
+ * @param priorBeliefs The beliefs the initiator has some prior belief/knowledge about.
+ * @param w_prior The weight that is put on the prior beliefs.
+ * @param weight_communication The weight that is put on the beliefs communicated by the responder.
+ */
 class Responder (
                   net : WUnDiGraph[String],
                   pc : Set[WUnDiEdge[Node[String]]],
@@ -42,6 +52,11 @@ class Responder (
 
   var T_complete: Map[Node[String], Boolean] = BeliefNetwork.allOptimalTruthValueAssignments.head
 
+  /**
+   * Take the utterance, update own beliefs and then evaluate whether to initiate repair.
+   * @param T_utterance Utterance provided by the initiator.
+   * @return Boolean indicating whether to indicate repair or not.
+   */
   def utteranceProcessing(T_utterance: Map[Node[String], Boolean]): Boolean = {
     // Update the network with the new utterance and update the current TVA
     updateNetwork(T_utterance)
@@ -62,15 +77,21 @@ class Responder (
     initiateRepair
   }
 
+  /**
+   * Evaluate what the best beliefs are to ask in a repair request.
+   * @return A TVA for the repair request beliefs.
+   */
   def repairProduction(): Map[Node[String], Boolean] = {
     var maxNormalisedCoherence: Double = 0.0
     var maxSimulatedFlipped : Map[Node[String], Boolean] = null
     var maxT_repair : Map[Node[String], Boolean] = null
 
+    // Go over all possible repair request (all subsets of vertices (excluding the empty set))
     P(BeliefNetwork.vertices).foreach(V_repair => {
       if (V_repair.nonEmpty){
         val allMappings = V_repair allMappings Set(true, false)
 
+        // Consider all mappings of truth-values for the current repair request.
         allMappings.foreach(T_repair => {
           if(T_repair.nonEmpty){
             // Combine communicated beliefs with proposed repair (V_repair and T_repair)
@@ -78,6 +99,7 @@ class Responder (
             val commAndRepairNodes = communicatedByInitiator.valueAssignment ++ T_repair
             val commAndRepair = BeliefBias(commAndRepairNodes, commAndRepairNodes.map { case (node, value) => node -> w_communicated })
 
+            // Simulate network with current repair request
             val simulatedNetwork = new MultiBiasedBeliefNetwork(
               network = net,
               negativeConstraints = nc,
@@ -91,7 +113,7 @@ class Responder (
             val countNonTakenCommunicated = T_flipped.filter(n => communicatedByInitiator.valueAssignment.contains(n._1))
               .count(n => T_flipped.get(n._1) != communicatedByInitiator.valueAssignment.get(n._1))
 
-
+            // Check all beliefs in the repair request are flipped and all communicated beliefs are taken over
             if (countNonFlippedBeliefs == 0 && countNonTakenCommunicated != 0 || maxT_repair == null) {
               val normalisedCoherence = simulatedNetwork.coh(T_flipped) / V_repair.size
 
@@ -121,7 +143,6 @@ class Responder (
   maxT_repair
   }
 
-
   /**
    * Combine the communicated beliefs with utterance (V_utterance and T_utterance)
    * @param T_utterance The TVA of the utterance
@@ -143,10 +164,18 @@ class Responder (
     T_complete = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
   }
 
+  /**
+   * Get the current truth-value assignment of the initiator.
+   * @return Current TVA.
+   */
   def getTVA(): Map[Node[String], Boolean] = {
     T_complete
   }
 
+  /**
+   * Get the communicated weight of the initiator.
+   * @return communicated weight.
+   */
   def get_w_communicated(): Double = {
     w_communicated
   }

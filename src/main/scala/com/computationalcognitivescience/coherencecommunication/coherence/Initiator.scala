@@ -64,7 +64,6 @@ class Initiator(
 
   var T_complete : Map[Node[String], Boolean] = BeliefNetwork.allOptimalTruthValueAssignments.head
 
-
   /**
    * Creates the shortest possible utterance such that the responder taking over the beliefs in the utterance, leads to
    * a belief network where the beliefs part of the intention of the initiator are most similar.
@@ -183,7 +182,7 @@ class Initiator(
    *         if the initiator wants to end the conversation and if the responder wants to end the conversation.
    */
   def endConversation(T_repair : Map[Node[String], Boolean]) : (Boolean, Boolean, Boolean) = {
-    // Simulate the network of the respondere
+    // Simulate the network of the responder
     val simulatedNetwork = new MultiBiasedBeliefNetwork(
       network = net,
       negativeConstraints = nc,
@@ -208,7 +207,6 @@ class Initiator(
     (result, intentionCount==Nintention, T_repair==null)
   }
 
-
   /**
    * Update the network with the information in the repair request.
    * @param T_repair The TVA of the repair request.
@@ -230,18 +228,34 @@ class Initiator(
     T_complete = mostSimilarTVA.get(mostSimilarTVA.keySet.max).head.head
   }
 
+  /**
+   * Get the current truth-value assignment of the initiator.
+   * @return Current TVA.
+   */
   def getTVA(): Map[Node[String], Boolean] = {
     T_complete
   }
 
+  /**
+   * Get the prior weight of the initiator.
+   * @return Prior weight.
+   */
   def get_w_prior(): Double = {
     w_prior
   }
 
+  /**
+   * Get the intention weight of the initiator.
+   * @return intention weight.
+   */
   def get_w_intention(): Double = {
     w_intention
   }
 
+  /**
+   * Get the communicated weight of the initiator.
+   * @return communicated weight.
+   */
   def get_w_communicated(): Double = {
     w_communicated
   }
