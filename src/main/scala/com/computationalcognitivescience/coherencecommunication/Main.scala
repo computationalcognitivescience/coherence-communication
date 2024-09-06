@@ -39,25 +39,25 @@ object Main {
 
     val network: BeliefNetwork = new BeliefNetwork(graph, negConstraints)
 
-    val producer: Producer = new Producer(network,
+    val producer: Initiator = new Initiator(network,
       priorBeliefs = Map(
         Node("Australia") -> true,
         Node("winter") -> false,
         Node("swimming") -> true
       ),
-      communicativeNodes = Set(
+      communicativeIntent = Set(
         Node("swimming"),
         Node("cold"),
         Node("beach")
       ))
 
-    val interpreter: Interpreter = new Interpreter(network,
+    val interpreter: Responder = new Responder(network,
       priorBeliefs = Map(
         Node("Australia") -> false,
         Node("winter") -> true,
       ))
     
-    val repairSimulation: repairSimulation = new repairSimulation(producer, interpreter)
+    val repairSimulation: ConversationOld = new ConversationOld(producer, interpreter)
     
     val results: Seq[Any] = repairSimulation.run()
 
