@@ -7,13 +7,13 @@ import mathlib.set.SetTheory._
 class Responder(
     beliefNetwork: FoundationalBeliefNetwork,
     priorBeliefs: Map[Node[String], Boolean],
-    previousInferredBeliefs: Map[Node[String], Boolean] = Map.empty,
+    previousState: Option[Interlocutor] = None,
     communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
     maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor(
       beliefNetwork,
       priorBeliefs,
-      previousInferredBeliefs,
+  previousState,
       communicatedBeliefs,
       maxUtteranceLength
     ) {
@@ -76,8 +76,8 @@ class Responder(
     new Responder(
       beliefNetwork,
       priorBeliefs,
-      previousInferredBeliefs,
-      communicatedBeliefs + utterance,
+      Some(this),
+      communicatedBeliefs ++ utterance,
       maxUtteranceLength
     )
 }

@@ -88,6 +88,7 @@ case class Simulation(
       )
       val conversationData = conversation.simulate()
       Parameters(
+        n,
         beliefNetworkSize,
         beliefNetworkPCRatio,
         intentionRatio,
@@ -102,7 +103,7 @@ case class Simulation(
 
 object Simulation {
   def main(args: Array[String]): Unit = {
-    Simulation(
+    val data = Simulation(
       beliefNetworkSizes = List(8),
       beliefNetworkPCRatios = List(.5),
       intentionRatios = List(0.2),
@@ -112,5 +113,6 @@ object Simulation {
       maxRoundLengths = List(5),
       numberOfSimulations = 10
     ).run()
+      .foreach(println)
   }
 }

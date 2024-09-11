@@ -56,16 +56,16 @@ object MinCut {
     )
   }
 
-  def tighten[T](graph: WUnDiGraph[T], a: Set[Node[T]]): Set[Node[T]] = {
-    // a contains all but one vertex
-    def sumWeight(v: Node[T]): Double = graph.edges.filter(_.contains(v)).toList.map(_.weight).sum
-    if(a.size < graph.size - 1) {
-      val z = argMax(graph.vertices \ a, sumWeight)
-      a + z
-    } else {
-      a
-    }
-  }
+//  def tighten[T](graph: WUnDiGraph[T], a: Set[Node[T]]): Set[Node[T]] = {
+//    // a contains all but one vertex
+//    def sumWeight(v: Node[T]): Double = graph.edges.filter(_.contains(v)).toList.map(_.weight).sum
+//    if(a.size < graph.size - 1) {
+//      val z = argMax(graph.vertices \ a, sumWeight)
+//      a + z
+//    } else {
+//      a
+//    }
+//  }
 
 //  def minCut[T](graph: WUnDiGraph[T], a: Node[T], cut: Set[WUnDiEdge[Node[T]]]): Set[WUnDiEdge[Node[T]]] = {
 //    val mostTightlyConnectedSubgraph = tighten(graph, Set(a))

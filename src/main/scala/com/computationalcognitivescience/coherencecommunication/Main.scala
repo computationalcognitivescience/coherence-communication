@@ -39,48 +39,48 @@ object Main {
 
     val network: BeliefNetwork = new BeliefNetwork(graph, negConstraints)
 
-    val producer: Initiator = new Initiator(network,
-      priorBeliefs = Map(
-        Node("Australia") -> true,
-        Node("winter") -> false,
-        Node("swimming") -> true
-      ),
-      communicativeIntent = Set(
-        Node("swimming"),
-        Node("cold"),
-        Node("beach")
-      ))
-
-    val interpreter: Responder = new Responder(network,
-      priorBeliefs = Map(
-        Node("Australia") -> false,
-        Node("winter") -> true,
-      ))
-    
-    val repairSimulation: ConversationOld = new ConversationOld(producer, interpreter)
-    
-    val results: Seq[Any] = repairSimulation.run()
-
-    printResults(results)
-
-    def printResults(results: Seq[Any]): Any = {
-      print("Producer beliefs: ")
-      println(results(0))
-      print("Interpreter predicted beliefs: ")
-      println(results(1))
-      print("Interpreter true beliefs: ")
-      println(results(2))
-      print("Predicted overall structural similarity: ")
-      println(results(3))
-      print("True overall structural similarity: ")
-      println(results(4))
-      print("Predicted communicative intent structural similarity: ")
-      println(results(5))
-      print("True communicative intent structural similarity: ")
-      println(results(6))
-      print("Number of communication rounds: ")
-      println(results(7))
-    }
+//    val producer: Initiator = new Initiator(network,
+//      priorBeliefs = Map(
+//        Node("Australia") -> true,
+//        Node("winter") -> false,
+//        Node("swimming") -> true
+//      ),
+//      communicativeIntent = Set(
+//        Node("swimming"),
+//        Node("cold"),
+//        Node("beach")
+//      ))
+//
+//    val interpreter: Responder = new Responder(network,
+//      priorBeliefs = Map(
+//        Node("Australia") -> false,
+//        Node("winter") -> true,
+//      ))
+//
+//    val repairSimulation: ConversationOld = new ConversationOld(producer, interpreter)
+//
+//    val results: Seq[Any] = repairSimulation.run()
+//
+//    printResults(results)
+//
+//    def printResults(results: Seq[Any]): Any = {
+//      print("Producer beliefs: ")
+//      println(results(0))
+//      print("Interpreter predicted beliefs: ")
+//      println(results(1))
+//      print("Interpreter true beliefs: ")
+//      println(results(2))
+//      print("Predicted overall structural similarity: ")
+//      println(results(3))
+//      print("True overall structural similarity: ")
+//      println(results(4))
+//      print("Predicted communicative intent structural similarity: ")
+//      println(results(5))
+//      print("True communicative intent structural similarity: ")
+//      println(results(6))
+//      print("Number of communication rounds: ")
+//      println(results(7))
+//    }
 
 //    val randomBeliefNet: BeliefNetwork = RandomBeliefNetwork.random(size = 10, density = 0.4, ratioPosNeg = 0.6)
 //    val nrPriorBeliefs1: Int = 3

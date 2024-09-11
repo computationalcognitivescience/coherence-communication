@@ -12,6 +12,13 @@ abstract class Interlocutor(
     maxUtteranceLength: Option[Int] = None
 ) {
 
+  protected def compare(
+      a: Node[String],
+      condidateInference: Map[Node[String], Boolean],
+      previousBeliefs: Map[Node[String], Boolean]
+  ): Int =
+    if (condidateInference(a) == previousBeliefs(a)) 1 else 0
+
   lazy val inferredBeliefs: Map[Node[String], Boolean] = {
     val allPossibleMaximumCoherenceInferences = beliefNetwork.coherenceSolutions()
     val currentInferredBeliefSet =
@@ -22,13 +29,6 @@ abstract class Interlocutor(
     else {
       val overlapPreviousCurrentInferredBeliefs =
         previousState.get.inferredBeliefs.keySet /\ currentInferredBeliefSet
-
-      def compare(
-          a: Node[String],
-          condidateInference: Map[Node[String], Boolean],
-          previousBeliefs: Map[Node[String], Boolean]
-      ): Int =
-        if (condidateInference(a) == previousBeliefs(a)) 1 else 0
 
       // Infer the beliefs that are structurally most similar to the previous inferred beliefs
       allPossibleMaximumCoherenceInferences

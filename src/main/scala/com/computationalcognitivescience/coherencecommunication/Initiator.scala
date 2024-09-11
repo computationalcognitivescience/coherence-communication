@@ -14,13 +14,13 @@ class Initiator(
     beliefNetwork: FoundationalBeliefNetwork,
     priorBeliefs: Map[Node[String], Boolean],
     val communicativeIntent: Map[Node[String], Boolean],
-    previousInferredBeliefs: Map[Node[String], Boolean] = Map.empty,
+    previousState: Option[Interlocutor] = None,
     communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
     maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor(
       beliefNetwork,
-      priorBeliefs + communicativeIntent,
-      previousInferredBeliefs,
+      priorBeliefs ++ communicativeIntent,
+      previousState,
       communicatedBeliefs,
       maxUtteranceLength
     ) {
@@ -35,8 +35,10 @@ class Initiator(
 //      .map((v: Node[String]) => v -> inferredBeliefs(v))
 //      .toMap
 
-  private def simulateBelieveInferences(utterance: Map[Node[String], Boolean]): Map[Node[String], Boolean] =
-    addCommunicatedBeliefs(utterance).allBeliefTruthValueAssignments
+  private def simulateBelieveInferences(
+      utterance: Map[Node[String], Boolean]
+  ): Initiator =
+    addCommunicatedBeliefs(utterance)
 
   /** Based on (van Arkel, 2021, p. 28)
     *
@@ -64,7 +66,10 @@ class Initiator(
     // beliefs most similar to our communicative intent
     allPossibleUtterances
       .argMax(utterance =>
-        structuralSim(allBeliefTruthValueAssignments, simulateBelieveInferences(utterance), communicativeIntent.keySet)
+        structuralSimilarity(
+          simulateBelieveInferences(utterance),
+          communicativeIntent.keySet
+        )
           / (utterance.size.doubleValue + 1)
       )
       .random
@@ -110,11 +115,16 @@ class Initiator(
       repairRequest: Map[Node[String], Boolean]
   ): Boolean = {
     val allBeliefsCommunicated: Boolean = {
-      val simulatedBeliefs = simulateBelieveInferences(repairRequest)
+      val simulatedInterlocutor = simulateBelieveInferences(repairRequest)
 
       // Infer if all nodes to be communicated have the correct truth-value assignment in the interpreter's network
+
       communicativeIntent.keySet
-        .forall(belief => simulatedBeliefs(belief) == communicativeIntent(belief))
+        .forall(belief =>
+          simulatedInterlocutor.allBeliefTruthValueAssignments(belief) == communicativeIntent(
+            belief
+          )
+        )
     }
 
     allBeliefsCommunicated && repairRequest.isEmpty
@@ -125,8 +135,8 @@ class Initiator(
       beliefNetwork,
       priorBeliefs,
       communicativeIntent,
-      previousInferredBeliefs,
-      communicatedBeliefs + utterance,
+      Some(this),
+      communicatedBeliefs ++ utterance,
       maxUtteranceLength
     )
 }
