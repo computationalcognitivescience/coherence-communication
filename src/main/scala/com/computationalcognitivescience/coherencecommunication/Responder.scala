@@ -66,9 +66,10 @@ class Responder(
 allPossibleRequests.foreach(println)
     // Get the best repair request
     allPossibleRequests
-      .argMax(repairRequest =>
-        beliefNetwork.coh(repairRequest) / (repairRequest.size + 1.0)
-      )
+      .argMax(repairRequest => {
+        val updatedNetwork = beliefNetwork.addFoundationalAssignment(repairRequest)
+        updatedNetwork.coh(updatedNetwork.coherence()) / (repairRequest.size + 1.0)
+      })
       .random
       .get
   }
