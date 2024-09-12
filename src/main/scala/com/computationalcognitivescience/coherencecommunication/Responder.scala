@@ -30,6 +30,7 @@ class Responder(
     val previousCoherence = previousState.beliefNetwork.coh(previousState.allBeliefTruthValueAssignments)
     val currentCoherence = beliefNetwork.coh(allBeliefTruthValueAssignments) // Calculate current coherence
     // If current coherence is lower than previous coherence, formulate a repair request
+    println(currentCoherence + "<" + previousCoherence)
     if (currentCoherence < previousCoherence)
       repairFormulation()
     // If current coherence is equal to or higher than previous coherence, all is well :) (do nothing)
@@ -62,7 +63,7 @@ class Responder(
             .toMap
         )
     }
-
+allPossibleRequests.foreach(println)
     // Get the best repair request
     allPossibleRequests
       .argMax(repairRequest =>
@@ -74,7 +75,7 @@ class Responder(
 
   override def addCommunicatedBeliefs(utterance: Map[Node[String], Boolean]): Responder =
     new Responder(
-      beliefNetwork,
+      beliefNetwork.addFoundationalAssignment(utterance),
       priorBeliefs,
       Some(this),
       communicatedBeliefs ++ utterance,

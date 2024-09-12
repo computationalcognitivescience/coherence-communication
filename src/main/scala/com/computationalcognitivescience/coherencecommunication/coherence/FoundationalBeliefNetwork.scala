@@ -13,6 +13,11 @@ class FoundationalBeliefNetwork(
     val foundationalAssignment: Map[Node[String], Boolean]
 ) extends BeliefNetwork(graph, negativeConstraints) {
 
+  def addFoundationalAssignment(assignment: Map[Node[String], Boolean]): FoundationalBeliefNetwork =
+    new FoundationalBeliefNetwork(
+      graph, negativeConstraints, foundationalBeliefs ++ assignment.keySet, foundationalAssignment ++ assignment
+    )
+
   override def coherence(): Map[Node[String], Boolean] =
     coherenceSolutions().random.get // Return the truth-value assignment that maximizes coherence value
   /** Calculate the optimal truth-value assignment of this FoundationalBeliefNetwork

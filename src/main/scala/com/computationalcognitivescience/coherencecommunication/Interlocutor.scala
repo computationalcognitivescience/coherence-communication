@@ -78,4 +78,28 @@ abstract class Interlocutor(
       )
       .sum
   }
+
+  def toDOTString: String = {
+    "graph G {" +
+      "\nnode[penwidth=2]" +
+      beliefNetwork.vertices.map(vertex => {
+        val style = {
+          "style=filled" +
+          ",fillcolor=" + (if (allBeliefTruthValueAssignments(vertex)) "darkolivegreen1" else "coral1") +
+          ",color=" + {
+            if(vertex in communicatedBeliefs.keySet) "aquamarine"
+            else if(vertex in priorBeliefs.keySet) "deeppink"
+            else "black"
+          }
+        }
+        "\t"+vertex.label + "["+ style + "]"
+      }).mkString("\n","\n","\n") +
+      "\tCoh[shape=plaintext, label=\"Coh="+math.round(10*beliefNetwork.coh(allBeliefTruthValueAssignments))/10.0+"\"]" +
+      beliefNetwork.edges.map(
+        edge => {
+          val style = if (edge in beliefNetwork.negativeConstraints) "dashed" else "solid"
+          "\t" + edge.left.label + " -- " + edge.right.label + " [label=<<table border=\"0\" cellborder=\"0\"><tr><td bgcolor=\"white\">" + scala.math.round(edge.weight * 100) / 100.0 + "</td></tr></table>>, penwidth=" + scala.math.round(0.5 + edge.weight * 3) + ", style=\"" + style + "\"]"
+        }).mkString("\n","\n","\n") +
+      "}"
+  }
 }

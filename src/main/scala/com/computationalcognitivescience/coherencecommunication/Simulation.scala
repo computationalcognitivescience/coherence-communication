@@ -113,6 +113,6 @@ object Simulation {
       maxRoundLengths = List(5),
       numberOfSimulations = 10
     ).run()
-      .foreach(println)
+      .last._2.foreach(turn => println(turn.utterance))
   }
 }

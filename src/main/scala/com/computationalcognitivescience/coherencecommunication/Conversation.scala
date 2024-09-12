@@ -11,11 +11,13 @@ case class Conversation(
 ) {
 
   private val preFirstRoundConversationData = ConversationData(
-    initiatorNetwork = initiator.beliefNetwork,
-    responderNetwork = responder.beliefNetwork,
+    initiatorState = initiator,
+    responderState = responder,
     round = 0,
     utteranceLengthsInitiator = None,
-    utteranceLengthsResponder = None,
+    repairLengthsResponder = None,
+    utterance = None,
+    repair = None,
     similarityAllBeliefs = initiator.structuralSimilarity(responder),
     similarityIntentionBeliefs =
       initiator.structuralSimilarity(responder, initiator.communicativeIntent.keySet),
@@ -28,23 +30,31 @@ case class Conversation(
       repairRequest: Option[Map[Node[String], Boolean]] = None,
       data: Seq[ConversationData] = Seq(preFirstRoundConversationData)
   ): Seq[ConversationData] = {
-    if (data.length > maxRounds) data    // Stop conversation if it takes more than maxRounds
-    else if (repairRequest.isEmpty) data // Stop conversation if no repair request was made
+    // Stop conversation if it takes more than maxRounds
+    if (data.length > maxRounds) data
+    // Stop conversation if no repair request was made after the first round
+    else if (repairRequest.isEmpty && data.length > 1) data
+    // Stop conversation if the repair request makes the initiator belief the intention is understood
+    else if (repairRequest.isDefined && initiator.endConversation(repairRequest.get)) data
+    // Start or continue conversation
     else {
-      // Stop if repair request was made and
-      // the initiator believes the responder inferred the intention
-      if (initiator.endConversation(repairRequest.get)) data
-      else {
-        val utterance        = initiator.repairSolution(repairRequest.get)
+      val utterance: Map[Node[String], Boolean] =
+        if(repairRequest.isEmpty)
+          initiator.produceUtterance()                // First round, no repair produce initial utterance
+        else
+          initiator.repairSolution(repairRequest.get) // Subsequent rounds, produce reply to repair request
+
         val updatedInitiator = initiator.addCommunicatedBeliefs(utterance)
         val updatedResponder = responder.addCommunicatedBeliefs(utterance)
         val newRepairRequest = updatedResponder.troubleIdentification(responder)
         val updatedConversationData = ConversationData(
-          initiatorNetwork = initiator.beliefNetwork,
-          responderNetwork = responder.beliefNetwork,
+          initiatorState = updatedInitiator,
+          responderState = updatedResponder,
           round = data.last.round + 1,
+          Some(utterance),
+          Some(newRepairRequest),
           utteranceLengthsInitiator = Some(utterance.size),
-          utteranceLengthsResponder = Some(newRepairRequest.size),
+          repairLengthsResponder = Some(newRepairRequest.size),
           similarityAllBeliefs = updatedInitiator.structuralSimilarity(updatedResponder),
           similarityIntentionBeliefs = updatedInitiator
             .structuralSimilarity(updatedResponder, updatedInitiator.communicativeIntent.keySet),
@@ -54,7 +64,6 @@ case class Conversation(
           )
         ) +: data
         simulateRound(Some(newRepairRequest), updatedConversationData)
-      }
     }
   }
 }

@@ -132,7 +132,7 @@ class Initiator(
 
   override def addCommunicatedBeliefs(utterance: Map[Node[String], Boolean]): Initiator =
     new Initiator(
-      beliefNetwork,
+      beliefNetwork.addFoundationalAssignment(utterance),
       priorBeliefs,
       communicativeIntent,
       Some(this),
