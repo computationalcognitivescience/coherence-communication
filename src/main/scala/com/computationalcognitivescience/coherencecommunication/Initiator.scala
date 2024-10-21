@@ -31,13 +31,25 @@ class Initiator(
   )
 
   override val inferredBeliefs: Map[Node[String], Boolean] =
-    if(previousState.isDefined) previousState.get.inferredBeliefs
+    if (previousState.isDefined) previousState.get.inferredBeliefs
     else super.inferredBeliefs
 
+  /** Creates a copy of this initiator with only the initiator's prior beliefs and the communicated
+    * beliefs (including the utterance).
+    * @param utterance A truth-value assignment for the uttered beliefs.
+    * @return A simulated responder from the initiator's perspective.
+    */
   private def simulateBelieveInferences(
       utterance: Map[Node[String], Boolean]
   ): Initiator =
-    addCommunicatedBeliefs(utterance)
+    new Initiator(
+      beliefNetwork.addFoundationalAssignment(utterance),
+      priorBeliefs,
+      Map.empty,
+      None,
+      communicatedBeliefs ++ utterance,
+      maxUtteranceLength
+    )
 
   override lazy val allBeliefTruthValueAssignments: Map[Node[String], Boolean] =
     priorBeliefs ++ communicatedBeliefs ++ inferredBeliefs ++ communicativeIntent
@@ -116,13 +128,15 @@ class Initiator(
   def endConversation(
       repairRequest: Option[Map[Node[String], Boolean]]
   ): Boolean = {
-    if(repairRequest.isEmpty) true
+    if (repairRequest.isEmpty) true
     else {
       val simulatedInterlocutor = simulateBelieveInferences(repairRequest.get)
       // Infer if all nodes to be communicated have the correct truth-value assignment in the interpreter's network
       communicativeIntent.keySet
         .forall(belief =>
-          simulatedInterlocutor.allBeliefTruthValueAssignments(belief) == communicativeIntent(belief)
+          simulatedInterlocutor.allBeliefTruthValueAssignments(belief) == communicativeIntent(
+            belief
+          )
         )
     }
   }

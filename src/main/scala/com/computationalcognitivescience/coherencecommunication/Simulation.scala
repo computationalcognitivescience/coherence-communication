@@ -114,15 +114,25 @@ object Simulation {
       numberOfSimulations = 1
     ).run()
 
+    println("\n===")
     println(data.last._2.head.initiatorState.beliefNetwork.vertices)
-    data.last._2.head.initiatorState.allBeliefTruthValueAssignments.keySet.toList.sortBy(_.label)
+    println("Intent is: " + data.head._2.head.initiatorState.communicativeIntent)
+    val orderedData: Seq[ConversationData] = data.last._2.reverse
+
+    orderedData.head.initiatorState.allBeliefTruthValueAssignments.keySet.toList.sortBy(_.label)
       .foreach(node => {
-        println(node + " i(" + data.last._2.last.initiatorState.allBeliefTruthValueAssignments(node) + ") r(" + data.last._2.last.responderState.allBeliefTruthValueAssignments(node) + ")")
+        val i = orderedData.head.initiatorState.allBeliefTruthValueAssignments(node)
+        val r = orderedData.head.responderState.allBeliefTruthValueAssignments(node)
+        val mark = if(i==r) "*" else ""
+        println(node + " i(" + i + ") r(" + r + ") " + mark)
       })
-    data.last._2.reverse.foreach(turn => println(turn.round + "i: " + turn.utterance.getOrElse(Map.empty)+ "\n" + turn.round + "r: " + turn.repair.getOrElse(Map.empty)))
-    data.last._2.last.initiatorState.allBeliefTruthValueAssignments.keySet.toList.sortBy(_.label)
+    orderedData.foreach(turn => println(turn.round + "i: " + turn.utterance.getOrElse(Map.empty)+ "\n" + turn.round + "r: " + turn.repair.getOrElse(Map.empty)))
+    orderedData.last.initiatorState.allBeliefTruthValueAssignments.keySet.toList.sortBy(_.label)
       .foreach(node => {
-        println(node + " i("+data.last._2.last.initiatorState.allBeliefTruthValueAssignments(node)+") r("+ data.last._2.last.responderState.allBeliefTruthValueAssignments(node)+")")
+        val i = orderedData.last.initiatorState.allBeliefTruthValueAssignments(node)
+        val r = orderedData.last.responderState.allBeliefTruthValueAssignments(node)
+        val mark = if (i == r) "*" else ""
+        println(node + " i(" + i + ") r(" + r +") " + mark)
       })
 
   }
