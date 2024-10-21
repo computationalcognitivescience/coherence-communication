@@ -104,15 +104,26 @@ case class Simulation(
 object Simulation {
   def main(args: Array[String]): Unit = {
     val data = Simulation(
-      beliefNetworkSizes = List(8),
+      beliefNetworkSizes = List(10),
       beliefNetworkPCRatios = List(.5),
       intentionRatios = List(0.2),
       initiatorPriorRatios = List(0.2),
       responderPriorRatios = List(0.2),
       maxUtteranceLengths = List(3),
       maxRoundLengths = List(5),
-      numberOfSimulations = 10
+      numberOfSimulations = 1
     ).run()
-      .last._2.foreach(turn => println(turn.utterance))
+
+    println(data.last._2.head.initiatorState.beliefNetwork.vertices)
+    data.last._2.head.initiatorState.allBeliefTruthValueAssignments.keySet.toList.sortBy(_.label)
+      .foreach(node => {
+        println(node + " i(" + data.last._2.last.initiatorState.allBeliefTruthValueAssignments(node) + ") r(" + data.last._2.last.responderState.allBeliefTruthValueAssignments(node) + ")")
+      })
+    data.last._2.reverse.foreach(turn => println(turn.round + "i: " + turn.utterance.getOrElse(Map.empty)+ "\n" + turn.round + "r: " + turn.repair.getOrElse(Map.empty)))
+    data.last._2.last.initiatorState.allBeliefTruthValueAssignments.keySet.toList.sortBy(_.label)
+      .foreach(node => {
+        println(node + " i("+data.last._2.last.initiatorState.allBeliefTruthValueAssignments(node)+") r("+ data.last._2.last.responderState.allBeliefTruthValueAssignments(node)+")")
+      })
+
   }
 }

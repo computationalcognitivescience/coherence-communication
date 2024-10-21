@@ -26,16 +26,21 @@ class Responder(
     */
   def troubleIdentification(
       previousState: Interlocutor
-  ): Map[Node[String], Boolean] = {
+  ): Option[Map[Node[String], Boolean]] = {
     val previousCoherence = previousState.beliefNetwork.coh(previousState.allBeliefTruthValueAssignments)
     val currentCoherence = beliefNetwork.coh(allBeliefTruthValueAssignments) // Calculate current coherence
     // If current coherence is lower than previous coherence, formulate a repair request
-    println(currentCoherence + "<" + previousCoherence)
-    if (currentCoherence < previousCoherence)
-      repairFormulation()
-    // If current coherence is equal to or higher than previous coherence, all is well :) (do nothing)
-    else
-      Map.empty
+    if (currentCoherence < previousCoherence) {
+      val repairRequest = repairFormulation()
+      println("[Responder.troubleIdentification] " + currentCoherence + "<" + previousCoherence)
+      println("[Responder.troubleIdentification] r says: " + repairRequest)
+      Some(repairRequest)
+    } // If current coherence is equal to or higher than previous coherence, all is well :) (do nothing)
+    else {
+      println("[Responder.troubleIdentification] " + currentCoherence + ">=" + previousCoherence)
+      println("[Responder.troubleIdentification] r says: Nothing")
+      None
+    }
   }
 
   /** Based on (van Arkel, 2021, p. 24) Generate a repair request (truth-value assignment)
@@ -63,8 +68,12 @@ class Responder(
             .toMap
         )
     }
-allPossibleRequests.foreach(println)
     // Get the best repair request
+//    allPossibleRequests.toList
+//      .map(repairRequest => repairRequest -> {
+//        val updatedNetwork = beliefNetwork.addFoundationalAssignment(repairRequest)
+//        updatedNetwork.coh(updatedNetwork.coherence()) / (repairRequest.size + 1.0)
+//      }).sortBy(_._2).foreach(println)
     allPossibleRequests
       .argMax(repairRequest => {
         val updatedNetwork = beliefNetwork.addFoundationalAssignment(repairRequest)

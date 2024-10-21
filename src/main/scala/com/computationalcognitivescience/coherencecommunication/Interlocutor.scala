@@ -19,7 +19,7 @@ abstract class Interlocutor(
   ): Int =
     if (condidateInference(a) == previousBeliefs(a)) 1 else 0
 
-  lazy val inferredBeliefs: Map[Node[String], Boolean] = {
+  def inferredBeliefs: Map[Node[String], Boolean] = {
     val allPossibleMaximumCoherenceInferences = beliefNetwork.coherenceSolutions()
     val currentInferredBeliefSet =
       (beliefNetwork.vertices \ priorBeliefs.keySet) \ communicatedBeliefs.keySet
@@ -43,7 +43,7 @@ abstract class Interlocutor(
     }
   }
 
-  lazy val allBeliefTruthValueAssignments: Map[Node[String], Boolean] =
+  def allBeliefTruthValueAssignments: Map[Node[String], Boolean] =
     priorBeliefs ++ communicatedBeliefs ++ inferredBeliefs
 
   val utteranceLengthLimit: Int = {
