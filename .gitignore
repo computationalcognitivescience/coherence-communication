@@ -253,3 +253,5 @@ $RECYCLE.BIN/
 *.lnk
 
 /.bsp/
+
+output/

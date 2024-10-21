@@ -135,5 +135,8 @@ object Simulation {
         println(node + " i(" + i + ") r(" + r +") " + mark)
       })
 
+
+
+
   }
 }

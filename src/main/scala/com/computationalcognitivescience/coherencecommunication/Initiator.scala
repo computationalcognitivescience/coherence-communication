@@ -150,4 +150,12 @@ class Initiator(
       communicatedBeliefs ++ utterance,
       maxUtteranceLength
     )
+
+
+  def toDOTString: String = {
+    val colorMap = communicativeIntent.map(_._1 -> "darkorange") ++
+      priorBeliefs.map(_._1 -> "deeppink") ++
+      communicatedBeliefs.map(_._1 -> "aquamarine")
+    super.toDOTString(Some(colorMap))
+  }
 }

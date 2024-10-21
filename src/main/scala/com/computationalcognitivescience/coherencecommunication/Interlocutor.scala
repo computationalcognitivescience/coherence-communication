@@ -79,7 +79,7 @@ abstract class Interlocutor(
       .sum
   }
 
-  def toDOTString: String = {
+  def toDOTString(colorMap: Option[Map[Node[String], String]]): String = {
     "graph G {" +
       "\nnode[penwidth=2]" +
       beliefNetwork.vertices.map(vertex => {
@@ -87,8 +87,7 @@ abstract class Interlocutor(
           "style=filled" +
           ",fillcolor=" + (if (allBeliefTruthValueAssignments(vertex)) "darkolivegreen1" else "coral1") +
           ",color=" + {
-            if(vertex in communicatedBeliefs.keySet) "aquamarine"
-            else if(vertex in priorBeliefs.keySet) "deeppink"
+            if(colorMap.isDefined) colorMap.get.getOrElse(vertex, "black")
             else "black"
           }
         }
