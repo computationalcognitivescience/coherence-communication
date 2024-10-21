@@ -1,12 +1,10 @@
 package com.computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.coherence.{
-  BeliefNetwork,
-  FoundationalBeliefNetwork
-}
+import com.computationalcognitivescience.coherencecommunication.coherence.{BeliefNetwork, FoundationalBeliefNetwork}
 import mathlib.graph.WUnDiGraph
 import mathlib.set.SetTheory._
 
+import java.time.{LocalDateTime, ZoneOffset}
 import scala.util._
 
 case class Simulation(
@@ -136,7 +134,51 @@ object Simulation {
       })
 
 
-
+    val dataDir = os.pwd/"output"
+    val filename = "out"+LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)+".html"
+    os.write(dataDir/filename,
+      """
+        |<!DOCTYPE html>
+        |<meta charset="utf-8">
+        |<body>
+        |<script src="//d3js.org/d3.v7.min.js"></script>
+        |<script src="https://unpkg.com/@hpcc-js/wasm@2.20.0/dist/graphviz.umd.js"></script>
+        |<script src="https://unpkg.com/d3-graphviz@5.6.0/build/d3-graphviz.js"></script>
+        |<div id="graph" style="text-align: center;"></div>
+        |<script>
+        |
+        |var dotIndex = 0;
+        |var graphviz = d3.select("#graph").graphviz()
+        |    .transition(function () {
+        |        return d3.transition("main")
+        |            .ease(d3.easeLinear)
+        |            .delay(500)
+        |            .duration(1500);
+        |    })
+        |    .logEvents(true)
+        |    .on("initEnd", render);
+        |
+        |function render() {
+        |    var dotLines = dots[dotIndex];
+        |    var dot = dotLines.join('');
+        |    graphviz
+        |        .renderDot(dot)
+        |        .on("end", function () {
+        |            dotIndex = (dotIndex + 1) % dots.length;
+        |            render();
+        |        });
+        |}
+        |
+        |var dots = [
+        |""".stripMargin
+    )
+    orderedData.foreach(round => {
+      os.write.append(dataDir / filename, "[\n'graph G {',\n'label="+round.round+"',\n")
+      os.write.append(dataDir / filename, ("sub" + round.initiatorState.toDOTString).split("\n").mkString("'","',\n'","',\n"))
+      os.write.append(dataDir / filename, ("sub" + round.responderState.toDOTString).split("\n").mkString("'","',\n'","',\n"))
+      os.write.append(dataDir / filename, "'}',\n],\n")
+    })
+    os.write.append(dataDir / filename, "];\n</script>")
 
   }
 }

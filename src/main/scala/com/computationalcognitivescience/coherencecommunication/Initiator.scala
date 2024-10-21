@@ -156,6 +156,6 @@ class Initiator(
     val colorMap = communicativeIntent.map(_._1 -> "darkorange") ++
       priorBeliefs.map(_._1 -> "deeppink") ++
       communicatedBeliefs.map(_._1 -> "aquamarine")
-    super.toDOTString(Some(colorMap))
+    super.toDOTString("Initiator", Some(colorMap))
   }
 }

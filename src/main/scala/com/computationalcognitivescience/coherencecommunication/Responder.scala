@@ -95,6 +95,6 @@ class Responder(
   def toDOTString: String = {
     val colorMap = priorBeliefs.map(_._1 -> "deeppink") ++
       communicatedBeliefs.map(_._1 -> "aquamarine")
-    super.toDOTString(Some(colorMap))
+    super.toDOTString("Responder", Some(colorMap))
   }
 }

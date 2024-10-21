@@ -79,8 +79,8 @@ abstract class Interlocutor(
       .sum
   }
 
-  def toDOTString(colorMap: Option[Map[Node[String], String]]): String = {
-    "graph G {" +
+  def toDOTString(id: String = "G", colorMap: Option[Map[Node[String], String]]): String = {
+    "graph "+id+" {" +
       "\nnode[penwidth=2]" +
       beliefNetwork.vertices.map(vertex => {
         val style = {
@@ -91,13 +91,13 @@ abstract class Interlocutor(
             else "black"
           }
         }
-        "\t"+vertex.label + "["+ style + "]"
+        "\t"+(vertex.label+id) + "[label="+vertex.label+","+ style + "]"
       }).mkString("\n","\n","\n") +
-      "\tCoh[shape=plaintext, label=\"Coh="+math.round(10*beliefNetwork.coh(allBeliefTruthValueAssignments))/10.0+"\"]" +
+      "\tCoh"+id+"[shape=plaintext, label=\"Coh="+math.round(10*beliefNetwork.coh(allBeliefTruthValueAssignments))/10.0+"\"]" +
       beliefNetwork.edges.map(
         edge => {
           val style = if (edge in beliefNetwork.negativeConstraints) "dashed" else "solid"
-          "\t" + edge.left.label + " -- " + edge.right.label + " [label=<<table border=\"0\" cellborder=\"0\"><tr><td bgcolor=\"white\">" + scala.math.round(edge.weight * 100) / 100.0 + "</td></tr></table>>, penwidth=" + scala.math.round(0.5 + edge.weight * 3) + ", style=\"" + style + "\"]"
+          "\t" + (edge.left.label+id) + " -- " + (edge.right.label+id) + " [label=<<table border=\"0\" cellborder=\"0\"><tr><td bgcolor=\"white\">" + scala.math.round(edge.weight * 100) / 100.0 + "</td></tr></table>>, penwidth=" + scala.math.round(0.5 + edge.weight * 3) + ", style=\"" + style + "\"]"
         }).mkString("\n","\n","\n") +
       "}"
   }
