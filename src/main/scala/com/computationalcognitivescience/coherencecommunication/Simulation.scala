@@ -149,11 +149,12 @@ object Simulation {
         |
         |var dotIndex = 0;
         |var graphviz = d3.select("#graph").graphviz()
+        |    .engine("fdp")
         |    .transition(function () {
         |        return d3.transition("main")
-        |            .ease(d3.easeLinear)
-        |            .delay(500)
-        |            .duration(1500);
+        |            //.ease(d3.easeLinear)
+        |            //.duration(1500)
+        |            .delay(1000);
         |    })
         |    .logEvents(true)
         |    .on("initEnd", render);

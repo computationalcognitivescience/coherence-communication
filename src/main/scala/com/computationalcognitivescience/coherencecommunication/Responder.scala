@@ -13,7 +13,7 @@ class Responder(
 ) extends Interlocutor(
       beliefNetwork,
       priorBeliefs,
-  previousState,
+      previousState,
       communicatedBeliefs,
       maxUtteranceLength
     ) {
@@ -95,6 +95,6 @@ class Responder(
   def toDOTString: String = {
     val colorMap = priorBeliefs.map(_._1 -> "deeppink") ++
       communicatedBeliefs.map(_._1 -> "aquamarine")
-    super.toDOTString("Responder", Some(colorMap))
+    super.toDOTString("Responder", Some(colorMap), xOffset = 10)
   }
 }

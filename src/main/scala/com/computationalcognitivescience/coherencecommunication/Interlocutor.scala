@@ -4,6 +4,8 @@ import mathlib.set.SetTheory._
 import mathlib.graph._
 import coherence.{BeliefNetwork, FoundationalBeliefNetwork}
 
+import scala.math.{cos, sin}
+
 abstract class Interlocutor(
     val beliefNetwork: FoundationalBeliefNetwork,
     val priorBeliefs: Map[Node[String], Boolean],
@@ -79,12 +81,21 @@ abstract class Interlocutor(
       .sum
   }
 
-  def toDOTString(id: String = "G", colorMap: Option[Map[Node[String], String]]): String = {
+  def toDOTString(id: String = "G", colorMap: Option[Map[Node[String], String]], xOffset: Int = 0, yOffset: Int = 0): String = {
+    val orderedVertices = beliefNetwork.vertices.toList.sortBy(_.label)
+    val coordinates: Map[Node[String], (Int, Int)] = orderedVertices.map(vertex => {
+        val index: Int = orderedVertices.indexOf(vertex)
+        val y: Int = (sin(360.0 / (orderedVertices.size + 1) * index) * 5).intValue() + yOffset
+        val x: Int = (cos(360.0 / (orderedVertices.size + 1) * index) * 5).intValue() + xOffset
+        vertex -> (x,y)
+      }).toMap
+
     "graph "+id+" {" +
       "\nnode[penwidth=2]" +
       beliefNetwork.vertices.map(vertex => {
         val style = {
           "style=filled" +
+          ",pos=\""+coordinates(vertex)._1+","+coordinates(vertex)._2+"!\"" +
           ",fillcolor=" + (if (allBeliefTruthValueAssignments(vertex)) "darkolivegreen1" else "coral1") +
           ",color=" + {
             if(colorMap.isDefined) colorMap.get.getOrElse(vertex, "black")
@@ -93,7 +104,7 @@ abstract class Interlocutor(
         }
         "\t"+(vertex.label+id) + "[label="+vertex.label+","+ style + "]"
       }).mkString("\n","\n","\n") +
-      "\tCoh"+id+"[shape=plaintext, label=\"Coh="+math.round(10*beliefNetwork.coh(allBeliefTruthValueAssignments))/10.0+"\"]" +
+      "\tCoh"+id+"[shape=plaintext, pos=\""+(2.5+xOffset)+","+(-1+yOffset)+"!\", label=\"Coh="+math.round(10*beliefNetwork.coh(allBeliefTruthValueAssignments))/10.0+"\"]" +
       beliefNetwork.edges.map(
         edge => {
           val style = if (edge in beliefNetwork.negativeConstraints) "dashed" else "solid"

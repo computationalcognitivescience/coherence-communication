@@ -5,35 +5,39 @@ import mathlib.graph.Node
 import scala.annotation.tailrec
 
 case class Conversation(
-    initiator: Initiator,
-    responder: Responder,
+    initialInitiator: Initiator,
+    initialResponder: Responder,
     maxRounds: Int
 ) {
 
   private val preFirstRoundConversationData = ConversationData(
-    initiatorState = initiator,
-    responderState = responder,
+    initiatorState = initialInitiator,
+    responderState = initialResponder,
     round = 0,
     utteranceLengthsInitiator = None,
     repairLengthsResponder = None,
     utterance = None,
     repair = None,
-    similarityAllBeliefs = initiator.structuralSimilarity(responder),
-    similarityIntentionBeliefs =
-      initiator.structuralSimilarity(responder, initiator.communicativeIntent.keySet),
-    similarityCommunicatedBeliefs =
-      initiator.structuralSimilarity(responder, initiator.communicatedBeliefs.keySet)
+    similarityAllBeliefs = initialInitiator.structuralSimilarity(initialResponder),
+    similarityIntentionBeliefs = initialInitiator
+      .structuralSimilarity(initialResponder, initialInitiator.communicativeIntent.keySet),
+    similarityCommunicatedBeliefs = initialInitiator.structuralSimilarity(
+      initialResponder,
+      initialInitiator.communicatedBeliefs.keySet
+    )
   )
-  def simulate(): Seq[ConversationData] = simulateRound()
+  def simulate(): Seq[ConversationData] = simulateRound(initialInitiator, initialResponder)
   @tailrec
   private def simulateRound(
+      initiator: Initiator,
+      responder: Responder,
       repairRequest: Option[Map[Node[String], Boolean]] = None,
       data: Seq[ConversationData] = Seq(preFirstRoundConversationData)
   ): Seq[ConversationData] = {
-    println("[Conversation.run] Round " + (data.length -1))
+    println("[Conversation.run] Round " + (data.length - 1))
     if (data.length > maxRounds) {
       // Stop conversation if it takes more than maxRounds
-      println("[Conversation.run] Max round "+maxRounds+" length reached.")
+      println("[Conversation.run] Max round " + maxRounds + " length reached.")
       data
     } else {
       // Start or continue conversation
@@ -45,12 +49,17 @@ case class Conversation(
             repairRequest.get
           ) // Repair request made, produce repair solution
 
-
-      println("[Conversation.run] initiator says: "+ utterance)
+      println("[Conversation.run] initiator says: " + utterance)
       // Update the interlocutors
       val updatedInitiator = initiator.addCommunicatedBeliefs(utterance)
       val updatedResponder = responder.addCommunicatedBeliefs(utterance)
-      println("[Conversation.run] "+updatedInitiator.inferredBeliefs.keySet.toList.sortBy(_.label).map(b => b.label + "i(" + updatedInitiator.inferredBeliefs(b) + ") r(" + updatedResponder.inferredBeliefs(b)+")").mkString(" "))
+//      println("[Conversation.run] "+updatedInitiator.inferredBeliefs.keySet.toList.sortBy(_.label).map(b => b.label + "i(" + updatedInitiator.inferredBeliefs(b) + ") r(" + updatedResponder.inferredBeliefs(b)+")").mkString(" "))
+      println(
+        "[Conversation.run] Initiator's communicated beliefs: " + updatedInitiator.communicatedBeliefs
+      )
+      println(
+        "[Conversation.run] Responder's communicated beliefs: " + updatedResponder.communicatedBeliefs
+      )
 
       // See if responder has a repair request
       val newRepairRequest = updatedResponder.troubleIdentification(responder)
@@ -78,7 +87,7 @@ case class Conversation(
         updatedConversationData
       } else {
         // Continue conversation
-        simulateRound(newRepairRequest, updatedConversationData)
+        simulateRound(updatedInitiator, updatedResponder, newRepairRequest, updatedConversationData)
       }
     }
   }
