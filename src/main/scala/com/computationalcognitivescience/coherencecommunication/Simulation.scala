@@ -29,7 +29,7 @@ case class Simulation(
       n <- 0 until numberOfSimulations
     ) yield {
       val randomGraph =
-        WUnDiGraph.preferentialAttachment(beliefNetworkSize, 2, 1.0)
+        WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, 2, 1.0)
       val negativeConstraints = scala.util.Random
         .shuffle(randomGraph.edges.toSeq)
         .take((randomGraph.size * beliefNetworkPCRatio).intValue)
@@ -145,6 +145,10 @@ object Simulation {
         |<script src="https://unpkg.com/@hpcc-js/wasm@2.20.0/dist/graphviz.umd.js"></script>
         |<script src="https://unpkg.com/d3-graphviz@5.6.0/build/d3-graphviz.js"></script>
         |<div id="graph" style="text-align: center;"></div>
+        |<div>
+        |    <button onclick="prev()">Previous</button>
+        |    <button onclick="next()">Next</button>
+        |</div>
         |<script>
         |
         |var dotIndex = 0;
@@ -154,7 +158,7 @@ object Simulation {
         |        return d3.transition("main")
         |            //.ease(d3.easeLinear)
         |            //.duration(1500)
-        |            .delay(1000);
+        |            .delay(0);
         |    })
         |    .logEvents(true)
         |    .on("initEnd", render);
@@ -163,20 +167,31 @@ object Simulation {
         |    var dotLines = dots[dotIndex];
         |    var dot = dotLines.join('');
         |    graphviz
-        |        .renderDot(dot)
-        |        .on("end", function () {
-        |            dotIndex = (dotIndex + 1) % dots.length;
-        |            render();
-        |        });
+        |        .renderDot(dot);
+        |}
+        |
+        |function next() {
+        |    dotIndex = (dotIndex + 1) % dots.length;
+        |    render();
+        |}
+        |
+        |function prev() {
+        |    dotIndex = (dotIndex - 1) % dots.length;
+        |    render();
         |}
         |
         |var dots = [
         |""".stripMargin
     )
     orderedData.foreach(round => {
-      os.write.append(dataDir / filename, "[\n'graph G {',\n'label="+round.round+"',\n")
-      os.write.append(dataDir / filename, ("sub" + round.initiatorState.toDOTString).split("\n").mkString("'","',\n'","',\n"))
-      os.write.append(dataDir / filename, ("sub" + round.responderState.toDOTString).split("\n").mkString("'","',\n'","',\n"))
+      val r = round.round
+      val initiator = round.initiatorState
+      val responder = round.responderState
+      val utterance = "Initiator said: " + round.utterance.getOrElse("")
+      val request = "Responder asks: " + round.repair.getOrElse("")
+      os.write.append(dataDir / filename, "[\n'graph G {',\n'label="+r+"',\n")
+      os.write.append(dataDir / filename, ("sub" + initiator.toDOTString(utterance)).split("\n").mkString("'","',\n'","',\n"))
+      os.write.append(dataDir / filename, ("sub" + responder.toDOTString(request)).split("\n").mkString("'","',\n'","',\n"))
       os.write.append(dataDir / filename, "'}',\n],\n")
     })
     os.write.append(dataDir / filename, "];\n</script>")

@@ -31,8 +31,8 @@ class Initiator(
   )
 
   override val inferredBeliefs: Map[Node[String], Boolean] =
-    if (previousState.isDefined) previousState.get.inferredBeliefs
-    else super.inferredBeliefs
+    if (previousState.isDefined) previousState.get.inferBeliefs()
+    else super.inferBeliefs()
 
   /** Creates a copy of this initiator with only the initiator's prior beliefs and the communicated
     * beliefs (including the utterance).
@@ -61,6 +61,7 @@ class Initiator(
     *   will most efficiently communicate the intent
     */
   def produceUtterance(): Map[Node[String], Boolean] = {
+    println("[Initiator.produceUtterance]")
 //    assert(priorBeliefs.keySet /\ communicativeIntent.keySet == Set.empty)
 
     val allPossibleUtterances: Set[Map[Node[String], Boolean]] =
@@ -105,6 +106,7 @@ class Initiator(
       repairRequest.keySet /\ communicatedBeliefs.keySet == Set.empty,
       "Repair request contains previously communicated beliefs, something went wrong."
     )
+    println("[Initiator.repairSolution]")
 
     val isCorrectRequest: Boolean =
       repairRequest.keySet
@@ -128,6 +130,7 @@ class Initiator(
   def endConversation(
       repairRequest: Option[Map[Node[String], Boolean]]
   ): Boolean = {
+    println("[Initiator.endConversation]")
     if (repairRequest.isEmpty) true
     else {
       val simulatedInterlocutor = simulateBelieveInferences(repairRequest.get)
@@ -152,10 +155,13 @@ class Initiator(
     )
 
 
-  def toDOTString: String = {
-    val colorMap = communicativeIntent.map(_._1 -> "darkorange") ++
-      priorBeliefs.map(_._1 -> "deeppink") ++
-      communicatedBeliefs.map(_._1 -> "aquamarine")
-    super.toDOTString("Initiator", Some(colorMap))
+  def toDOTString(msg: String): String = {
+    val colorMap = beliefNetwork.vertices.map(v => v ->
+      (List.empty :::
+        (if (priorBeliefs.contains(v)) List("deeppink") else List()) :::
+        (if (communicativeIntent.contains(v)) List("darkorange") else List()) :::
+        (if (communicatedBeliefs.contains(v)) List("aquamarine") else List()))
+    ).toMap
+    super.toDOTString("Initiator", Some(colorMap), Some(3), msg = msg)
   }
 }

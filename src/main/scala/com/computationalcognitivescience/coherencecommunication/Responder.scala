@@ -48,6 +48,7 @@ class Responder(
     *   The the most efficient set of truth values for which a flip maximizes coherence
     */
   private def repairFormulation(): Map[Node[String], Boolean] = {
+    println("[Responder.repairFormulation]")
     // calculate V_request = V \ V_communicated
     val vRequest: Set[Node[String]] =
       allBeliefTruthValueAssignments.keySet -- communicatedBeliefs.keySet
@@ -92,9 +93,12 @@ class Responder(
       maxUtteranceLength
     )
 
-  def toDOTString: String = {
-    val colorMap = priorBeliefs.map(_._1 -> "deeppink") ++
-      communicatedBeliefs.map(_._1 -> "aquamarine")
-    super.toDOTString("Responder", Some(colorMap), xOffset = 10)
+  def toDOTString(msg: String): String = {
+    val colorMaps = beliefNetwork.vertices.map(v => v ->
+      (List.empty :::
+      (if (priorBeliefs.contains(v)) List("deeppink") else List()) :::
+      (if (communicatedBeliefs.contains(v)) List("aquamarine") else List()))
+    ).toMap
+    super.toDOTString("Responder", Some(colorMaps), Some(3), msg = msg, xOffset = 10)
   }
 }

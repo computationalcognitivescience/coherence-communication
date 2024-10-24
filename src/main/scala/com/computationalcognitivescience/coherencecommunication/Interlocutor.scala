@@ -21,7 +21,8 @@ abstract class Interlocutor(
   ): Int =
     if (condidateInference(a) == previousBeliefs(a)) 1 else 0
 
-  def inferredBeliefs: Map[Node[String], Boolean] = {
+  def inferBeliefs(): Map[Node[String], Boolean] = {
+//    println("[Interlocutor.inferredBeliefs]")
     val allPossibleMaximumCoherenceInferences = beliefNetwork.coherenceSolutions()
     val currentInferredBeliefSet =
       (beliefNetwork.vertices \ priorBeliefs.keySet) \ communicatedBeliefs.keySet
@@ -45,13 +46,15 @@ abstract class Interlocutor(
     }
   }
 
+  val inferredBeliefs: Map[Node[String], Boolean] = inferBeliefs()
+
   def allBeliefTruthValueAssignments: Map[Node[String], Boolean] =
     priorBeliefs ++ communicatedBeliefs ++ inferredBeliefs
 
   val utteranceLengthLimit: Int = {
     if (maxUtteranceLength.isDefined)
       maxUtteranceLength.get
-    else beliefNetwork.vertices.size
+    else beliefNetwork.vertices.size + 1
   }
 
   def addCommunicatedBeliefs(utterance: Map[Node[String], Boolean]): Interlocutor
@@ -70,6 +73,7 @@ abstract class Interlocutor(
       that: Interlocutor,
       subset: Set[Node[String]] = this.beliefNetwork.vertices
   ): Int = {
+//    println("[Interlocutor.structuralSimilarity]")
     subset.toList
       .map(belief =>
         if (
@@ -81,35 +85,57 @@ abstract class Interlocutor(
       .sum
   }
 
-  def toDOTString(id: String = "G", colorMap: Option[Map[Node[String], String]], xOffset: Int = 0, yOffset: Int = 0): String = {
+  def toDOTString(
+      id: String = "G",
+      colorMaps: Option[Map[Node[String], List[String]]],
+      maxColors: Option[Int],
+      msg: String = "",
+      xOffset: Int = 0,
+      yOffset: Int = 0
+  ): String = {
     val orderedVertices = beliefNetwork.vertices.toList.sortBy(_.label)
-    val coordinates: Map[Node[String], (Int, Int)] = orderedVertices.map(vertex => {
+    val coordinates: Map[Node[String], (Double, Double)] = orderedVertices
+      .map(vertex => {
         val index: Int = orderedVertices.indexOf(vertex)
-        val y: Int = (sin(360.0 / (orderedVertices.size + 1) * index) * 5).intValue() + yOffset
-        val x: Int = (cos(360.0 / (orderedVertices.size + 1) * index) * 5).intValue() + xOffset
-        vertex -> (x,y)
-      }).toMap
+        val y: Double  = yOffset + 4 * sin(2 * math.Pi / orderedVertices.size * index)
+        val x: Double  = xOffset + 4 * cos(2 * math.Pi / orderedVertices.size * index)
+        vertex -> (x, y)
+      })
+      .toMap
 
-    "graph "+id+" {" +
+    "graph " + id + " {" +
       "\nnode[penwidth=2]" +
-      beliefNetwork.vertices.map(vertex => {
-        val style = {
-          "style=filled" +
-          ",pos=\""+coordinates(vertex)._1+","+coordinates(vertex)._2+"!\"" +
-          ",fillcolor=" + (if (allBeliefTruthValueAssignments(vertex)) "darkolivegreen1" else "coral1") +
-          ",color=" + {
-            if(colorMap.isDefined) colorMap.get.getOrElse(vertex, "black")
-            else "black"
-          }
-        }
-        "\t"+(vertex.label+id) + "[label="+vertex.label+","+ style + "]"
-      }).mkString("\n","\n","\n") +
-      "\tCoh"+id+"[shape=plaintext, pos=\""+(2.5+xOffset)+","+(-1+yOffset)+"!\", label=\"Coh="+math.round(10*beliefNetwork.coh(allBeliefTruthValueAssignments))/10.0+"\"]" +
-      beliefNetwork.edges.map(
-        edge => {
+      beliefNetwork.vertices
+        .map(vertex => {
+          val position = "pos=\"" + coordinates(vertex)._1 + "," + coordinates(vertex)._2 + "!\""
+          val style = "color=black, style=filled,fillcolor=" +
+            (if (allBeliefTruthValueAssignments(vertex)) "darkolivegreen1" else "coral1")
+          val colors = colorMaps.getOrElse(Map.empty).getOrElse(vertex, List("none"))
+          val colorTable =
+            colors
+              .map(color => s"<td style=\"rounded\" bgcolor=\"$color\">&nbsp;</td>")
+              .mkString("<tr>", "", "") +
+              (for (i <- 0 until (maxColors.getOrElse(1) - colors.size))
+                yield "<td>&nbsp;</td>").mkString("", "", "</tr>")
+          val label = s"<<table border=\"0\" cellborder=\"0\"><tr><td colspan=\"${maxColors
+              .getOrElse(1)}\">${vertex.label}</td></tr>$colorTable</table>>"
+//        val label = vertex.label
+          val mainNode =
+            "" + (vertex.label + id) + "[" + position + ",label=" + label + "," + style + "]\n"
+          mainNode
+        })
+        .mkString("\n", "\n", "\n") +
+      "Coh" + id + "[shape=plaintext, pos=\"" + xOffset + "," + (yOffset + 4.5) + "!\", label=\"Coh=" + math
+        .round(10 * beliefNetwork.coh(allBeliefTruthValueAssignments)) / 10.0 + "\"]\n" +
+      "Msg" + id + "[shape=plaintext, pos=\"" + xOffset + "," + (yOffset + 5) + "!\", label=\"" + msg + "\"]" +
+      beliefNetwork.edges
+        .map(edge => {
           val style = if (edge in beliefNetwork.negativeConstraints) "dashed" else "solid"
-          "\t" + (edge.left.label+id) + " -- " + (edge.right.label+id) + " [label=<<table border=\"0\" cellborder=\"0\"><tr><td bgcolor=\"white\">" + scala.math.round(edge.weight * 100) / 100.0 + "</td></tr></table>>, penwidth=" + scala.math.round(0.5 + edge.weight * 3) + ", style=\"" + style + "\"]"
-        }).mkString("\n","\n","\n") +
+          (edge.left.label + id) + " -- " + (edge.right.label + id) + " [label=<<table border=\"0\" cellborder=\"0\"><tr><td bgcolor=\"white\">" + scala.math
+            .round(edge.weight * 100) / 100.0 + "</td></tr></table>>, penwidth=" + scala.math
+            .round(0.5 + edge.weight * 3) + ", style=\"" + style + "\"]"
+        })
+        .mkString("\n", "\n", "\n") +
       "}"
   }
 }
