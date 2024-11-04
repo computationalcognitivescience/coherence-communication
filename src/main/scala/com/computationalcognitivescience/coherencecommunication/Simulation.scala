@@ -27,10 +27,13 @@ case class Simulation(
   def run(): Map[Parameters, Seq[ConversationData]] = {
     val totalN =
       beliefNetworkSizes.size *
+        beliefNetworkConstraintsRatios.size *
         beliefNetworkPCRatios.size *
         intentionRatios.size *
         initiatorPriorRatios.size *
         responderPriorRatios.size *
+        priorsOverlapRatios.size *
+        priorsAsymmetryRatios.size *
         maxUtteranceLengths.size *
         maxRoundLengths.size *
         numberOfSimulations
@@ -127,12 +130,15 @@ case class Simulation(
       )
       val conversationData = conversation.simulate()
       Parameters(
-        n,
+        id = n,
         beliefNetworkSize,
+        beliefNetworkConstraintsRatio,
         beliefNetworkPCRatio,
         intentionRatio,
         initiatorPriorRatio,
         responderPriorRatio,
+        priorOverlap,
+        priorAsymmetry,
         maxUtteranceLength,
         maxRoundLength
       ) -> conversationData
@@ -153,7 +159,7 @@ object Simulation {
       priorsAsymmetryRatios = List(0, .5, 1),
       maxUtteranceLengths = List(3, 5),
       maxRoundLengths = List(5),
-      numberOfSimulations = 4
+      numberOfSimulations = 2
     ).run()
 
 //    println("\n===")
