@@ -61,7 +61,7 @@ class Initiator(
     *   will most efficiently communicate the intent
     */
   def produceUtterance(): Map[Node[String], Boolean] = {
-    println("[Initiator.produceUtterance]")
+//    println("[Initiator.produceUtterance]")
 //    assert(priorBeliefs.keySet /\ communicativeIntent.keySet == Set.empty)
 
     val allPossibleUtterances: Set[Map[Node[String], Boolean]] =
@@ -106,7 +106,7 @@ class Initiator(
       repairRequest.keySet /\ communicatedBeliefs.keySet == Set.empty,
       "Repair request contains previously communicated beliefs, something went wrong."
     )
-    println("[Initiator.repairSolution]")
+//    println("[Initiator.repairSolution]")
 
     val isCorrectRequest: Boolean =
       repairRequest.keySet
@@ -130,7 +130,7 @@ class Initiator(
   def endConversation(
       repairRequest: Option[Map[Node[String], Boolean]]
   ): Boolean = {
-    println("[Initiator.endConversation]")
+//    println("[Initiator.endConversation]")
     if (repairRequest.isEmpty) true
     else {
       val simulatedInterlocutor = simulateBelieveInferences(repairRequest.get)

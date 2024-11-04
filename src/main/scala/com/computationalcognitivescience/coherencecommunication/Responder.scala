@@ -32,13 +32,13 @@ class Responder(
     // If current coherence is lower than previous coherence, formulate a repair request
     if (currentCoherence < previousCoherence) {
       val repairRequest = repairFormulation()
-      println("[Responder.troubleIdentification] " + currentCoherence + "<" + previousCoherence)
-      println("[Responder.troubleIdentification] r says: " + repairRequest)
+//      println("[Responder.troubleIdentification] " + currentCoherence + "<" + previousCoherence)
+//      println("[Responder.troubleIdentification] r says: " + repairRequest)
       Some(repairRequest)
     } // If current coherence is equal to or higher than previous coherence, all is well :) (do nothing)
     else {
-      println("[Responder.troubleIdentification] " + currentCoherence + ">=" + previousCoherence)
-      println("[Responder.troubleIdentification] r says: Nothing")
+//      println("[Responder.troubleIdentification] " + currentCoherence + ">=" + previousCoherence)
+//      println("[Responder.troubleIdentification] r says: Nothing")
       None
     }
   }
@@ -48,7 +48,7 @@ class Responder(
     *   The the most efficient set of truth values for which a flip maximizes coherence
     */
   private def repairFormulation(): Map[Node[String], Boolean] = {
-    println("[Responder.repairFormulation]")
+//    println("[Responder.repairFormulation]")
     // calculate V_request = V \ V_communicated
     val vRequest: Set[Node[String]] =
       allBeliefTruthValueAssignments.keySet -- communicatedBeliefs.keySet
@@ -74,7 +74,7 @@ class Responder(
 //      .map(repairRequest => repairRequest -> {
 //        val updatedNetwork = beliefNetwork.addFoundationalAssignment(repairRequest)
 //        updatedNetwork.coh(updatedNetwork.coherence()) / (repairRequest.size + 1.0)
-//      }).sortBy(_._2).foreach(println)
+////      }).sortBy(_._2).foreach(println)
     allPossibleRequests
       .argMax(repairRequest => {
         val updatedNetwork = beliefNetwork.addFoundationalAssignment(repairRequest)
