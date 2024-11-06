@@ -4,7 +4,7 @@ import upickle.default.{macroRW, ReadWriter => RW}
 case class Parameters(
     id: Long,
     beliefNetworkSize: Int,
-    beliefNetworkConstraintsRatios: Double,
+    beliefNetworkConstraintsRatio: Double,
     beliefNetworkPCRatio: Double,
     intentionRatios: Double,
     initiatorPriorRatio: Double,

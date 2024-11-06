@@ -1,15 +1,12 @@
 package com.computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.coherence.{
-  BeliefNetwork,
-  FoundationalBeliefNetwork
-}
+import com.computationalcognitivescience.coherencecommunication.coherence.FoundationalBeliefNetwork
 import mathlib.graph.{Node, WUnDiGraph}
 import mathlib.set.SetTheory._
 
 import java.time.{LocalDateTime, ZoneOffset}
+import scala.collection.parallel.CollectionConverters._
 import scala.util._
-import upickle._
 
 case class Simulation(
     beliefNetworkSizes: List[Int],
@@ -25,124 +22,133 @@ case class Simulation(
     numberOfSimulations: Int
 ) {
   def run(): Map[Parameters, Seq[ConversationData]] = {
-    val totalN =
-      beliefNetworkSizes.size *
-        beliefNetworkConstraintsRatios.size *
-        beliefNetworkPCRatios.size *
-        intentionRatios.size *
-        initiatorPriorRatios.size *
-        responderPriorRatios.size *
-        priorsOverlapRatios.size *
-        priorsAsymmetryRatios.size *
-        maxUtteranceLengths.size *
-        maxRoundLengths.size *
-        numberOfSimulations
-    var i = 0
-    (for (
-      beliefNetworkSize             <- beliefNetworkSizes;
-      beliefNetworkConstraintsRatio <- beliefNetworkConstraintsRatios;
-      beliefNetworkPCRatio          <- beliefNetworkPCRatios;
-      intentionRatio                <- intentionRatios;
-      initiatorPriorRatio           <- initiatorPriorRatios;
-      responderPriorRatio           <- responderPriorRatios;
-      priorOverlap                  <- priorsOverlapRatios;
-      priorAsymmetry                <- priorsAsymmetryRatios;
-      maxUtteranceLength            <- maxUtteranceLengths;
-      maxRoundLength                <- maxRoundLengths;
-      n                             <- 0 until numberOfSimulations
-    ) yield {
-      println(s"$i/$totalN")
-      i = i + 1
-      val randomGraph =
-//        WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, 2, 1.0)
-        WUnDiGraph.uniform(
-          n = beliefNetworkSize,
-          numberEdges = (beliefNetworkSize * beliefNetworkConstraintsRatio).intValue
+    val allPar =
+      for (
+        beliefNetworkSize             <- beliefNetworkSizes;
+        beliefNetworkConstraintsRatio <- beliefNetworkConstraintsRatios;
+        beliefNetworkPCRatio          <- beliefNetworkPCRatios;
+        intentionRatio                <- intentionRatios;
+        initiatorPriorRatio           <- initiatorPriorRatios;
+        responderPriorRatio           <- responderPriorRatios;
+        priorOverlap                  <- priorsOverlapRatios;
+        priorAsymmetry                <- priorsAsymmetryRatios;
+        maxUtteranceLength            <- maxUtteranceLengths;
+        maxRoundLength                <- maxRoundLengths
+      ) yield {
+        (
+          beliefNetworkSize,
+          beliefNetworkConstraintsRatio,
+          beliefNetworkPCRatio,
+          intentionRatio,
+          initiatorPriorRatio,
+          responderPriorRatio,
+          priorOverlap,
+          priorAsymmetry,
+          maxUtteranceLength,
+          maxRoundLength
         )
-      val negativeConstraints = scala.util.Random
-        .shuffle(randomGraph.edges.toSeq)
-        .take((randomGraph.size * beliefNetworkPCRatio).intValue)
-        .toSet
+      }
 
-      val initiatorPrior: Map[Node[String], Boolean] = Random
-        .shuffle(randomGraph.vertices.toSeq)
-        .take((randomGraph.vertices.size * initiatorPriorRatio).intValue)
-        .map(belief => (belief, Random.nextBoolean()))
-        .toMap
-      val initiatorCommunicativeIntent = Random
-        .shuffle((randomGraph.vertices \ initiatorPrior.keySet).toSeq)
-        .take((randomGraph.vertices.size * intentionRatio).intValue)
-        .map(belief => (belief, Random.nextBoolean()))
-        .toMap
-
-      val initiatorBeliefNetwork = new FoundationalBeliefNetwork(
-        randomGraph,
-        negativeConstraints,
-        initiatorPrior.keySet \/ initiatorCommunicativeIntent.keySet,
-        initiatorPrior ++ initiatorCommunicativeIntent
+    val allParameters = (allPar.indices zip allPar).map(tmp => Parameters(
+        tmp._1.intValue,
+      tmp._2._1,
+      tmp._2._2,
+      tmp._2._3,
+      tmp._2._4,
+      tmp._2._5,
+      tmp._2._6,
+      tmp._2._7,
+      tmp._2._8,
+      tmp._2._9,
+      tmp._2._10,
       )
+    ).sortBy(_.id)
 
-      val initiator = new Initiator(
-        initiatorBeliefNetwork,
-        initiatorPrior,
-        initiatorCommunicativeIntent
-      )
+    // Parallelize computations
+    allParameters.par
+      .map(parameters => {
+        val randomGraph =
+          //        WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, 2, 1.0)
+          WUnDiGraph.uniform(
+            n = parameters.beliefNetworkSize,
+            numberEdges =
+              (parameters.beliefNetworkSize * parameters.beliefNetworkConstraintsRatio).intValue
+          )
+        val negativeConstraints = scala.util.Random
+          .shuffle(randomGraph.edges.toSeq)
+          .take((randomGraph.size * parameters.beliefNetworkPCRatio).intValue)
+          .toSet
 
-      val initiatorPriorVertices = initiatorPrior.keySet.toSeq
-      val responderOverlappingPriorVertices = Random
-        .shuffle(initiatorPriorVertices)
-        .take((initiatorPriorVertices.size * priorOverlap).intValue)
-
-      val responderOverlappingSymmetricPrior: Map[Node[String], Boolean] = Random
-        .shuffle(responderOverlappingPriorVertices)
-        .take((responderOverlappingPriorVertices.size * priorAsymmetry).intValue)
-        .map(belief => (belief, initiatorPrior(belief)))
-        .toMap
-      val responderOverlappingAssymetricPrior: Map[Node[String], Boolean] =
-        (initiatorPriorVertices.toSet \ responderOverlappingSymmetricPrior.keySet)
-          .map(belief => (belief, !initiatorPrior(belief)))
+        val initiatorPrior: Map[Node[String], Boolean] = Random
+          .shuffle(randomGraph.vertices.toSeq)
+          .take((randomGraph.vertices.size * parameters.initiatorPriorRatio).intValue)
+          .map(belief => (belief, Random.nextBoolean()))
+          .toMap
+        val initiatorCommunicativeIntent = Random
+          .shuffle((randomGraph.vertices \ initiatorPrior.keySet).toSeq)
+          .take((randomGraph.vertices.size * parameters.initiatorPriorRatio).intValue)
+          .map(belief => (belief, Random.nextBoolean()))
           .toMap
 
-      val responderNonOverlappingPrior: Map[Node[String], Boolean] = Random
-        .shuffle(randomGraph.vertices.toSeq)
-        .take((randomGraph.vertices.size * responderPriorRatio).intValue)
-        .map(belief => (belief, Random.nextBoolean()))
-        .toMap
-      val responderPrior: Map[Node[String], Boolean] =
-        responderOverlappingSymmetricPrior ++ responderOverlappingAssymetricPrior ++ responderNonOverlappingPrior
+        val initiatorBeliefNetwork = new FoundationalBeliefNetwork(
+          randomGraph,
+          negativeConstraints,
+          initiatorPrior.keySet \/ initiatorCommunicativeIntent.keySet,
+          initiatorPrior ++ initiatorCommunicativeIntent
+        )
 
-      val responderBeliefNetwork = new FoundationalBeliefNetwork(
-        randomGraph,
-        negativeConstraints,
-        responderPrior.keySet,
-        responderPrior
-      )
+        val initiator = new Initiator(
+          initiatorBeliefNetwork,
+          initiatorPrior,
+          initiatorCommunicativeIntent
+        )
 
-      val responder = new Responder(
-        responderBeliefNetwork,
-        responderPrior
-      )
+        val initiatorPriorVertices = initiatorPrior.keySet.toSeq
+        val responderOverlappingPriorVertices = Random
+          .shuffle(initiatorPriorVertices)
+          .take((initiatorPriorVertices.size * parameters.priorsOverlapRatio).intValue)
 
-      val conversation = Conversation(
-        initiator,
-        responder,
-        maxRoundLength
-      )
-      val conversationData = conversation.simulate()
-      Parameters(
-        id = n,
-        beliefNetworkSize,
-        beliefNetworkConstraintsRatio,
-        beliefNetworkPCRatio,
-        intentionRatio,
-        initiatorPriorRatio,
-        responderPriorRatio,
-        priorOverlap,
-        priorAsymmetry,
-        maxUtteranceLength,
-        maxRoundLength
-      ) -> conversationData
-    }).toMap
+        val responderOverlappingSymmetricPrior: Map[Node[String], Boolean] = Random
+          .shuffle(responderOverlappingPriorVertices)
+          .take((responderOverlappingPriorVertices.size * parameters.priorsAsymmetryRatio).intValue)
+          .map(belief => (belief, initiatorPrior(belief)))
+          .toMap
+        val responderOverlappingAssymetricPrior: Map[Node[String], Boolean] =
+          (initiatorPriorVertices.toSet \ responderOverlappingSymmetricPrior.keySet)
+            .map(belief => (belief, !initiatorPrior(belief)))
+            .toMap
+
+        val responderNonOverlappingPrior: Map[Node[String], Boolean] = Random
+          .shuffle(randomGraph.vertices.toSeq)
+          .take((randomGraph.vertices.size * parameters.responderPriorRatio).intValue)
+          .map(belief => (belief, Random.nextBoolean()))
+          .toMap
+        val responderPrior: Map[Node[String], Boolean] =
+          responderOverlappingSymmetricPrior ++ responderOverlappingAssymetricPrior ++ responderNonOverlappingPrior
+
+        val responderBeliefNetwork = new FoundationalBeliefNetwork(
+          randomGraph,
+          negativeConstraints,
+          responderPrior.keySet,
+          responderPrior
+        )
+
+        val responder = new Responder(
+          responderBeliefNetwork,
+          responderPrior
+        )
+
+        val conversation = Conversation(
+          initiator,
+          responder,
+          parameters.maxRoundLength
+        )
+        val conversationData = conversation.simulate()
+        println(s"${parameters.id}/${allParameters.size}")
+        parameters -> conversationData
+      })
+      .toList
+      .toMap
   }
 }
 
@@ -150,7 +156,7 @@ object Simulation {
   def main(args: Array[String]): Unit = {
     val data = Simulation(
       beliefNetworkSizes = List(10),
-      beliefNetworkConstraintsRatios = List(1.0/3.0, 2.0/3.0, 1.0),
+      beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
       beliefNetworkPCRatios = List(.25, .5, .75, 1.0),
       intentionRatios = List(0.2, 0.4),
       initiatorPriorRatios = List(0, .2, .4),

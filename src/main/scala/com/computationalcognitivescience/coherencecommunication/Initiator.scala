@@ -70,7 +70,7 @@ class Initiator(
         utteranceLengthLimit
       )
         // Map each set of beliefs to its current truth-value mapping
-        .filterNot(_.isEmpty) // Disallow empty utterance?
+        .filterNot(_.isEmpty) // Disallow empty utterance? TODO Check with computational-level theory.
         .map((utterance: Set[Node[String]]) =>
           utterance // Take the set of beliefs
             .map((node: Node[String]) => (node, inferredBeliefs(node)))
