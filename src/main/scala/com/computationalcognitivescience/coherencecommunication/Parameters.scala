@@ -6,7 +6,7 @@ case class Parameters(
     beliefNetworkSize: Int,
     beliefNetworkConstraintsRatio: Double,
     beliefNetworkPCRatio: Double,
-    intentionRatios: Double,
+    initiatorCommunicativeIntentRatio: Double,
     initiatorPriorRatio: Double,
     responderPriorRatio: Double,
     priorsOverlapRatio: Double,

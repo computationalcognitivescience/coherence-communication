@@ -49,6 +49,7 @@ case class Simulation(
         )
       }
 
+    // Hack to set id without global var
     val allParameters = (allPar.indices zip allPar).map(tmp => Parameters(
         tmp._1.intValue,
       tmp._2._1,
@@ -65,7 +66,7 @@ case class Simulation(
     ).sortBy(_.id)
 
     // Parallelize computations
-    allParameters.par
+    allParameters
       .map(parameters => {
         val randomGraph =
           //        WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, 2, 1.0)
@@ -86,7 +87,7 @@ case class Simulation(
           .toMap
         val initiatorCommunicativeIntent = Random
           .shuffle((randomGraph.vertices \ initiatorPrior.keySet).toSeq)
-          .take((randomGraph.vertices.size * parameters.initiatorPriorRatio).intValue)
+          .take((randomGraph.vertices.size * parameters.initiatorCommunicativeIntentRatio).intValue)
           .map(belief => (belief, Random.nextBoolean()))
           .toMap
 

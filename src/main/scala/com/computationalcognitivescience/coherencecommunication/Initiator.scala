@@ -69,13 +69,13 @@ class Initiator(
         beliefNetwork.vertices \ communicatedBeliefs.keySet,
         utteranceLengthLimit
       )
-        // Map each set of beliefs to its current truth-value mapping
-        .filterNot(_.isEmpty) // Disallow empty utterance? TODO Check with computational-level theory.
-        .map((utterance: Set[Node[String]]) =>
-          utterance // Take the set of beliefs
-            .map((node: Node[String]) => (node, inferredBeliefs(node)))
-            .toMap
-        )
+      // Map each set of beliefs to its current truth-value mapping
+      .filterNot(_.isEmpty) // Disallow empty utterance? TODO Check with computational-level theory.
+      .map((utterance: Set[Node[String]]) =>
+        utterance // Take the set of beliefs
+          .map((node: Node[String]) => (node, inferredBeliefs(node)))
+          .toMap
+      )
 
     // Get utterance which will make the interpreter's
     // beliefs most similar to our communicative intent
