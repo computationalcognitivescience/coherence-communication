@@ -4,11 +4,11 @@ import coherence._
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
-class Responder(
-    beliefNetwork: FoundationalBeliefNetwork,
-    priorBeliefs: Map[Node[String], Boolean],
-    previousState: Option[Interlocutor] = None,
-    communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
+case class Responder(
+    override val beliefNetwork: FoundationalBeliefNetwork,
+    override val priorBeliefs: Map[Node[String], Boolean],
+    override val previousState: Option[Interlocutor] = None,
+    override val communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
     maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor(
       beliefNetwork,
@@ -18,7 +18,6 @@ class Responder(
       maxUtteranceLength
     ) {
 
-
   /** Based on (van Arkel, 2021, p. 22)
     * @return
     *   A repair request (truth-value assignment over nodes) if the new coherence is lower than the
@@ -27,8 +26,10 @@ class Responder(
   def troubleIdentification(
       previousState: Interlocutor
   ): Option[Map[Node[String], Boolean]] = {
-    val previousCoherence = previousState.beliefNetwork.coh(previousState.allBeliefTruthValueAssignments)
-    val currentCoherence = beliefNetwork.coh(allBeliefTruthValueAssignments) // Calculate current coherence
+    val previousCoherence =
+      previousState.beliefNetwork.coh(previousState.allBeliefTruthValueAssignments)
+    val currentCoherence =
+      beliefNetwork.coh(allBeliefTruthValueAssignments) // Calculate current coherence
     // If current coherence is lower than previous coherence, formulate a repair request
     if (currentCoherence < previousCoherence) {
       val repairRequest = repairFormulation()
@@ -70,11 +71,7 @@ class Responder(
         )
     }
     // Get the best repair request
-//    allPossibleRequests.toList
-//      .map(repairRequest => repairRequest -> {
-//        val updatedNetwork = beliefNetwork.addFoundationalAssignment(repairRequest)
-//        updatedNetwork.coh(updatedNetwork.coherence()) / (repairRequest.size + 1.0)
-////      }).sortBy(_._2).foreach(println)
+    // TODO Investigate why allPossibleRequests sometimes is emtpy. See also Christians report.
     allPossibleRequests
       .argMax(repairRequest => {
         val updatedNetwork = beliefNetwork.addFoundationalAssignment(repairRequest)
@@ -85,7 +82,7 @@ class Responder(
   }
 
   override def addCommunicatedBeliefs(utterance: Map[Node[String], Boolean]): Responder =
-    new Responder(
+    Responder(
       beliefNetwork.addFoundationalAssignment(utterance),
       priorBeliefs,
       Some(this),
@@ -94,11 +91,14 @@ class Responder(
     )
 
   def toDOTString(msg: String): String = {
-    val colorMaps = beliefNetwork.vertices.map(v => v ->
-      (List.empty :::
-      (if (priorBeliefs.contains(v)) List("deeppink") else List()) :::
-      (if (communicatedBeliefs.contains(v)) List("aquamarine") else List()))
-    ).toMap
+    val colorMaps = beliefNetwork.vertices
+      .map(v =>
+        v ->
+          (List.empty :::
+            (if (priorBeliefs.contains(v)) List("deeppink") else List()) :::
+            (if (communicatedBeliefs.contains(v)) List("aquamarine") else List()))
+      )
+      .toMap
     super.toDOTString("Responder", Some(colorMaps), Some(3), msg = msg, xOffset = 10)
   }
 }

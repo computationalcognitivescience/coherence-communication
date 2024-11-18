@@ -17,6 +17,12 @@ case class ConversationData(
 ) {
   def toPicklableConversationData: PicklableConversationData = PicklableConversationData(
     initiatorState.beliefNetwork.vertices.map(_.label),
+    initiatorState.beliefNetwork.positiveConstraints.map(e =>
+      PicklableWeightedEdge(e.left.label, e.right.label, e.weight)
+    ),
+    initiatorState.beliefNetwork.negativeConstraints.map(e =>
+      PicklableWeightedEdge(e.left.label, e.right.label, e.weight)
+    ),
     initiatorState.priorBeliefs.map(kv => kv._1.label -> kv._2),
     initiatorState.communicativeIntent.map(kv => kv._1.label -> kv._2),
     initiatorState.inferredBeliefs.map(kv => kv._1.label -> kv._2),
@@ -24,23 +30,34 @@ case class ConversationData(
     responderState.inferredBeliefs.map(kv => kv._1.label -> kv._2),
     round,
     utterance match {
-        case Some(utt) => Some(utt.map(kv => kv._1.label -> kv._2))
-        case None => None
+      case Some(utt) => Some(utt.map(kv => kv._1.label -> kv._2))
+      case None      => None
     },
     repair match {
       case Some(rep) => Some(rep.map(kv => kv._1.label -> kv._2))
-      case None => None
+      case None      => None
     },
     utteranceLengthsInitiator,
     repairLengthsResponder,
-    similarityAllBeliefs,
-    similarityIntentionBeliefs,
-    similarityCommunicatedBeliefs
+//    similarityAllBeliefs,
+//    similarityIntentionBeliefs,
+//    similarityCommunicatedBeliefs
   )
+}
+
+case class PicklableWeightedEdge(
+    left: String,
+    right: String,
+    weight: Double
+)
+object PicklableWeightedEdge {
+  implicit val rw: RW[PicklableWeightedEdge] = macroRW
 }
 
 case class PicklableConversationData(
     beliefs: Set[String],
+    positiveConstraints: Set[PicklableWeightedEdge],
+    negativeConstraints: Set[PicklableWeightedEdge],
     initiatorPrior: Map[String, Boolean],
     initiatorIntent: Map[String, Boolean],
     initiatorInferred: Map[String, Boolean],
@@ -51,9 +68,9 @@ case class PicklableConversationData(
     repair: Option[Map[String, Boolean]],
     utteranceLengthsInitiator: Option[Int],
     repairLengthsResponder: Option[Int],
-    similarityAllBeliefs: Int,
-    similarityIntentionBeliefs: Int,
-    similarityCommunicatedBeliefs: Int
+//    similarityAllBeliefs: Int,
+//    similarityIntentionBeliefs: Int,
+//    similarityCommunicatedBeliefs: Int
 )
 
 object PicklableConversationData {

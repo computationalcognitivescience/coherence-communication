@@ -10,12 +10,12 @@ import mathlib.graph._
 //NOTES:
 // PRIOR BELIEFS AND COMMUNICATIVE INTENT CAN OVERLAP
 // WE ALLOW FOR EMPTY UTTERANCES BY DIVIDING BY UTTERANCE SIZE + 1
-class Initiator(
-    beliefNetwork: FoundationalBeliefNetwork,
-    priorBeliefs: Map[Node[String], Boolean],
-    val communicativeIntent: Map[Node[String], Boolean],
-    previousState: Option[Interlocutor] = None,
-    communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
+case class Initiator(
+    override val beliefNetwork: FoundationalBeliefNetwork,
+    override val priorBeliefs: Map[Node[String], Boolean],
+    communicativeIntent: Map[Node[String], Boolean],
+    override val previousState: Option[Interlocutor] = None,
+    override val communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
     maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor(
       beliefNetwork,
@@ -31,18 +31,21 @@ class Initiator(
   )
 
   override val inferredBeliefs: Map[Node[String], Boolean] =
-    if (previousState.isDefined) previousState.get.inferBeliefs()
-    else super.inferBeliefs()
+    if (previousState.isDefined)
+      previousState.get.inferredBeliefs // If not first time initiator, keep old beliefs.
+    else super.inferBeliefs()           // If first time initiator, infer beliefs from scratch.
 
   /** Creates a copy of this initiator with only the initiator's prior beliefs and the communicated
     * beliefs (including the utterance).
-    * @param utterance A truth-value assignment for the uttered beliefs.
-    * @return A simulated responder from the initiator's perspective.
+    * @param utterance
+    *   A truth-value assignment for the uttered beliefs.
+    * @return
+    *   A simulated responder from the initiator's perspective.
     */
   private def simulateBelieveInferences(
       utterance: Map[Node[String], Boolean]
   ): Initiator =
-    new Initiator(
+    Initiator(
       beliefNetwork.addFoundationalAssignment(utterance),
       priorBeliefs,
       Map.empty,
@@ -69,13 +72,15 @@ class Initiator(
         beliefNetwork.vertices \ communicatedBeliefs.keySet,
         utteranceLengthLimit
       )
-      // Map each set of beliefs to its current truth-value mapping
-      .filterNot(_.isEmpty) // Disallow empty utterance? TODO Check with computational-level theory.
-      .map((utterance: Set[Node[String]]) =>
-        utterance // Take the set of beliefs
-          .map((node: Node[String]) => (node, inferredBeliefs(node)))
-          .toMap
-      )
+        // Map each set of beliefs to its current truth-value mapping
+        .filterNot(
+          _.isEmpty
+        ) // Disallow empty utterance? TODO Check with computational-level theory.
+        .map((utterance: Set[Node[String]]) =>
+          utterance // Take the set of beliefs
+            .map((node: Node[String]) => (node, inferredBeliefs(node)))
+            .toMap
+        )
 
     // Get utterance which will make the interpreter's
     // beliefs most similar to our communicative intent
@@ -145,7 +150,7 @@ class Initiator(
   }
 
   override def addCommunicatedBeliefs(utterance: Map[Node[String], Boolean]): Initiator =
-    new Initiator(
+    Initiator(
       beliefNetwork.addFoundationalAssignment(utterance),
       priorBeliefs,
       communicativeIntent,
@@ -154,14 +159,16 @@ class Initiator(
       maxUtteranceLength
     )
 
-
   def toDOTString(msg: String): String = {
-    val colorMap = beliefNetwork.vertices.map(v => v ->
-      (List.empty :::
-        (if (priorBeliefs.contains(v)) List("deeppink") else List()) :::
-        (if (communicativeIntent.contains(v)) List("darkorange") else List()) :::
-        (if (communicatedBeliefs.contains(v)) List("aquamarine") else List()))
-    ).toMap
+    val colorMap = beliefNetwork.vertices
+      .map(v =>
+        v ->
+          (List.empty :::
+            (if (priorBeliefs.contains(v)) List("deeppink") else List()) :::
+            (if (communicativeIntent.contains(v)) List("darkorange") else List()) :::
+            (if (communicatedBeliefs.contains(v)) List("aquamarine") else List()))
+      )
+      .toMap
     super.toDOTString("Initiator", Some(colorMap), Some(3), msg = msg)
   }
 }
