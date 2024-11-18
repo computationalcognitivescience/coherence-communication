@@ -7,14 +7,16 @@ import mathlib.set.SetTheory._
 case class Responder(
     override val beliefNetwork: FoundationalBeliefNetwork,
     override val priorBeliefs: Map[Node[String], Boolean],
-    override val previousState: Option[Interlocutor] = None,
+    override val previousState: Option[Responder] = None,
     override val communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
+    presetInferredBeliefs: Option[Map[Node[String], Boolean]] = None,
     maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor(
       beliefNetwork,
       priorBeliefs,
       previousState,
       communicatedBeliefs,
+      presetInferredBeliefs,
       maxUtteranceLength
     ) {
 
@@ -87,6 +89,7 @@ case class Responder(
       priorBeliefs,
       Some(this),
       communicatedBeliefs ++ utterance,
+      Some(inferredBeliefs),
       maxUtteranceLength
     )
 

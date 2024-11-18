@@ -11,8 +11,11 @@ abstract class Interlocutor(
     val priorBeliefs: Map[Node[String], Boolean],
     val previousState: Option[Interlocutor] = None,
     val communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
+    presetInferredBeliefs: Option[Map[Node[String], Boolean]],
     maxUtteranceLength: Option[Int] = None
 ) {
+
+  val inferredBeliefs: Map[Node[String], Boolean] = presetInferredBeliefs.getOrElse(inferBeliefs())
 
   protected def compare(
       a: Node[String],
@@ -46,7 +49,6 @@ abstract class Interlocutor(
     }
   }
 
-  val inferredBeliefs: Map[Node[String], Boolean] = inferBeliefs()
 
   def allBeliefTruthValueAssignments: Map[Node[String], Boolean] =
     priorBeliefs ++ communicatedBeliefs ++ inferredBeliefs

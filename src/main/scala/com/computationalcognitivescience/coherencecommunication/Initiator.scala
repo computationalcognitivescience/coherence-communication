@@ -14,14 +14,16 @@ case class Initiator(
     override val beliefNetwork: FoundationalBeliefNetwork,
     override val priorBeliefs: Map[Node[String], Boolean],
     communicativeIntent: Map[Node[String], Boolean],
-    override val previousState: Option[Interlocutor] = None,
+    override val previousState: Option[Initiator] = None,
     override val communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
+    presetInferredBeliefs: Option[Map[Node[String], Boolean]] = None,
     maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor(
       beliefNetwork,
       priorBeliefs ++ communicativeIntent,
       previousState,
       communicatedBeliefs,
+      presetInferredBeliefs,
       maxUtteranceLength
     ) {
 
@@ -30,10 +32,10 @@ case class Initiator(
     "Communicative intent contains beliefs not present in the belief network."
   )
 
-  override val inferredBeliefs: Map[Node[String], Boolean] =
-    if (previousState.isDefined)
-      previousState.get.inferredBeliefs // If not first time initiator, keep old beliefs.
-    else super.inferBeliefs()           // If first time initiator, infer beliefs from scratch.
+//  override val inferredBeliefs: Map[Node[String], Boolean] =
+//    if (previousState.isDefined)
+//      previousState.get.inferredBeliefs // If not first time initiator, keep old beliefs.
+//    else super.inferBeliefs()           // If first time initiator, infer beliefs from scratch.
 
   /** Creates a copy of this initiator with only the initiator's prior beliefs and the communicated
     * beliefs (including the utterance).
@@ -51,6 +53,7 @@ case class Initiator(
       Map.empty,
       None,
       communicatedBeliefs ++ utterance,
+      if (previousState.isDefined) Some(previousState.get.inferredBeliefs) else None,
       maxUtteranceLength
     )
 
@@ -156,6 +159,7 @@ case class Initiator(
       communicativeIntent,
       Some(this),
       communicatedBeliefs ++ utterance,
+      if(previousState.isDefined) Some(previousState.get.inferredBeliefs) else None,
       maxUtteranceLength
     )
 
