@@ -1,6 +1,7 @@
 package com.computationalcognitivescience.coherencecommunication
 
 import mathlib.graph.{Node, WUnDiEdge}
+import mathlib.set.SetTheory._
 import upickle.default.{macroRW, ReadWriter => RW}
 
 case class ConversationData(
@@ -13,6 +14,42 @@ case class ConversationData(
     utteranceLengthsInitiator: Option[Int],
     repairLengthsResponder: Option[Int],
 ) {
+
+  def asymmetryAllBeliefs: Double =
+    initiatorState.structuralSimilarity(responderState) / initiatorState.beliefNetwork.vertices.size.doubleValue
+
+  def asymmetryIntentionBeliefs: Double = {
+    val communicativeIntentBeliefs = initiatorState.communicativeIntent.keySet
+    initiatorState.structuralSimilarity(responderState, communicativeIntentBeliefs) / communicativeIntentBeliefs.size.doubleValue
+  }
+
+  def priorOverlap: Double = {
+    (initiatorState.priorBeliefs.keySet /\ responderState.priorBeliefs.keySet).size
+  }
+
+  def priorAsymmetry: Double = {
+    val overlappingPriors =
+      initiatorState.priorBeliefs.keySet /\ responderState.priorBeliefs.keySet
+    initiatorState.structuralSimilarity(responderState, overlappingPriors) / overlappingPriors.size.doubleValue
+  }
+
+  /*
+  id: Int
+  networkSize: Int
+  networkConstraints: Int
+  networkPCRatio: Double
+  initiatorIntentSize: Int
+  initiatiorPriorSize: Int
+  responderPriorSize: Int
+  round: Int
+  asymmetryAllBeliefs: Double
+  asymmetryIntentionBeliefs: Double
+  priorOverlap: Double
+  priorAsymmtery: Double
+
+   */
+
+
   def toPicklableConversationData: PicklableConversationData = PicklableConversationData(
     initiatorState.beliefNetwork.vertices.map(_.label),
     initiatorState.beliefNetwork.positiveConstraints.map(e =>

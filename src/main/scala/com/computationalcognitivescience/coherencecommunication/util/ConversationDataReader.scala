@@ -76,7 +76,7 @@ case class ConversationDataReader(file: Path) {
 
 object ConversationDataReader {
   def main(args: Array[String]): Unit = {
-    val cdr = ConversationDataReader(os.pwd / "output" / "out1732536275.json")
+    val cdr = ConversationDataReader(os.pwd / "output" / "out1732536588.json")
 
     val data = cdr.readAll()
 

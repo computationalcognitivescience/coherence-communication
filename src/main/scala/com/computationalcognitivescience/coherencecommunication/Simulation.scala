@@ -70,12 +70,12 @@ case class Simulation(
       .par
       .map(parameters => {
         val randomGraph =
-          //        WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, 2, 1.0)
-          WUnDiGraph.uniform(
-            n = parameters.beliefNetworkSize,
-            numberEdges =
-              (parameters.beliefNetworkSize * parameters.beliefNetworkConstraintsRatio).intValue
-          )
+          WUnDiGraph.preferentialAttachment(parameters.beliefNetworkSize + 2, 2, 1.0)
+//          WUnDiGraph.uniform(
+//            n = parameters.beliefNetworkSize,
+//            numberEdges =
+//              (parameters.beliefNetworkSize * parameters.beliefNetworkConstraintsRatio).intValue
+//          )
         val negativeConstraints = scala.util.Random
           .shuffle(randomGraph.edges.toSeq)
           .take((randomGraph.size * parameters.beliefNetworkPCRatio).intValue)
@@ -167,7 +167,7 @@ object Simulation {
       priorsAsymmetryRatios = List(0, .5, 1),
       maxUtteranceLengths = List(3, 5),
       maxRoundLengths = List(5),
-      numberOfSimulations = 2
+      numberOfSimulations = 10
     ).run()
 
 //    println("\n===")
