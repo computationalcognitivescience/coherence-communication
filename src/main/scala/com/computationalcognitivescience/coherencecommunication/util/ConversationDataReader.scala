@@ -1,37 +1,82 @@
 package com.computationalcognitivescience.coherencecommunication.util
 
 import com.computationalcognitivescience.coherencecommunication.coherence.FoundationalBeliefNetwork
-import com.computationalcognitivescience.coherencecommunication.{
-  ConversationData,
-  Initiator,
-  Parameters,
-  PicklableConversationData
-}
-import mathlib.graph.{Node, WUnDiEdge, WUnDiGraph}
+import com.computationalcognitivescience.coherencecommunication.{ConversationData, Initiator, Parameters, PicklableConversationData, Responder}
+import mathlib.graph.{Node, WUnDiGraph}
 import mathlib.set.SetTheory._
 import os.Path
 
 case class ConversationDataReader(file: Path) {
 
-  def convertPickledData(
-      pd: (Parameters, Seq[PicklableConversationData])
-  ): (Parameters, Seq[ConversationData]) = {
-    ???
-  }
+  private def unpickleTruthValueAssignment(
+    pickledTruthValueAssignment: Map[String, Boolean]
+  ): Map[Node[String], Boolean] =
+    pickledTruthValueAssignment.map(b => Node(b._1) -> b._2)
 
+  def convertPickledData(
+      parameters: Parameters,
+      pcds: Seq[PicklableConversationData]
+  ): (Parameters, Seq[ConversationData]) = {
+    val cds = pcds.map(pcd => {
+      ConversationData(
+        initiatorState = Initiator(
+          beliefNetwork = new FoundationalBeliefNetwork(
+            graph = new WUnDiGraph[String](
+              pcd.beliefs.map(Node(_)),
+              pcd.positiveConstraints.map(_.toWUnDiEdge) \/
+              pcd.negativeConstraints.map(_.toWUnDiEdge)
+            ),
+            negativeConstraints   = pcd.negativeConstraints.map(_.toWUnDiEdge),
+            foundationalBeliefs = pcd.initiatorPrior.keySet.map(Node(_)) \/ pcd.communicatedBeliefs.keySet.map(Node(_)) \/ pcd.initiatorIntent.keySet.map(Node(_)),
+            foundationalAssignment = unpickleTruthValueAssignment(pcd.initiatorPrior) ++ unpickleTruthValueAssignment(pcd.communicatedBeliefs) ++ unpickleTruthValueAssignment(pcd.initiatorIntent)
+          ),
+          priorBeliefs = unpickleTruthValueAssignment(pcd.initiatorPrior),
+          communicativeIntent = unpickleTruthValueAssignment(pcd.initiatorIntent),
+          previousState = None,
+          communicatedBeliefs = unpickleTruthValueAssignment(pcd.communicatedBeliefs),
+          presetInferredBeliefs = Some(unpickleTruthValueAssignment(pcd.initiatorInferred)),
+          maxUtteranceLength = Some(parameters.maxUtteranceLength)
+      ),
+      responderState = Responder(
+        beliefNetwork = new FoundationalBeliefNetwork(
+          graph = new WUnDiGraph[String](
+            pcd.beliefs.map(Node(_)),
+            pcd.positiveConstraints.map(_.toWUnDiEdge) \/
+              pcd.negativeConstraints.map(_.toWUnDiEdge)
+          ),
+          negativeConstraints = pcd.negativeConstraints.map(_.toWUnDiEdge),
+          foundationalBeliefs = pcd.responderPrior.keySet.map(Node(_)) \/ pcd.communicatedBeliefs.keySet.map(Node(_)),
+          foundationalAssignment = unpickleTruthValueAssignment(pcd.responderPrior) ++ unpickleTruthValueAssignment(pcd.communicatedBeliefs)
+        ),
+        priorBeliefs = pcd.responderPrior.map(b => Node(b._1) -> b._2),
+        previousState = None,
+        communicatedBeliefs = pcd.communicatedBeliefs.map(b => Node(b._1) -> b._2),
+        presetInferredBeliefs = Some(unpickleTruthValueAssignment(pcd.responderInferred)),
+        maxUtteranceLength = Some(parameters.maxUtteranceLength)
+      ),
+      round = pcd.round,
+      utterance = Some(unpickleTruthValueAssignment(pcd.utterance.getOrElse(Map.empty))),
+      communicatedBeliefs = unpickleTruthValueAssignment(pcd.communicatedBeliefs),
+      repair = Some(unpickleTruthValueAssignment(pcd.repair.getOrElse(Map.empty))),
+      utteranceLengthsInitiator = pcd.utteranceLengthsInitiator,
+      repairLengthsResponder = pcd.repairLengthsResponder
+    )
+  })
+    parameters -> cds
+  }
 
   def readAll(): Map[Parameters, Seq[ConversationData]] = {
     val jsonString = os.read(file)
     val unpickledData: Seq[(Parameters, Seq[PicklableConversationData])] =
       upickle.default.read[Seq[(Parameters, Seq[PicklableConversationData])]](jsonString)
 
-    unpickledData.map(convertPickledData).toMap
+    unpickledData.map((convertPickledData _).tupled).toMap
   }
 }
 
 object ConversationDataReader {
   def main(args: Array[String]): Unit = {
-    val cdr = ConversationDataReader(os.pwd / "output" / "out1730894954.json")
+    val cdr = ConversationDataReader(os.pwd / "output" / "out1732536275.json")
 
     val data = cdr.readAll()
 

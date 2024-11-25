@@ -17,14 +17,8 @@ case class Conversation(
     utteranceLengthsInitiator = None,
     repairLengthsResponder = None,
     utterance = None,
+    communicatedBeliefs = Map.empty,
     repair = None,
-    similarityAllBeliefs = initialInitiator.structuralSimilarity(initialResponder),
-    similarityIntentionBeliefs = initialInitiator
-      .structuralSimilarity(initialResponder, initialInitiator.communicativeIntent.keySet),
-    similarityCommunicatedBeliefs = initialInitiator.structuralSimilarity(
-      initialResponder,
-      initialInitiator.communicatedBeliefs.keySet
-    )
   )
   def simulate(): Seq[ConversationData] = simulateRound(initialInitiator, initialResponder)
   @tailrec
@@ -69,16 +63,10 @@ case class Conversation(
         responderState = updatedResponder,
         round = data.head.round + 1,
         Some(utterance),
+        communicatedBeliefs = Map.empty,
         newRepairRequest,
         utteranceLengthsInitiator = Some(utterance.size),
         repairLengthsResponder = Some(newRepairRequest.size),
-        similarityAllBeliefs = updatedInitiator.structuralSimilarity(updatedResponder),
-        similarityIntentionBeliefs = updatedInitiator
-          .structuralSimilarity(updatedResponder, updatedInitiator.communicativeIntent.keySet),
-        similarityCommunicatedBeliefs = updatedInitiator.structuralSimilarity(
-          updatedResponder,
-          updatedInitiator.communicatedBeliefs.keySet
-        )
       ) +: data
 
       if (repairRequest.isDefined && initiator.endConversation(repairRequest)) {

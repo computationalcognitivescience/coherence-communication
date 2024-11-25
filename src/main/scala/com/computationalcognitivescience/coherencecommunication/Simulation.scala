@@ -67,6 +67,7 @@ case class Simulation(
 
     // Parallelize computations
     allParameters
+      .par
       .map(parameters => {
         val randomGraph =
           //        WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, 2, 1.0)
@@ -98,7 +99,7 @@ case class Simulation(
           initiatorPrior ++ initiatorCommunicativeIntent
         )
 
-        val initiator = new Initiator(
+        val initiator = Initiator(
           initiatorBeliefNetwork,
           initiatorPrior,
           initiatorCommunicativeIntent
@@ -134,7 +135,7 @@ case class Simulation(
           responderPrior
         )
 
-        val responder = new Responder(
+        val responder = Responder(
           responderBeliefNetwork,
           responderPrior
         )
