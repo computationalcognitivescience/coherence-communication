@@ -47,15 +47,14 @@ object AnalysisOne {
   }
 
   val csvHeaders: String =
-    "networkSize;networkConstraints;networkPCRatio;initiatorIntentSize;initiatiorPriorSize;responderPriorSize;nRounds;nRequests;asymmetryAllBeliefsFirst;asymmetryIntentionBeliefsFirst;asymmetryAllBeliefsLast;asymmetryIntentionBeliefsLast;priorOverlap;priorAsymmtery"
+    "networkSize,networkConstraints,networkPCRatio,initiatorIntentSize,initiatiorPriorSize,responderPriorSize,nRounds,nRequests,asymmetryAllBeliefsFirst,asymmetryIntentionBeliefsFirst,asymmetryAllBeliefsLast,asymmetryIntentionBeliefsLast,priorOverlap,priorAsymmtery"
   def main(args: Array[String]): Unit = {
-    val filename = "out1732536588"
+    val filename = "out1734105925"
     val cdr = ConversationDataReader(os.pwd / "output" / s"$filename.json")
 
     val data = cdr.readAll()
     val analyzedData = analyzeAll(data).toSeq
-
-
+    
     os.write(os.pwd / "output" / s"$filename-analysisOne.csv", csvHeaders + "\n" + analyzedData.toCSV(), createFolders = true)
   }
 }

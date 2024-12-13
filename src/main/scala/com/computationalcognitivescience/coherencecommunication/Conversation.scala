@@ -63,7 +63,7 @@ case class Conversation(
         responderState = updatedResponder,
         round = data.head.round + 1,
         Some(utterance),
-        communicatedBeliefs = Map.empty,
+        communicatedBeliefs = updatedInitiator.communicatedBeliefs,
         newRepairRequest,
         utteranceLengthsInitiator = Some(utterance.size),
         repairLengthsResponder = Some(newRepairRequest.size),

@@ -157,9 +157,10 @@ case class Initiator(
       beliefNetwork.addFoundationalAssignment(utterance),
       priorBeliefs,
       communicativeIntent,
-      Some(this),
-      communicatedBeliefs ++ utterance,
-      if(previousState.isDefined) Some(previousState.get.inferredBeliefs) else None,
+      previousState = Some(this),
+      communicatedBeliefs = communicatedBeliefs ++ utterance,
+      presetInferredBeliefs =
+        if (previousState.isDefined) Some(previousState.get.inferredBeliefs) else None,
       maxUtteranceLength
     )
 

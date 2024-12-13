@@ -85,11 +85,11 @@ case class Responder(
 
   override def addCommunicatedBeliefs(utterance: Map[Node[String], Boolean]): Responder =
     Responder(
-      beliefNetwork.addFoundationalAssignment(utterance),
-      priorBeliefs,
-      Some(this),
-      communicatedBeliefs ++ utterance,
-      Some(inferredBeliefs),
+      beliefNetwork = beliefNetwork.addFoundationalAssignment(utterance),
+      priorBeliefs = priorBeliefs,
+      previousState = Some(this),
+      communicatedBeliefs = communicatedBeliefs ++ utterance,
+      presetInferredBeliefs = None,
       maxUtteranceLength
     )
 
