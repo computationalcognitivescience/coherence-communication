@@ -12,25 +12,33 @@ case class ConversationData(
     communicatedBeliefs: Map[Node[String], Boolean],
     repair: Option[Map[Node[String], Boolean]],
     utteranceLengthsInitiator: Option[Int],
-    repairLengthsResponder: Option[Int],
+    repairLengthsResponder: Option[Int]
 ) {
 
   def asymmetryAllBeliefs: Double =
-    initiatorState.structuralSimilarity(responderState) / initiatorState.beliefNetwork.vertices.size.doubleValue
+    1.0 - initiatorState.structuralSimilarity(
+      responderState
+    ) / initiatorState.beliefNetwork.vertices.size.doubleValue
 
   def asymmetryIntentionBeliefs: Double = {
     val communicativeIntentBeliefs = initiatorState.communicativeIntent.keySet
-    initiatorState.structuralSimilarity(responderState, communicativeIntentBeliefs) / communicativeIntentBeliefs.size.doubleValue
+    1.0 - initiatorState.structuralSimilarity(
+      responderState,
+      communicativeIntentBeliefs
+    ) / communicativeIntentBeliefs.size.doubleValue
   }
 
   def priorOverlap: Double = {
-    (initiatorState.priorBeliefs.keySet /\ responderState.priorBeliefs.keySet).size
+    1.0 - (initiatorState.priorBeliefs.keySet /\ responderState.priorBeliefs.keySet).size
   }
 
   def priorAsymmetry: Double = {
     val overlappingPriors =
       initiatorState.priorBeliefs.keySet /\ responderState.priorBeliefs.keySet
-    initiatorState.structuralSimilarity(responderState, overlappingPriors) / overlappingPriors.size.doubleValue
+    1.0 - initiatorState.structuralSimilarity(
+      responderState,
+      overlappingPriors
+    ) / overlappingPriors.size.doubleValue
   }
 
   /*
@@ -48,7 +56,6 @@ case class ConversationData(
   priorAsymmtery: Double
 
    */
-
 
   def toPicklableConversationData: PicklableConversationData = PicklableConversationData(
     initiatorState.beliefNetwork.vertices.map(_.label),
@@ -104,7 +111,7 @@ case class PicklableConversationData(
     communicatedBeliefs: Map[String, Boolean],
     repair: Option[Map[String, Boolean]],
     utteranceLengthsInitiator: Option[Int],
-    repairLengthsResponder: Option[Int],
+    repairLengthsResponder: Option[Int]
 )
 
 object PicklableConversationData {
