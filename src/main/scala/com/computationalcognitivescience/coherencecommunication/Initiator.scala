@@ -63,7 +63,7 @@ case class Initiator(
   /** Based on (van Arkel, 2021, p. 28)
     *
     * @return
-    *   A truth-value assignment over any set of non-prior, non-already communicated beliefs that
+    *   A truth-value assignment over any set of non-already communicated beliefs that
     *   will most efficiently communicate the intent
     */
   def produceUtterance(): Map[Node[String], Boolean] = {

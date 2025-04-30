@@ -61,12 +61,19 @@ class BeliefNetwork(
     *   The weighted sum over satisfied positive constraints
     */
   protected def cohPlus(assignment: Map[Node[String], Boolean]): Double = {
-    val satisfiedPositiveConstraints: Set[WUnDiEdge[Node[String]]] =
-      positiveConstraints.filter(isSatisfiedPositiveConstraint(assignment))
+//    val satisfiedPositiveConstraints: Set[WUnDiEdge[Node[String]]] =
+//      positiveConstraints.filter(isSatisfiedPositiveConstraint(assignment))
+//
+//    satisfiedPositiveConstraints.toList
+//      .map((edge: WUnDiEdge[Node[String]]) => edge.weight) // Get weights
+//      .sum                                                 // Sum weights
 
-    satisfiedPositiveConstraints.toList
-      .map((edge: WUnDiEdge[Node[String]]) => edge.weight) // Get weights
-      .sum                                                 // Sum weights
+    sum(
+      { positiveConstraints | isSatisfiedPositiveConstraint(assignment) _ },
+      (edge: WUnDiEdge[Node[String]]) => edge.weight
+    )
+
+
   }
 
   /** Calculate the coherence-value from negative constraints with a given truth-value assignment

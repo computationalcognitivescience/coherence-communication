@@ -22,7 +22,13 @@ case class AnalysisOne(
 
 object AnalysisOne {
   def analyzeAll(data: Map[Parameters, Seq[ConversationData]]): Iterable[AnalysisOne] = {
-    data.map(row => {
+    data
+      .filter(row => {
+        val conversationDataSorted = row._2.sortBy(_.round)
+        val conversationDataLast = conversationDataSorted.last
+        !conversationDataLast.initiatorState.communicativeIntent.forall(b => conversationDataLast.communicatedBeliefs.contains(b._1))
+      })
+      .map(row => {
       val conversationDataSorted = row._2.sortBy(_.round)
       val conversationDataFirst = conversationDataSorted.head
       val conversationDataLast = conversationDataSorted.last
