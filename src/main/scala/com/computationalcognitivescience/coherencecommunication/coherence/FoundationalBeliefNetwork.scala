@@ -6,16 +6,19 @@ import mathlib.set.SetTheory._
 import scala.collection.immutable
 import scala.util.Random
 
-class FoundationalBeliefNetwork(
-    graph: WUnDiGraph[String],
-    negativeConstraints: Set[WUnDiEdge[Node[String]]],
-    val foundationalBeliefs: Set[Node[String]],
-    val foundationalAssignment: Map[Node[String], Boolean]
-) extends BeliefNetwork(graph, negativeConstraints) {
+case class FoundationalBeliefNetwork(
+    override val graph: WUnDiGraph[String],
+    override val negativeConstraints: Set[WUnDiEdge[Node[String]]],
+    foundationalBeliefs: Set[Node[String]],
+    foundationalAssignment: Map[Node[String], Boolean]
+) extends BaseBeliefNetwork {
 
   def addFoundationalAssignment(assignment: Map[Node[String], Boolean]): FoundationalBeliefNetwork =
     new FoundationalBeliefNetwork(
-      graph, negativeConstraints, foundationalBeliefs ++ assignment.keySet, foundationalAssignment ++ assignment
+      graph,
+      negativeConstraints,
+      foundationalBeliefs ++ assignment.keySet,
+      foundationalAssignment ++ assignment
     )
 
   override def coherence(): Map[Node[String], Boolean] =
@@ -83,142 +86,50 @@ class FoundationalBeliefNetwork(
     unassignedMinus.allMappings(Set(true, false)).map(_ ++ foundationalAssignment)
 }
 
-object RandomFoundationalBeliefNetwork {
-
-  /** Generate a belief network from a fixed number of vertices, but a (semi) random number of edges
-    * based on an edge density and a (semi) random number of negative edges. Additionally, (semi-)
-    * randomly chooses foundational beliefs and assigns truth-values
-    *
-    * [KNOWN BUG]: Generated networks allow for duplicate edges (A, B) (B,A) and self edges (A, A)
-    *
-    * @param size
-    *   The number of edges in the network
-    * @param density
-    *   The (expected) density of edges in the network
-    * @param ratioPosNeg
-    *   The target ratio of positive edges to negative edges
-    * @param ratioFoundational
-    *   The target ratio of foundational beliefs as opposed to non-foundational beliefs
-    * @param ratioFoundationalTrueFalse
-    *   The target ratio of True foundational beliefs as opposed to False foundational beliefs
-    * @return
-    */
+case object FoundationalBeliefNetwork {
   def random(
       size: Int,
       density: Double,
-      ratioPosNeg: Double,
-      ratioFoundational: Double,
-      ratioFoundationalTrueFalse: Double
-      //              we: Option[Double] = None,
+      ratioNegativeEdges: Double,
+      ratioFoundationalBeliefs: Double,
+      ratioFoundationalBeliefsAssignment: Double,
+      weightUpperbound: Double = 1.0
   ): FoundationalBeliefNetwork = {
-    assert(0 <= density && density <= 1)
-    assert(0 <= ratioPosNeg && ratioPosNeg <= 1)
-    assert(0 <= ratioFoundational && ratioFoundational <= 1)
-    assert(0 <= ratioFoundationalTrueFalse && ratioFoundationalTrueFalse <= 1)
-
-    // Generate the vertices and edges of the network
-    val graph: WUnDiGraph[String]  = WUnDiGraph.random(size - 1, density)
-    val nrNegativeConstraints: Int = (graph.edges.size * (1 - ratioPosNeg)).intValue
-    val negativeConstraints: Set[WUnDiEdge[Node[String]]] =
-      Random.shuffle(graph.edges.toList).take(nrNegativeConstraints).toSet
-
-    // Generate foundational beliefs
-    val nrFoundationalBeliefs: Int =
-      (ratioFoundational * size).intValue // Calculate number of foundational beliefs
-    val foundationalBeliefs: List[Node[String]] = graph.vertices
-      .take(nrFoundationalBeliefs)
-      .toList // Determine which vertices become foundational beliefs
-    val nrTrueFoundational: Int =
-      (ratioFoundationalTrueFalse * nrFoundationalBeliefs).intValue // Determine number of '''true''' foundational beliefs
-    val foundationalTruthValues: List[Boolean] = Random.shuffle(
-      List.fill(nrTrueFoundational)(true) ++ List.fill(nrFoundationalBeliefs - nrTrueFoundational)(
-        false
-      )
-    ) // Generate truth-values
-    val foundationalAssignment: Map[Node[String], Boolean] =
-      (foundationalBeliefs zip foundationalTruthValues).toMap // Assign truth values to foundational beliefs
-
-    new FoundationalBeliefNetwork(
-      graph,
-      negativeConstraints,
-      foundationalBeliefs.toSet,
-      foundationalAssignment
+    require(
+      0.0 <= density && density <= 1.0,
+      s"Density $density is not between 0.0 and 1.0 inclusive."
     )
-  }
+    require(
+      0.0 <= ratioNegativeEdges && ratioNegativeEdges <= 1.0,
+      s"Ratio negative edges $ratioNegativeEdges is not between 0.0 and 1.0 inclusive."
+    )
+    require(
+      0.0 <= ratioFoundationalBeliefs && ratioFoundationalBeliefs <= 1.0,
+      s"Ratio foundational beliefs $ratioFoundationalBeliefs is not between 0.0 and 1.0 inclusive."
+    )
 
-  /** Generate a belief network from a fixed number of vertices, edges and negative constraints with
-    * edges having random (uniformly drawn) weights between 0 and 1. Additionally chooses a fixed
-    * number of biased nodes and (semi-)randomly assigns a fixed number of false truth-values, the
-    * rest will be true truth-biased, and randomly assigns weights between 0 and 1.
-    *
-    * @param size
-    *   The number of vertices in the network
-    * @param nrEdges
-    *   The number of edges in the network
-    * @param nrNegativeEdges
-    *   The number of negative constraints in the belief network where The number of negative
-    *   constraints must be smaller than or equal to the total number of edges
-    * @param nrFoundationalBeliefs
-    *   The number of foundational beliefs in the network
-    * @param nrFalseFoundationalBeliefs
-    *   The number of foundational beliefs that must be false
-    * @return
-    *   A randomly generated BiasedBeliefNetwork
-    */
-  def random(
-      size: Int,
-      nrEdges: Int,
-      nrNegativeEdges: Int,
-      nrFoundationalBeliefs: Int,
-      nrFalseFoundationalBeliefs: Int
-      //              we: Option[Double] = None,
-  ): FoundationalBeliefNetwork = {
-    assert(nrEdges <= size * size)
-    assert(nrNegativeEdges <= nrEdges)
-    assert(nrFoundationalBeliefs <= size)
-    assert(nrFalseFoundationalBeliefs <= nrFoundationalBeliefs)
+    val graph = WUnDiGraph.preferentialAttachment(
+      size,
+      scala.math.round(density * size).intValue,
+      weightUpperbound
+    )
 
-    // Remove edge candidates that result int self-edges or are reversed duplicates of other edge candidates
-    def noDuplicateEdges(endpoints: (Int, Int)): Boolean = {
-      endpoints._1 < endpoints._2
-    }
+    val foundationalBeliefs = scala.util.Random
+      .shuffle(graph.vertices)
+      .take(scala.math.round(graph.size * ratioFoundationalBeliefs).intValue)
+    val (trueFoundation, falseFoundation) = scala.util.Random
+      .shuffle(foundationalBeliefs)
+      .splitAt(
+        scala.math.round(foundationalBeliefs.size * ratioFoundationalBeliefsAssignment).intValue
+      )
 
-    // Generate vertex and edge candidates (candidates stay as Int for easier processing)
-    val vertexCandidates: Set[Int] = (0 until size).toSet
-    val edgeCandidates: Set[(Int, Int)] =
-      (vertexCandidates x vertexCandidates).filter(noDuplicateEdges)
-
-    // Generate vertices and edges
-    val vertices: Set[Node[String]] = vertexCandidates.map("N" + _).map(Node(_))
-    val edges: Set[WUnDiEdge[Node[String]]] = edgeCandidates
-      .take(nrEdges)
-      .map((e: (Int, Int)) => ("N" + e._1, "N" + e._2))
-      .map((e: (String, String)) => (Node(e._1), Node(e._2)))
-      .map((e: (Node[String], Node[String])) => WUnDiEdge(e._1, e._2, Random.nextDouble()))
-
-    // Determine which edges are negative
-    val negativeConstraints: Set[WUnDiEdge[Node[String]]] = edges.take(nrNegativeEdges)
-
-    // TODO: determine whether this is stupid
-    val foundationalBeliefs: List[Node[String]] = Random
-      .shuffle(vertices.toList)
-      .take(nrFoundationalBeliefs) // Determine which vertices are biased beliefs
-
-    val foundationalTruthValues: List[Boolean] = Random.shuffle(
-      List.fill(nrFoundationalBeliefs - nrFalseFoundationalBeliefs)(true) ++ List.fill(
-        nrFalseFoundationalBeliefs
-      )(false)
-    ) // Generate truth-values
-    val foundationalAssignment: Map[Node[String], Boolean] =
-      (foundationalBeliefs zip foundationalTruthValues).toMap // Assign truth values to biased beliefs
-
-    // Generate graph and belief network
-    val graph: WUnDiGraph[String] = WUnDiGraph(vertices, edges)
-    new FoundationalBeliefNetwork(
+    FoundationalBeliefNetwork(
       graph,
-      negativeConstraints,
-      foundationalBeliefs.toSet,
-      foundationalAssignment
+      negativeConstraints = scala.util.Random
+        .shuffle(graph.edges)
+        .take(scala.math.round(graph.edges.size * ratioNegativeEdges).intValue),
+      foundationalBeliefs,
+      foundationalAssignment = trueFoundation.map(_ -> true).toMap ++ falseFoundation.map(_ -> false).toMap
     )
   }
 }
