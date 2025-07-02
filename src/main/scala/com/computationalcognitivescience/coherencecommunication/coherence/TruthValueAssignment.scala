@@ -2,7 +2,6 @@ package com.computationalcognitivescience.coherencecommunication.coherence
 
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import mathlib.set.SetTheory._
-import mathlib.graph.Node
 
 import scala.annotation.tailrec
 
@@ -147,7 +146,7 @@ case class TruthValueAssignment(
   def structuralSimilarity(that: TruthValueAssignment): Int = {
     val intersectingBeliefs              = beliefs /\ that.beliefs
     def compare(belief: Belief): Boolean = this(belief) == that(belief)
-    (intersectingBeliefs | compare).size
+    (intersectingBeliefs | compare _).size
   }
 
   /** Structural similarity as defined in Definition 3. Returns the number of beliefs that have the
@@ -177,7 +176,7 @@ case class TruthValueAssignment(
   def structuralSimilarity(that: TruthValueAssignment, subset: Set[Belief]): Int = {
     val intersectingBeliefs              = beliefs /\ that.beliefs /\ subset
     def compare(belief: Belief): Boolean = this(belief) == that(belief)
-    (intersectingBeliefs | compare).size
+    (intersectingBeliefs | compare _).size
   }
 
   /** Relative structural similarity as defined in Definition 4. Returns the number of beliefs that

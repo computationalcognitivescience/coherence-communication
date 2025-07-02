@@ -3,9 +3,6 @@ package com.computationalcognitivescience.coherencecommunication.coherence
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
-import scala.collection.immutable
-import scala.util.Random
-
 case class FoundationalBeliefNetwork(
     override val graph: WUnDiGraph[String],
     override val negativeConstraints: Set[WUnDiEdge[Node[String]]],
