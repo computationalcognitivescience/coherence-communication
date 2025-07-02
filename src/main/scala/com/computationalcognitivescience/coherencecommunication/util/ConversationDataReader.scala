@@ -27,13 +27,13 @@ case class ConversationDataReader(file: Path) {
               pcd.negativeConstraints.map(_.toWUnDiEdge)
             ),
             negativeConstraints   = pcd.negativeConstraints.map(_.toWUnDiEdge),
-            foundationalBeliefs = pcd.initiatorPrior.keySet.map(Node(_)) \/ pcd.communicatedBeliefs.keySet.map(Node(_)) \/ pcd.initiatorIntent.keySet.map(Node(_)),
-            foundationalAssignment = unpickleTruthValueAssignment(pcd.initiatorPrior) ++ unpickleTruthValueAssignment(pcd.communicatedBeliefs) ++ unpickleTruthValueAssignment(pcd.initiatorIntent)
+            priorBeliefs = pcd.initiatorPrior.keySet.map(Node(_)) \/ pcd.communicatedBeliefs.keySet.map(Node(_)) \/ pcd.initiatorIntent.keySet.map(Node(_)),
+            priorBeliefsAssignment = unpickleTruthValueAssignment(pcd.initiatorPrior) ++ unpickleTruthValueAssignment(pcd.communicatedBeliefs) ++ unpickleTruthValueAssignment(pcd.initiatorIntent)
           ),
           priorBeliefs = unpickleTruthValueAssignment(pcd.initiatorPrior),
           communicativeIntent = unpickleTruthValueAssignment(pcd.initiatorIntent),
           previousState = None,
-          communicatedBeliefs = unpickleTruthValueAssignment(pcd.communicatedBeliefs),
+          sharedBeliefs = unpickleTruthValueAssignment(pcd.communicatedBeliefs),
           presetInferredBeliefs = Some(unpickleTruthValueAssignment(pcd.initiatorInferred)),
           maxUtteranceLength = Some(parameters.maxUtteranceLength)
       ),
@@ -45,12 +45,12 @@ case class ConversationDataReader(file: Path) {
               pcd.negativeConstraints.map(_.toWUnDiEdge)
           ),
           negativeConstraints = pcd.negativeConstraints.map(_.toWUnDiEdge),
-          foundationalBeliefs = pcd.responderPrior.keySet.map(Node(_)) \/ pcd.communicatedBeliefs.keySet.map(Node(_)),
-          foundationalAssignment = unpickleTruthValueAssignment(pcd.responderPrior) ++ unpickleTruthValueAssignment(pcd.communicatedBeliefs)
+          priorBeliefs = pcd.responderPrior.keySet.map(Node(_)) \/ pcd.communicatedBeliefs.keySet.map(Node(_)),
+          priorBeliefsAssignment = unpickleTruthValueAssignment(pcd.responderPrior) ++ unpickleTruthValueAssignment(pcd.communicatedBeliefs)
         ),
         priorBeliefs = pcd.responderPrior.map(b => Node(b._1) -> b._2),
         previousState = None,
-        communicatedBeliefs = pcd.communicatedBeliefs.map(b => Node(b._1) -> b._2),
+        sharedBeliefs = pcd.communicatedBeliefs.map(b => Node(b._1) -> b._2),
         presetInferredBeliefs = Some(unpickleTruthValueAssignment(pcd.responderInferred)),
         maxUtteranceLength = Some(parameters.maxUtteranceLength)
       ),

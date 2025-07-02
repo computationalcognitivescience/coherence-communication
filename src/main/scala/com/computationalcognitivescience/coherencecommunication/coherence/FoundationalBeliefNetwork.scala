@@ -1,24 +1,27 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
+import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
 case class FoundationalBeliefNetwork(
     override val graph: WUnDiGraph[String],
-    override val negativeConstraints: Set[WUnDiEdge[Node[String]]],
-    foundationalBeliefs: Set[Node[String]],
-    foundationalAssignment: Map[Node[String], Boolean]
+    override val negativeConstraints: Set[WUnDiEdge[Belief]],
+    priorBeliefs: Set[Belief],
+    priorBeliefsAssignment: TruthValueAssignment
 ) extends BaseBeliefNetwork {
 
-  def addFoundationalAssignment(assignment: Map[Node[String], Boolean]): FoundationalBeliefNetwork =
-    new FoundationalBeliefNetwork(
+  private def addFoundationalAssignment(
+      assignment: TruthValueAssignment
+  ): FoundationalBeliefNetwork =
+    FoundationalBeliefNetwork(
       graph,
       negativeConstraints,
-      foundationalBeliefs ++ assignment.keySet,
-      foundationalAssignment ++ assignment
+      priorBeliefs ++ assignment.beliefs,
+      priorBeliefsAssignment ++ assignment
     )
 
-  override def coherence(): Map[Node[String], Boolean] =
+  override def coherence(): TruthValueAssignment =
     coherenceSolutions().random.get // Return the truth-value assignment that maximizes coherence value
   /** Calculate the optimal truth-value assignment of this FoundationalBeliefNetwork
     *
@@ -29,19 +32,21 @@ case class FoundationalBeliefNetwork(
     *   A truth-value assignment over vertices that results in maximum coherence If multiple maximal
     *   truth-value assignments exists, get a random maximal one.
     */
-  override def coherenceSolutions(): Set[Map[Node[String], Boolean]] = {
+  override def coherenceSolutions(): Set[TruthValueAssignment] = {
     // Get truth-value assignment over non-foundational nodes
-    val notFoundationalBeliefs: Set[Node[String]] = graph.vertices -- foundationalBeliefs
-    val otherAssignments: Set[Map[Node[String], Boolean]] =
-      notFoundationalBeliefs allMappings Set(true, false)
+    val notFoundationalBeliefs: Set[Belief] = graph.vertices -- priorBeliefs
+    val otherAssignments: Set[TruthValueAssignment] =
+      (notFoundationalBeliefs allMappings Set(true, false))
+        .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))
 
     // Add foundational truth-value assignments
-    val allAssignments: Set[Map[Node[String], Boolean]] =
-      otherAssignments.map(_ ++ foundationalAssignment)
+    val allAssignments: Set[TruthValueAssignment] =
+      otherAssignments.map(_ ++ priorBeliefsAssignment)
 
     // Get highest coherence solutions
     allAssignments.argMax(coh)
   }
+
 
   /** Check if truth-value assignment is valid (i.e. all foundational vertices have their required
     * truth-value)
@@ -52,14 +57,14 @@ case class FoundationalBeliefNetwork(
     *   True if all foundational nodes have their required truth-value assignment as given in
     *   foundationalAssignment, False otherwise
     */
-  private def isValidAssignment(assignment: Map[Node[String], Boolean]): Boolean = {
+  private def isValidAssignment(assignment: TruthValueAssignment): Boolean = {
 
     // Check if foundational vertex has its required truth-value
-    def isSatisfied(vertex: Node[String]): Boolean = {
-      foundationalAssignment(vertex) == assignment(vertex)
+    def isSatisfied(vertex: Belief): Boolean = {
+      priorBeliefsAssignment(vertex) == assignment(vertex)
     }
 
-    foundationalBeliefs.forall(isSatisfied)
+    priorBeliefs.forall(isSatisfied)
   }
 
   /** Generate all possible truth-value assignments over nodes incident to a negative constraint
@@ -78,9 +83,12 @@ case class FoundationalBeliefNetwork(
     *   set]
     */
   override def ac1(
-      unassignedMinus: Set[Node[String]] // All nodes incident to a negative constraint
-  ): Set[Map[Node[String], Boolean]] =
-    unassignedMinus.allMappings(Set(true, false)).map(_ ++ foundationalAssignment)
+      unassignedMinus: Set[Belief] // All nodes incident to a negative constraint
+  ): Set[TruthValueAssignment] =
+    (unassignedMinus
+      .allMappings(Set(true, false)))
+      .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))
+      .map(_ ++ priorBeliefsAssignment)
 }
 
 case object FoundationalBeliefNetwork {
@@ -120,13 +128,17 @@ case object FoundationalBeliefNetwork {
         scala.math.round(foundationalBeliefs.size * ratioFoundationalBeliefsAssignment).intValue
       )
 
+    val foundationalAssignment =
+      trueFoundation.map(_ -> true).toMap ++ falseFoundation.map(_ -> false).toMap
+
     FoundationalBeliefNetwork(
       graph,
       negativeConstraints = scala.util.Random
         .shuffle(graph.edges)
         .take(scala.math.round(graph.edges.size * ratioNegativeEdges).intValue),
       foundationalBeliefs,
-      foundationalAssignment = trueFoundation.map(_ -> true).toMap ++ falseFoundation.map(_ -> false).toMap
+      priorBeliefsAssignment =
+        TruthValueAssignment(foundationalAssignment.keySet, foundationalAssignment.toSet)
     )
   }
 }

@@ -27,9 +27,8 @@ case class TruthValueAssignment(
     val overlap = beliefs.intersect(that.beliefs)
     TruthValueAssignment(
       beliefs.union(that.beliefs),
-      that.truthValueAssignment
-        .filterNot(tva => overlap.contains(tva._1))
-        .union(truthValueAssignment)
+      (this -- overlap).truthValueAssignment     // Remove beliefs from this overlapping with that
+        \/ that.truthValueAssignment             // Add beliefs from that
     )
   }
 
@@ -60,14 +59,32 @@ case class TruthValueAssignment(
       truthValueAssignment.filter(_._1 == belief) + (belief -> truthValue)
     )
 
+  /**
+   * Does this truth value assignment contain `belief`?
+   * @param belief The belief to test existence for.
+   * @return
+   */
+  def contains(belief: Belief): Boolean = beliefs.contains(belief)
+
   /** Removed the truth value assignment for belief.
-    * @param belief
+   *
+   * @param belief
     *   The belief to be removed.
     * @return
     *   The updated truth value assignment.
     */
   def -(belief: Belief): TruthValueAssignment =
     TruthValueAssignment(beliefs - belief, truthValueAssignment.filter(_._1 == belief))
+
+  /** Removed the beliefs from `that` truth-value assignment from `this` one.
+   *
+   * @param that
+   *   The truth-value assignment whose beliefs are to be removed.
+   * @return
+   *   The updated truth value assignment.
+   */
+  def \(that: TruthValueAssignment): TruthValueAssignment =
+    TruthValueAssignment(beliefs - that.beliefs, truthValueAssignment.filter(_._1 in that.beliefs))
 
   /** Truth-value assignment merge as defined in Definition 1. Here, $T_A$ is `this` instance and
     * $T_B$ is the `that` argument, and $A$ and $B$ are the sets of beliefs respectively:

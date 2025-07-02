@@ -49,10 +49,10 @@ case class Conversation(
       val updatedResponder = responder.addCommunicatedBeliefs(utterance)
 ////      println("[Conversation.run] "+updatedInitiator.inferredBeliefs.keySet.toList.sortBy(_.label).map(b => b.label + "i(" + updatedInitiator.inferredBeliefs(b) + ") r(" + updatedResponder.inferredBeliefs(b)+")").mkString(" "))
 //      println(
-        "[Conversation.run] Initiator's communicated beliefs: " + updatedInitiator.communicatedBeliefs
+        "[Conversation.run] Initiator's communicated beliefs: " + updatedInitiator.sharedBeliefs
 //      )
 //      println(
-        "[Conversation.run] Responder's communicated beliefs: " + updatedResponder.communicatedBeliefs
+        "[Conversation.run] Responder's communicated beliefs: " + updatedResponder.sharedBeliefs
 //      )
 
       // See if responder has a repair request
@@ -63,7 +63,7 @@ case class Conversation(
         responderState = updatedResponder,
         round = data.head.round + 1,
         Some(utterance),
-        communicatedBeliefs = updatedInitiator.communicatedBeliefs,
+        communicatedBeliefs = updatedInitiator.sharedBeliefs,
         newRepairRequest,
         utteranceLengthsInitiator = Some(utterance.size),
         repairLengthsResponder = Some(newRepairRequest.size),

@@ -1,5 +1,6 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
+import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import mathlib.graph.{Node, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
@@ -7,10 +8,10 @@ import scala.util.Random
 
 case class BiasedBeliefNetwork(
     override val graph: WUnDiGraph[String],
-    override val negativeConstraints: Set[WUnDiEdge[Node[String]]],
-    biasBeliefs: Set[Node[String]],
-    biasAssignment: Map[Node[String], Boolean],
-    biasWeights: Map[Node[String], Double]
+    override val negativeConstraints: Set[WUnDiEdge[Belief]],
+    biasBeliefs: Set[Belief],
+    biasAssignment: TruthValueAssignment,
+    biasWeights: Map[Belief, Double]
 ) extends BaseBeliefNetwork {
 
   /** Calculate the coherence-value from biased beliefs with a given truth-value assignment
@@ -20,7 +21,7 @@ case class BiasedBeliefNetwork(
     * @return
     *   The weighted sum over satisfied biased beliefs
     */
-  protected def cohBias(assignment: Map[Node[String], Boolean]): Double = {
+  protected def cohBias(assignment: TruthValueAssignment): Double = {
 
     /** Return the biased belief's weight if the belief is satisfied
       *
@@ -29,7 +30,7 @@ case class BiasedBeliefNetwork(
       * @return
       *   The weight of the bias if the belief's bias is satisfied, 0.0 otherwise
       */
-    def biasWeight(belief: Node[String]): Double =
+    def biasWeight(belief: Belief): Double =
       if (assignment(belief) == biasAssignment(belief)) biasWeights(belief)
       else 0.0
 
@@ -45,7 +46,7 @@ case class BiasedBeliefNetwork(
     *   The weighted sum over all satisfied constraints
     */
   override def coh(
-      assignment: Map[Node[String], Boolean]
+      assignment: TruthValueAssignment
   ): Double =
     cohPlus(assignment) + cohMin(assignment) + cohBias(assignment)
 }
@@ -88,13 +89,15 @@ case object BiasedBeliefNetwork {
       .take(scala.math.round(graph.size * ratioBiasBeliefs).intValue)
     val (trueBias, falseBias) = scala.util.Random.shuffle(biasBeliefs).splitAt(scala.math.round(biasBeliefs.size * ratioBiasBeliefsAssignment).intValue)
 
+    val biasAssignment =  trueBias.map(_ -> true).toMap ++ falseBias.map(_ -> false).toMap
+
     BiasedBeliefNetwork(
       graph,
       negativeConstraints = scala.util.Random
         .shuffle(graph.edges)
         .take(scala.math.round(graph.edges.size * ratioNegativeEdges).intValue),
       biasBeliefs,
-      biasAssignment = trueBias.map(_ -> true).toMap ++ falseBias.map(_ -> false).toMap,
+      biasAssignment = TruthValueAssignment(biasAssignment.keySet, biasAssignment.toSet),
       biasWeights = biasBeliefs.map(_ -> scala.util.Random.nextDouble()*biasBeliefsWeightUpperbound).toMap
     )
   }

@@ -1,11 +1,8 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
-import mathlib.graph.GraphImplicits.{EdgeImpl2, WUnDiEdgeImpl}
+import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import mathlib.graph._
-import mathlib.set.SetTheory._
 
-import scala.annotation.tailrec
-import scala.util.Random
 
 /** A belief network representing positive and negative cohering beliefs.
   * @param graph
@@ -15,7 +12,7 @@ import scala.util.Random
   */
 case class BeliefNetwork(
     override val graph: WUnDiGraph[String],
-    override val negativeConstraints: Set[WUnDiEdge[Node[String]]]
+    override val negativeConstraints: Set[WUnDiEdge[Belief]]
 ) extends BaseBeliefNetwork
 
 case object BeliefNetwork {

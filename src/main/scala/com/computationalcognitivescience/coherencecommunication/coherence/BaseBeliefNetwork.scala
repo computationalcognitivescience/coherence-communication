@@ -1,5 +1,6 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
+import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
@@ -8,15 +9,15 @@ import scala.annotation.tailrec
 trait BaseBeliefNetwork {
 
   val graph: WUnDiGraph[String]
-  val negativeConstraints: Set[WUnDiEdge[Node[String]]]
+  val negativeConstraints: Set[WUnDiEdge[Belief]]
   require(
     negativeConstraints isSubsetEqTo graph.edges,
     "The set of negative constraints is not a subset of or equal to the edges in the graph."
   )
-  val positiveConstraints: Set[WUnDiEdge[Node[String]]] = graph.edges \ negativeConstraints
+  val positiveConstraints: Set[WUnDiEdge[Belief]] = graph.edges \ negativeConstraints
 
-  def vertices: Set[Node[String]] = graph.vertices
-  def edges: Set[WUnDiEdge[Node[String]]] = graph.edges
+  def vertices: Set[Belief] = graph.vertices
+  def edges: Set[WUnDiEdge[Belief]] = graph.edges
   def size: Int = graph.size
 
   /** Check if in the given truth-value assignment a positive constraint is satisfied
@@ -28,8 +29,8 @@ trait BaseBeliefNetwork {
     * @return
     *   True if the constraint is satisfied, false otherwise
     */
-  protected def isSatisfiedPositiveConstraint(assignment: Map[Node[String], Boolean])(
-      edge: WUnDiEdge[Node[String]]
+  protected def isSatisfiedPositiveConstraint(assignment: TruthValueAssignment)(
+      edge: WUnDiEdge[Belief]
   ): Boolean = assignment(edge.left) == assignment(edge.right)
 
   /** Check if in the given truth-value assignment a negative constraint is satisfied
@@ -41,8 +42,8 @@ trait BaseBeliefNetwork {
     * @return
     *   True if the constraint is satisfied, false otherwise
     */
-  protected def isSatisfiedNegativeConstraint(assignment: Map[Node[String], Boolean])(
-      edge: WUnDiEdge[Node[String]]
+  protected def isSatisfiedNegativeConstraint(assignment: TruthValueAssignment)(
+      edge: WUnDiEdge[Belief]
   ): Boolean = assignment(edge.left) != assignment(edge.right)
 
   /** Check if in the given truth-value assignment a positive constraint is determined
@@ -54,9 +55,9 @@ trait BaseBeliefNetwork {
     * @return
     *   True if both endpoints of the edge have been assigned, false otherwise
     */
-  protected def isDeterminedConstraint(assignment: Map[Node[String], Boolean])(
-      edge: WUnDiEdge[Node[String]]
-  ): Boolean = assignment.keySet.contains(edge.left) && assignment.keySet.contains(edge.right)
+  protected def isDeterminedConstraint(assignment: TruthValueAssignment)(
+      edge: WUnDiEdge[Belief]
+  ): Boolean = assignment.contains(edge.left) && assignment.contains(edge.right)
 
   /** Calculate the coherence-value from positive constraints with a given truth-value assignment
     *
@@ -65,10 +66,10 @@ trait BaseBeliefNetwork {
     * @return
     *   The weighted sum over satisfied positive constraints
     */
-  protected def cohPlus(assignment: Map[Node[String], Boolean]): Double = {
+  protected def cohPlus(assignment: TruthValueAssignment): Double = {
     sum(
       { positiveConstraints | isSatisfiedPositiveConstraint(assignment) _ },
-      (edge: WUnDiEdge[Node[String]]) => edge.weight
+      (edge: WUnDiEdge[Belief]) => edge.weight
     )
   }
 
@@ -79,12 +80,12 @@ trait BaseBeliefNetwork {
     * @return
     *   The weighted sum over satisfied negative constraints
     */
-  protected def cohMin(assignment: Map[Node[String], Boolean]): Double = {
-    val satisfiedNegativeConstraints: Set[WUnDiEdge[Node[String]]] =
+  protected def cohMin(assignment: TruthValueAssignment): Double = {
+    val satisfiedNegativeConstraints: Set[WUnDiEdge[Belief]] =
       negativeConstraints.filter(isSatisfiedNegativeConstraint(assignment))
 
     satisfiedNegativeConstraints.toList
-      .map((edge: WUnDiEdge[Node[String]]) => edge.weight) // Get weights
+      .map((edge: WUnDiEdge[Belief]) => edge.weight) // Get weights
       .sum                                                 // Sum weights
 
   }
@@ -96,10 +97,10 @@ trait BaseBeliefNetwork {
     * @return
     *   The weighted sum over all satisfied constraints
     */
-  def coh(assignment: Map[Node[String], Boolean]): Double =
+  def coh(assignment: TruthValueAssignment): Double =
     cohPlus(assignment) + cohMin(assignment)
 
-  def coherence(): Map[Node[String], Boolean] =
+  def coherence(): TruthValueAssignment =
     coherenceSolutions().random.get // Return the truth-value assignment that maximizes coherence value
 
   /** Calculate the optimal truth-value assignment of this BeliefNetwork
@@ -111,10 +112,11 @@ trait BaseBeliefNetwork {
     *   A truth-value assignment over vertices that results in maximum coherence If multiple maximal
     *   truth-value assignments exists, get a random maximal one.
     */
-  def coherenceSolutions(): Set[Map[Node[String], Boolean]] = {
+  def coherenceSolutions(): Set[TruthValueAssignment] = {
     // Get the truth-assignment that maximizes coherence
     val allAssignments =
-      graph.vertices allMappings Set(true, false) // Generate all possible truth-value assignments
+      (graph.vertices allMappings Set(true, false))               // Generate all possible truth-value assignments
+        .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))  // Convert Map to TruthValueAssignment
     allAssignments.argMax(coh)
   }
 
@@ -135,9 +137,10 @@ trait BaseBeliefNetwork {
     *   All possible truth value assignments over unassignedMinus
     */
   protected def ac1(
-      unassignedMinus: Set[Node[String]] // All nodes incident to a negative constraint
-  ): Set[Map[Node[String], Boolean]] =
-    unassignedMinus.allMappings(Set(true, false))
+      unassignedMinus: Set[Belief] // All nodes incident to a negative constraint
+  ): Set[TruthValueAssignment] =
+    (unassignedMinus.allMappings(Set(true, false)))
+      .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))
 
   /** Given a graph and a truth-value assignment, remove all determined constraints from the graph
     *
@@ -153,30 +156,30 @@ trait BaseBeliefNetwork {
     *      assignment over Nodes 3. The sum coherence value of satisfied constraints
     */
   protected def ac2(
-      assignmentSet: Set[Map[Node[String], Boolean]]
-  ): (WUnDiGraph[String], Set[(Map[Node[String], Boolean], Double)]) = {
+      assignmentSet: Set[TruthValueAssignment]
+  ): (WUnDiGraph[String], Set[(TruthValueAssignment, Double)]) = {
 
     // Because the set of *determined* constraints (positive or negative) is the same for all truth-value assignments
     // We can take a any truth-value assignment to determine the determined constraints
-    val randomAssignment: Map[Node[String], Boolean] = assignmentSet.random.get
+    val randomAssignment: TruthValueAssignment = assignmentSet.random.get
 
     // For positive constraints we need to check if they've been determined already
-    val dPosConstraints: Set[WUnDiEdge[Node[String]]] =
+    val dPosConstraints: Set[WUnDiEdge[Belief]] =
       positiveConstraints.filter(isDeterminedConstraint(randomAssignment))
 
     // Because of the application of AC1 we know all negative constraints are already determined
-    val dNegConstraints: Set[WUnDiEdge[Node[String]]] = negativeConstraints
+    val dNegConstraints: Set[WUnDiEdge[Belief]] = negativeConstraints
 
     // For a set of determined positive constraints, get the coherence value
     def cohDPlus(
-        edgeSet: Set[WUnDiEdge[Node[String]]],
-        assignment: Map[Node[String], Boolean]
+        edgeSet: Set[WUnDiEdge[Belief]],
+        assignment: TruthValueAssignment
     ): Double = {
-      val satisfiedPositiveConstraints: Set[WUnDiEdge[Node[String]]] =
+      val satisfiedPositiveConstraints: Set[WUnDiEdge[Belief]] =
         edgeSet.filter(isSatisfiedPositiveConstraint(assignment))
 
       satisfiedPositiveConstraints.toList
-        .map((edge: WUnDiEdge[Node[String]]) => edge.weight) // Get weights
+        .map((edge: WUnDiEdge[Belief]) => edge.weight) // Get weights
         .sum                                                 // Sum weights
     }
 
@@ -192,20 +195,20 @@ trait BaseBeliefNetwork {
       *   The sum coherence value over satisfied determined constraints
       */
     def cohDMin(
-        edgeSet: Set[WUnDiEdge[Node[String]]],
-        assignment: Map[Node[String], Boolean]
+        edgeSet: Set[WUnDiEdge[Belief]],
+        assignment: TruthValueAssignment
     ): Double = {
-      val satisfiedNegativeConstraints: Set[WUnDiEdge[Node[String]]] =
+      val satisfiedNegativeConstraints: Set[WUnDiEdge[Belief]] =
         edgeSet.filter(isSatisfiedNegativeConstraint(assignment))
 
       satisfiedNegativeConstraints.toList
-        .map((edge: WUnDiEdge[Node[String]]) => edge.weight) // Get weights
+        .map((edge: WUnDiEdge[Belief]) => edge.weight) // Get weights
         .sum                                                 // Sum weights
     }
 
     // For each truth-value assignment, get the coherence from already determined constraints
-    val assignmentCoherence: Set[(Map[Node[String], Boolean], Double)] = {
-      assignmentSet.map((assignment: Map[Node[String], Boolean]) =>
+    val assignmentCoherence: Set[(TruthValueAssignment, Double)] = {
+      assignmentSet.map((assignment: TruthValueAssignment) =>
         (assignment, cohDPlus(dPosConstraints, assignment) + cohDMin(dNegConstraints, assignment))
       )
     }
@@ -234,10 +237,10 @@ trait BaseBeliefNetwork {
     */
   protected def ac3(
       graph: WUnDiGraph[String],
-      assignment: Map[Node[String], Boolean]
+      assignment: TruthValueAssignment
   ): WUnDiGraph[String] = {
-    val acceptedNode: Node[String] = Node("sourceNode")
-    val rejectedNode: Node[String] = Node("targetNode")
+    val acceptedNode: Belief = Node("sourceNode")
+    val rejectedNode: Belief = Node("targetNode")
 
     /** Divides edges into sets encoding incidence to an accepted Node, incidence to rejected Node,
       * or incidence to neither (both ends unassigned). ASSUMPTION: Input graph has all determined
@@ -252,15 +255,15 @@ trait BaseBeliefNetwork {
       *   1. edges incident to an accepted Node 2. edges incident to an rejected Node 3. edges
       *      incident to neither
       */
-    def sortIncidentEdges(graph: WUnDiGraph[String], assignment: Map[Node[String], Boolean]): (
-        Set[WUnDiEdge[Node[String]]],
-        Set[WUnDiEdge[Node[String]]],
-        Set[WUnDiEdge[Node[String]]]
+    def sortIncidentEdges(graph: WUnDiGraph[String], assignment: TruthValueAssignment): (
+        Set[WUnDiEdge[Belief]],
+        Set[WUnDiEdge[Belief]],
+        Set[WUnDiEdge[Belief]]
     ) = {
-      val edgeList: List[WUnDiEdge[Node[String]]]   = graph.edges.toList
-      val incidentToA: Set[WUnDiEdge[Node[String]]] = Set.empty
-      val incidentToR: Set[WUnDiEdge[Node[String]]] = Set.empty
-      val notIncident: Set[WUnDiEdge[Node[String]]] = Set.empty
+      val edgeList: List[WUnDiEdge[Belief]]   = graph.edges.toList
+      val incidentToA: Set[WUnDiEdge[Belief]] = Set.empty
+      val incidentToR: Set[WUnDiEdge[Belief]] = Set.empty
+      val notIncident: Set[WUnDiEdge[Belief]] = Set.empty
 
       /** Recursive call of sortIncidentEdges
         *
@@ -279,23 +282,23 @@ trait BaseBeliefNetwork {
         */
       @tailrec
       def sortIncidentEdgesRecursive(
-          edgeList: List[WUnDiEdge[Node[String]]],
-          incidentToA: Set[WUnDiEdge[Node[String]]],
-          incidentToR: Set[WUnDiEdge[Node[String]]],
-          notIncident: Set[WUnDiEdge[Node[String]]]
+          edgeList: List[WUnDiEdge[Belief]],
+          incidentToA: Set[WUnDiEdge[Belief]],
+          incidentToR: Set[WUnDiEdge[Belief]],
+          notIncident: Set[WUnDiEdge[Belief]]
       ): (
-          Set[WUnDiEdge[Node[String]]],
-          Set[WUnDiEdge[Node[String]]],
-          Set[WUnDiEdge[Node[String]]]
+          Set[WUnDiEdge[Belief]],
+          Set[WUnDiEdge[Belief]],
+          Set[WUnDiEdge[Belief]]
       ) = {
         // If there are no more edges to sort
         if (edgeList.isEmpty) (incidentToA, incidentToR, notIncident)
         else {
           // If the edgeList is non-empty
-          val edge: WUnDiEdge[Node[String]] = edgeList.head
+          val edge: WUnDiEdge[Belief] = edgeList.head
           // if the left Node is assigned
           if (assignment.contains(edge.left)) {
-            if (assignment(edge.left)) // if the left Node is true
+            if (assignment(edge.left).get) // if the left Node is true
               sortIncidentEdgesRecursive(
                 edgeList.tail,
                 incidentToA + edge,
@@ -312,7 +315,7 @@ trait BaseBeliefNetwork {
 
             // if the right Node is assigned
           } else if (assignment.contains(edge.right)) {
-            if (assignment(edge.right)) // if the right Node is true
+            if (assignment(edge.right).get) // if the right Node is true
               sortIncidentEdgesRecursive(
                 edgeList.tail,
                 incidentToA + edge,
@@ -339,14 +342,14 @@ trait BaseBeliefNetwork {
       if (edgeList.isEmpty) (incidentToA, incidentToR, notIncident)
       else {
         // If the edgeList is non-empty
-        val edge: WUnDiEdge[Node[String]] = edgeList.head
+        val edge: WUnDiEdge[Belief] = edgeList.head
         if (assignment.contains(edge.left)) {
-          if (assignment(edge.left))
+          if (assignment(edge.left).get)
             sortIncidentEdgesRecursive(edgeList.tail, incidentToA + edge, incidentToR, notIncident)
           else
             sortIncidentEdgesRecursive(edgeList.tail, incidentToA, incidentToR + edge, notIncident)
         } else if (assignment.contains(edge.right)) {
-          if (assignment(edge.right))
+          if (assignment(edge.right).get)
             sortIncidentEdgesRecursive(edgeList.tail, incidentToA + edge, incidentToR, notIncident)
           else
             sortIncidentEdgesRecursive(edgeList.tail, incidentToA, incidentToR + edge, notIncident)
@@ -357,9 +360,9 @@ trait BaseBeliefNetwork {
 
     // Collect all constraints that are incident to an accepted node
     val (constraintsAPrime, constraintsRPrime, notIncidentConstraints): (
-        Set[WUnDiEdge[Node[String]]],
-        Set[WUnDiEdge[Node[String]]],
-        Set[WUnDiEdge[Node[String]]]
+        Set[WUnDiEdge[Belief]],
+        Set[WUnDiEdge[Belief]],
+        Set[WUnDiEdge[Belief]]
     ) =
       sortIncidentEdges(graph, assignment)
 
@@ -373,9 +376,9 @@ trait BaseBeliefNetwork {
       *   Weighted Undirected Edge connected to the special accepted Node
       */
     def replaceConstraintAPrime(
-        assignment: Map[Node[String], Boolean],
-        edge: WUnDiEdge[Node[String]]
-    ): WUnDiEdge[Node[String]] = {
+        assignment: TruthValueAssignment,
+        edge: WUnDiEdge[Belief]
+    ): WUnDiEdge[Belief] = {
       if (assignment.contains(edge.left)) {
         WUnDiEdge(left = edge.right, right = acceptedNode, weight = edge.weight)
       } else {
@@ -393,9 +396,9 @@ trait BaseBeliefNetwork {
       *   Weighted Undirected Edge connected to the special rejected Node
       */
     def replaceConstraintRPrime(
-        assignment: Map[Node[String], Boolean],
-        edge: WUnDiEdge[Node[String]]
-    ): WUnDiEdge[Node[String]] = {
+        assignment: TruthValueAssignment,
+        edge: WUnDiEdge[Belief]
+    ): WUnDiEdge[Belief] = {
       if (assignment.contains(edge.left)) {
         WUnDiEdge(left = edge.right, right = rejectedNode, weight = edge.weight)
       } else {
@@ -414,9 +417,9 @@ trait BaseBeliefNetwork {
       *   Set of edges
       */
     def combineDuplicateEdges(
-        edgeList: List[WUnDiEdge[Node[String]]],
-        targetNode: Node[String]
-    ): Set[WUnDiEdge[Node[String]]] = {
+        edgeList: List[WUnDiEdge[Belief]],
+        targetNode: Belief
+    ): Set[WUnDiEdge[Belief]] = {
 
       /** Recursive call of combineDuplicateEdges
         *
@@ -431,55 +434,55 @@ trait BaseBeliefNetwork {
         */
       @tailrec
       def combineDuplicateEdgesRecursive(
-          edgeList: List[WUnDiEdge[Node[String]]],
-          weightMap: Map[Node[String], Double],
-          targetNode: Node[String]
-      ): Set[WUnDiEdge[Node[String]]] = {
+          edgeList: List[WUnDiEdge[Belief]],
+          weightMap: Map[Belief, Double],
+          targetNode: Belief
+      ): Set[WUnDiEdge[Belief]] = {
         if (edgeList.isEmpty) {
           weightMap
-            .map((nodeWeightPair: (Node[String], Double)) =>
+            .map((nodeWeightPair: (Belief, Double)) =>
               WUnDiEdge(nodeWeightPair._1, targetNode, nodeWeightPair._2)
             )
             .toSet
         } else {
-          val edge: WUnDiEdge[Node[String]] = edgeList.head
+          val edge: WUnDiEdge[Belief] = edgeList.head
           if (weightMap.contains(edge.left)) {
-            val newMap: Map[Node[String], Double] =
+            val newMap: Map[Belief, Double] =
               weightMap + (edge.left -> (weightMap(edge.left) + edge.weight))
             combineDuplicateEdgesRecursive(edgeList.tail, newMap, targetNode)
           } else {
-            val newMap: Map[Node[String], Double] = weightMap + (edge.left -> edge.weight)
+            val newMap: Map[Belief, Double] = weightMap + (edge.left -> edge.weight)
             combineDuplicateEdgesRecursive(edgeList.tail, newMap, targetNode)
           }
         }
       }
 
-      val weightMap: Map[Node[String], Double] = Map.empty
+      val weightMap: Map[Belief, Double] = Map.empty
       if (edgeList.isEmpty) Set.empty
       else {
-        val edge: WUnDiEdge[Node[String]]     = edgeList.head
-        val newMap: Map[Node[String], Double] = weightMap + (edge.left -> edge.weight)
+        val edge: WUnDiEdge[Belief]     = edgeList.head
+        val newMap: Map[Belief, Double] = weightMap + (edge.left -> edge.weight)
         combineDuplicateEdgesRecursive(edgeList.tail, newMap, targetNode)
       }
     }
 
     // Replace a constraint from A-Prime with a new constraint in A-Star (A-star is a subset of P' x {a})
-    val newConstraintsA: Set[WUnDiEdge[Node[String]]] = combineDuplicateEdges(
+    val newConstraintsA: Set[WUnDiEdge[Belief]] = combineDuplicateEdges(
       constraintsAPrime.toList.map(replaceConstraintAPrime(assignment, _)),
       acceptedNode
     )
     // Replace a constraint from R-Prime with a new constraint in R-Star (R-star is a subset of P' x {r})
-    val newConstraintsR: Set[WUnDiEdge[Node[String]]] = combineDuplicateEdges(
+    val newConstraintsR: Set[WUnDiEdge[Belief]] = combineDuplicateEdges(
       constraintsRPrime.toList.map(replaceConstraintRPrime(assignment, _)),
       rejectedNode
     )
 
     // The new graph only has the old unassigned nodes plus the "sourceNode" and "targetNode" nodes
-    val newNodes: Set[Node[String]] =
-      graph.vertices -- assignment.keySet ++ Set(acceptedNode, rejectedNode)
+    val newNodes: Set[Belief] =
+      graph.vertices -- assignment.beliefs ++ Set(acceptedNode, rejectedNode)
 
     // Replace all constraints that were incident to A' and R' with their replacing constraints connecting to 'a' and 'r'.
-    val newConstraints: Set[WUnDiEdge[Node[String]]] =
+    val newConstraints: Set[WUnDiEdge[Belief]] =
       notIncidentConstraints ++ newConstraintsA ++ newConstraintsR
 
     WUnDiGraph(newNodes, newConstraints)
@@ -492,20 +495,20 @@ trait BaseBeliefNetwork {
     *   A truth-value assignment over vertices that results in maximum coherence If multiple maximal
     *   truth-value assignments exists, get a random maximal one.
     */
-  def cMinusCoherence(): Map[Node[String], Boolean] = {
+  def cMinusCoherence(): TruthValueAssignment = {
 
     // Get all vertices incident to a negative constraint
-    val unassignedMinus: Set[Node[String]] = negativeConstraints.flatMap(e => Set(e.left, e.right))
+    val unassignedMinus: Set[Belief] = negativeConstraints.flatMap(e => Set(e.left, e.right))
 
     // Apply AC1 exhaustively
     // Effectively: Get all possible truth-value assignments over the vertices incident to a negative constraint
-    val assignmentMinusSet: Set[Map[Node[String], Boolean]] = ac1(unassignedMinus)
+    val assignmentMinusSet: Set[TruthValueAssignment] = ac1(unassignedMinus)
 
     // Apply AC2 where possible
     // For each truth-value assignment:
     // create a new graph wherein all edges that have a pre-determined truth-value assignment are removed
     val (graphPrime, assignmentCoherence)
-        : (WUnDiGraph[String], Set[(Map[Node[String], Boolean], Double)]) = ac2(assignmentMinusSet)
+        : (WUnDiGraph[String], Set[(TruthValueAssignment, Double)]) = ac2(assignmentMinusSet)
 
     // Apply AC3 where possible
     // Remove all nodes that have a pre-assigned truth-value assignment and replace them with a single true node and a single false node
@@ -513,14 +516,14 @@ trait BaseBeliefNetwork {
     val maxFlowGraphs: Set[
       (
           WUnDiGraph[String],         // Graph
-          Map[Node[String], Boolean], // Truth-value assignment of determined Nodes
+          TruthValueAssignment, // Truth-value assignment of determined Nodes
           Double                      // Coherence value of determined edges
       )
     ] = // Coherence value of determined constraints
       // Apply AC3 to the graph, pass the truth-value assignment and coherence value as is
       assignmentCoherence.map(
         (instance: (
-            Map[Node[String], Boolean], // Truth-value assignment of determined Nodes
+            TruthValueAssignment, // Truth-value assignment of determined Nodes
             Double
         )) => // Coherence value of determined constraints
           (ac3(graphPrime, instance._1), instance._1, instance._2)
@@ -540,10 +543,10 @@ trait BaseBeliefNetwork {
       */
     def combinePartitionWithPredetermined(
         maxFlowGraph: WUnDiGraph[String],
-        predeterminedAssignment: Map[Node[String], Boolean],
+        predeterminedAssignment: TruthValueAssignment,
         predeterminedCoherence: Double
-    ): (Map[Node[String], Boolean], Double) = {
-      val (assignment: Map[Node[String], Boolean], coherenceValue: Double) = getPartition(
+    ): (TruthValueAssignment, Double) = {
+      val (assignment: TruthValueAssignment, coherenceValue: Double) = getPartition(
         maxFlowGraph
       )
       (
@@ -552,14 +555,14 @@ trait BaseBeliefNetwork {
       )
     }
 
-    val partitionCoherenceTuples: Set[(Map[Node[String], Boolean], Double)] =
+    val partitionCoherenceTuples: Set[(TruthValueAssignment, Double)] =
       maxFlowGraphs.map(instance =>
         combinePartitionWithPredetermined(instance._1, instance._2, instance._3)
       )
 
     // Get the partition with the highest coherence value
     partitionCoherenceTuples
-      .argMax((e: (Map[Node[String], Boolean], Double)) => e._2)
+      .argMax((e: (TruthValueAssignment, Double)) => e._2)
       .map(_._1)
       .random
       .get
@@ -574,8 +577,8 @@ trait BaseBeliefNetwork {
     *   Final residual Graph (Weighted Directed graph)
     */
   protected def maxFlow(graph: WUnDiGraph[String]): WDiGraph[String] = {
-    val sourceNode: Node[String] = Node("sourceNode")
-    val targetNode: Node[String] = Node("targetNode")
+    val sourceNode: Belief = Node("sourceNode")
+    val targetNode: Belief = Node("targetNode")
 
     /** Given an Weighted Undirected Edge, generate two Weighted Directed Edges
       *
@@ -585,15 +588,15 @@ trait BaseBeliefNetwork {
       *   A Set of two Weighted Directed Edges
       */
     def createDirectedEdges(
-        edge: WUnDiEdge[Node[String]]
-    ): Set[WDiEdge[Node[String]]] = {
+        edge: WUnDiEdge[Belief]
+    ): Set[WDiEdge[Belief]] = {
       val firstEdge  = WDiEdge(edge.left, edge.right, edge.weight)
       val secondEdge = WDiEdge(edge.right, edge.left, edge.weight)
       Set(firstEdge, secondEdge)
     }
 
     // Create directed graph
-    val edges: Set[WDiEdge[Node[String]]] = graph.edges.flatMap(createDirectedEdges)
+    val edges: Set[WDiEdge[Belief]] = graph.edges.flatMap(createDirectedEdges)
     val dirGraph: WDiGraph[String]        = WDiGraph(graph.vertices, edges)
 
     /** Recursively finds the augmenting path through the given Weighted Directed Graph and updates
@@ -613,20 +616,20 @@ trait BaseBeliefNetwork {
     @tailrec
     def findAugmentingPathRecursive(
         graph: WDiGraph[String],
-        aList: Map[Node[String], Set[NodeWeightPair[String]]],
-        sourceNode: Node[String] = sourceNode,
-        targetNode: Node[String] = targetNode
+        aList: Map[Belief, Set[NodeWeightPair[String]]],
+        sourceNode: Belief = sourceNode,
+        targetNode: Belief = targetNode
     ): WDiGraph[String] = {
       // Find path from a to r
-      val augmentingPath: List[WDiEdge[Node[String]]] = bfs(graph, sourceNode, targetNode, aList)
+      val augmentingPath: List[WDiEdge[Belief]] = bfs(graph, sourceNode, targetNode, aList)
       if (augmentingPath.isEmpty) graph
       else {
         // TODO: Implement some way to make this faster (A trait of network that maps a node 2-tuple to an edge?)
         // TODO: or perhaps a map from edge to edge that just maps to its reverse counterpart?
         // Get reverse path
-        val reversePath: List[WDiEdge[Node[String]]] = {
+        val reversePath: List[WDiEdge[Belief]] = {
           // Check for each edge if its endpoints are part of the nodes in the path
-          val reversePathNodes: List[Node[String]] = Range(augmentingPath.size - 1, 0, -1).inclusive
+          val reversePathNodes: List[Belief] = Range(augmentingPath.size - 1, 0, -1).inclusive
             .map(i => augmentingPath(i).right)
             .toList ++ List(sourceNode)
           Range(0, augmentingPath.size, 1)
@@ -658,9 +661,9 @@ trait BaseBeliefNetwork {
           */
         @tailrec
         def updateAdjacencyList(
-            aList: Map[Node[String], Set[NodeWeightPair[String]]],
-            edgeList: List[WDiEdge[Node[String]]]
-        ): Map[Node[String], Set[NodeWeightPair[String]]] = {
+            aList: Map[Belief, Set[NodeWeightPair[String]]],
+            edgeList: List[WDiEdge[Belief]]
+        ): Map[Belief, Set[NodeWeightPair[String]]] = {
           // Base case
           if (edgeList.isEmpty) aList
           else {
@@ -673,7 +676,7 @@ trait BaseBeliefNetwork {
               ) + // Add updated weight to the set
               NodeWeightPair[String](edge.right, edge.weight)
             // Update adjacencyList
-            val newAList: Map[Node[String], Set[NodeWeightPair[String]]] =
+            val newAList: Map[Belief, Set[NodeWeightPair[String]]] =
               aList + (edge.left -> newNeighbours)
             updateAdjacencyList(newAList, edgeList.tail)
           }
@@ -681,17 +684,17 @@ trait BaseBeliefNetwork {
 
         // Adjust all path capacities
         // Reduce weight of forward edges
-        val newForwardEdges: List[WDiEdge[Node[String]]] = augmentingPath
-          .map((e: WDiEdge[Node[String]]) => WDiEdge(e.left, e.right, e.weight - minCapacity))
+        val newForwardEdges: List[WDiEdge[Belief]] = augmentingPath
+          .map((e: WDiEdge[Belief]) => WDiEdge(e.left, e.right, e.weight - minCapacity))
 
         // Increase weight of backward edges
-        val newReverseEdges: List[WDiEdge[Node[String]]] = reversePath
-          .map((e: WDiEdge[Node[String]]) => WDiEdge(e.left, e.right, e.weight + minCapacity))
+        val newReverseEdges: List[WDiEdge[Belief]] = reversePath
+          .map((e: WDiEdge[Belief]) => WDiEdge(e.left, e.right, e.weight + minCapacity))
 
-        val newEdges: List[WDiEdge[Node[String]]] = newForwardEdges ++ newReverseEdges
+        val newEdges: List[WDiEdge[Belief]] = newForwardEdges ++ newReverseEdges
 
         // Update adjacencyList
-        val newAList: Map[Node[String], Set[NodeWeightPair[String]]] =
+        val newAList: Map[Belief, Set[NodeWeightPair[String]]] =
           updateAdjacencyList(aList, newEdges)
 
         val newGraph = WDiGraph(
@@ -723,10 +726,10 @@ trait BaseBeliefNetwork {
     */
   private def bfs(
       graph: WDiGraph[String],
-      startNode: Node[String],
-      targetNode: Node[String],
-      aList: Map[Node[String], Set[NodeWeightPair[String]]]
-  ): List[WDiEdge[Node[String]]] = {
+      startNode: Belief,
+      targetNode: Belief,
+      aList: Map[Belief, Set[NodeWeightPair[String]]]
+  ): List[WDiEdge[Belief]] = {
     assert(graph.vertices.contains(startNode))
     assert(graph.vertices.contains(targetNode))
 
@@ -742,10 +745,10 @@ trait BaseBeliefNetwork {
       *   Weighted Directed Edge
       */
     def getEdgeFromNodes(
-        left: Node[String],
-        right: Node[String],
-        aList: Map[Node[String], Set[NodeWeightPair[String]]]
-    ): WDiEdge[Node[String]] = {
+        left: Belief,
+        right: Belief,
+        aList: Map[Belief, Set[NodeWeightPair[String]]]
+    ): WDiEdge[Belief] = {
       WDiEdge(left, right, aList(left).filter(_.node == right).random.get.weight)
     }
 
@@ -773,22 +776,22 @@ trait BaseBeliefNetwork {
       @tailrec
       def bfsRecursive(
           graph: WDiGraph[String],
-          aList: Map[Node[String], Set[NodeWeightPair[String]]],
-          pathToNode: Map[Node[String], List[WDiEdge[Node[String]]]],
-          startNode: Node[String],
-          targetNode: Node[String],
-          queue: List[Node[String]],
-          explored: Set[Node[String]]
-      ): List[WDiEdge[Node[String]]] = {
+          aList: Map[Belief, Set[NodeWeightPair[String]]],
+          pathToNode: Map[Belief, List[WDiEdge[Belief]]],
+          startNode: Belief,
+          targetNode: Belief,
+          queue: List[Belief],
+          explored: Set[Belief]
+      ): List[WDiEdge[Belief]] = {
 
-        val neighbours: Set[Node[String]] = aList(startNode)
+        val neighbours: Set[Belief] = aList(startNode)
           .filter(_.weight != 0)
           .map(_.node)
           .filterNot(queue.contains) // Remove nodes that are already in the queue
           .diff(explored)            // Remove nodes that have already been explored
 
         // Update path to found neighbours
-        val newPathToNode: Map[Node[String], List[WDiEdge[Node[String]]]] =
+        val newPathToNode: Map[Belief, List[WDiEdge[Belief]]] =
           pathToNode ++
             neighbours
               .map(n => n -> (pathToNode(startNode) ++ List(getEdgeFromNodes(startNode, n, aList))))
@@ -799,9 +802,9 @@ trait BaseBeliefNetwork {
           newPathToNode(targetNode)
         } else {
           // We've explored the current node
-          val newExplored: Set[Node[String]] = explored + startNode
+          val newExplored: Set[Belief] = explored + startNode
           // Add neighbours to the end of the queue
-          val newQueue: List[Node[String]] =
+          val newQueue: List[Belief] =
             queue ++ neighbours.toList
 
           // If the queue is empty at this point, there is no path from startNode to targetNode
@@ -822,14 +825,14 @@ trait BaseBeliefNetwork {
         }
       }
 
-      val neighbours: Set[Node[String]] = aList(startNode).filter(_.weight != 0).map(_.node)
-      val pathToNode: Map[Node[String], List[WDiEdge[Node[String]]]] = neighbours
+      val neighbours: Set[Belief] = aList(startNode).filter(_.weight != 0).map(_.node)
+      val pathToNode: Map[Belief, List[WDiEdge[Belief]]] = neighbours
         .map(n =>
           n -> List(WDiEdge(startNode, n, aList(startNode).filter(_.node == n).random.get.weight))
         )
         .toMap
-      val explored: Set[Node[String]] = Set(startNode)
-      val queue: List[Node[String]]   = neighbours.toList
+      val explored: Set[Belief] = Set(startNode)
+      val queue: List[Belief]   = neighbours.toList
 
       // No path can be found
       if (queue.isEmpty) List.empty
@@ -860,7 +863,7 @@ trait BaseBeliefNetwork {
     */
   protected def getPartition(
       graph: WUnDiGraph[String]
-  ): (Map[Node[String], Boolean], Double) = {
+  ): (TruthValueAssignment, Double) = {
 
     /** Get all Nodes connected to the startNode
       *
@@ -871,7 +874,7 @@ trait BaseBeliefNetwork {
       * @return
       *   A set of nodes connected to the start Node
       */
-    def getConnected(graph: WDiGraph[String], startNode: Node[String]): Set[Node[String]] = {
+    def getConnected(graph: WDiGraph[String], startNode: Belief): Set[Belief] = {
 
       /** For a given Node, find all its neighbours in the given Graph
         *
@@ -886,9 +889,9 @@ trait BaseBeliefNetwork {
         */
       def findNeighboursInGraph(
           graph: WDiGraph[String],
-          node: Node[String],
-          ignore: Set[Node[String]] = Set.empty
-      ): Set[Node[String]] = {
+          node: Belief,
+          ignore: Set[Belief] = Set.empty
+      ): Set[Belief] = {
         assert(graph.vertices.contains(node))
 
         /** For a given Edge, if Self is incident to that edge AND the weight of the edges is larger
@@ -904,10 +907,10 @@ trait BaseBeliefNetwork {
           *   Th other Node of this edge if Self is incident to the edge and it has weight > 0
           */
         def getNeighbourIfIncident(
-            edge: WDiEdge[Node[String]],
-            self: Node[String],
-            ignore: Set[Node[String]] = Set.empty
-        ): Set[Node[String]] = {
+            edge: WDiEdge[Belief],
+            self: Belief,
+            ignore: Set[Belief] = Set.empty
+        ): Set[Belief] = {
           if (edge.left == self && edge.weight > 0 && !ignore.contains(edge.right)) Set(edge.right)
           else Set.empty
         }
@@ -931,10 +934,10 @@ trait BaseBeliefNetwork {
       @tailrec
       def getConnectedRecursive(
           graph: WDiGraph[String],
-          node: Node[String],
-          connected: Set[Node[String]],
-          queue: List[Node[String]]
-      ): Set[Node[String]] = {
+          node: Belief,
+          connected: Set[Belief],
+          queue: List[Belief]
+      ): Set[Belief] = {
         val neighbours = findNeighboursInGraph(graph, node, connected ++ queue.toSet)
         val newQueue   = queue ++ neighbours
         if (queue.isEmpty) connected + node
@@ -943,8 +946,8 @@ trait BaseBeliefNetwork {
         }
       }
 
-      val connected: Set[Node[String]] = Set(startNode) // Usually Node("sourceNode")
-      val queue: List[Node[String]] =
+      val connected: Set[Belief] = Set(startNode) // Usually Node("sourceNode")
+      val queue: List[Belief] =
         findNeighboursInGraph(graph, startNode).toList // Neighbours of Node("sourceNode")
 
       // if startNode has no Neighbours, return it by itself
@@ -959,17 +962,17 @@ trait BaseBeliefNetwork {
     val residualGraph: WDiGraph[String] = maxFlow(graph)
 
     // residualGraph should have only 2 connected components
-    val trueComponent: Set[Node[String]] =
+    val trueComponent: Set[Belief] =
       getConnected(
         residualGraph,
         Node("sourceNode")
       ) // Nodes connected to "sourceNode" are set to True
-    val falseComponent: Set[Node[String]] =
+    val falseComponent: Set[Belief] =
       graph.vertices -- trueComponent // Nodes connected to "targetNode" are set to False
 
     // Combine the found truth-value assignments
-    val assignment: Map[Node[String], Boolean] =
-      trueComponent.map((_, true)).toMap ++ falseComponent.map((_, false)).toMap
+    val assignmentAsMap = trueComponent.map((_, true)).toMap ++ falseComponent.map((_, false)).toMap
+    val assignment: TruthValueAssignment = TruthValueAssignment(assignmentAsMap.keySet, assignmentAsMap.toSet)
 
     // Calculate coherence over the max-flow subgraph
     val tempBeliefNet: BeliefNetwork = new BeliefNetwork(graph, Set.empty)

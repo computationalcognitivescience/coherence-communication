@@ -11,18 +11,18 @@ import mathlib.graph._
 // PRIOR BELIEFS AND COMMUNICATIVE INTENT CAN OVERLAP
 // WE ALLOW FOR EMPTY UTTERANCES BY DIVIDING BY UTTERANCE SIZE + 1
 case class Initiator(
-    override val beliefNetwork: FoundationalBeliefNetwork,
-    override val priorBeliefs: Map[Node[String], Boolean],
-    communicativeIntent: Map[Node[String], Boolean],
-    override val previousState: Option[Initiator] = None,
-    override val communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
-    presetInferredBeliefs: Option[Map[Node[String], Boolean]] = None,
-    maxUtteranceLength: Option[Int] = None
+                      override val beliefNetwork: FoundationalBeliefNetwork,
+                      override val priorBeliefs: Map[Node[String], Boolean],
+                      communicativeIntent: Map[Node[String], Boolean],
+                      override val previousState: Option[Initiator] = None,
+                      override val sharedBeliefs: Map[Node[String], Boolean] = Map.empty,
+                      presetInferredBeliefs: Option[Map[Node[String], Boolean]] = None,
+                      maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor(
       beliefNetwork,
       priorBeliefs ++ communicativeIntent,
       previousState,
-      communicatedBeliefs,
+      sharedBeliefs,
       presetInferredBeliefs,
       maxUtteranceLength
     ) {
@@ -52,13 +52,13 @@ case class Initiator(
       priorBeliefs,
       Map.empty,
       None,
-      communicatedBeliefs ++ utterance,
+      sharedBeliefs ++ utterance,
       if (previousState.isDefined) Some(previousState.get.inferredBeliefs) else None,
       maxUtteranceLength
     )
 
   override lazy val allBeliefTruthValueAssignments: Map[Node[String], Boolean] =
-    priorBeliefs ++ communicatedBeliefs ++ inferredBeliefs ++ communicativeIntent
+    priorBeliefs ++ sharedBeliefs ++ inferredBeliefs ++ communicativeIntent
 
   /** Based on (van Arkel, 2021, p. 28)
     *
@@ -72,7 +72,7 @@ case class Initiator(
 
     val allPossibleUtterances: Set[Map[Node[String], Boolean]] =
       powersetUp(
-        beliefNetwork.vertices \ communicatedBeliefs.keySet,
+        beliefNetwork.vertices \ sharedBeliefs.keySet,
         utteranceLengthLimit
       )
         // Map each set of beliefs to its current truth-value mapping
@@ -111,7 +111,7 @@ case class Initiator(
       repairRequest: Map[Node[String], Boolean]
   ): Map[Node[String], Boolean] = {
     assert(
-      repairRequest.keySet /\ communicatedBeliefs.keySet == Set.empty,
+      repairRequest.keySet /\ sharedBeliefs.keySet == Set.empty,
       "Repair request contains previously communicated beliefs, something went wrong."
     )
 //    println("[Initiator.repairSolution]")
@@ -158,7 +158,7 @@ case class Initiator(
       priorBeliefs,
       communicativeIntent,
       previousState = Some(this),
-      communicatedBeliefs = communicatedBeliefs ++ utterance,
+      sharedBeliefs = sharedBeliefs ++ utterance,
       presetInferredBeliefs =
         if (previousState.isDefined) Some(previousState.get.inferredBeliefs) else None,
       maxUtteranceLength
@@ -171,7 +171,7 @@ case class Initiator(
           (List.empty :::
             (if (priorBeliefs.contains(v)) List("deeppink") else List()) :::
             (if (communicativeIntent.contains(v)) List("darkorange") else List()) :::
-            (if (communicatedBeliefs.contains(v)) List("aquamarine") else List()))
+            (if (sharedBeliefs.contains(v)) List("aquamarine") else List()))
       )
       .toMap
     super.toDOTString("Initiator", Some(colorMap), Some(3), msg = msg)

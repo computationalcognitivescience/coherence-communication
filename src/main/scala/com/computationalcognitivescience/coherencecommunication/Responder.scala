@@ -5,17 +5,17 @@ import mathlib.graph._
 import mathlib.set.SetTheory._
 
 case class Responder(
-    override val beliefNetwork: FoundationalBeliefNetwork,
-    override val priorBeliefs: Map[Node[String], Boolean],
-    override val previousState: Option[Responder] = None,
-    override val communicatedBeliefs: Map[Node[String], Boolean] = Map.empty,
-    presetInferredBeliefs: Option[Map[Node[String], Boolean]] = None,
-    maxUtteranceLength: Option[Int] = None
+                      override val beliefNetwork: FoundationalBeliefNetwork,
+                      override val priorBeliefs: Map[Node[String], Boolean],
+                      override val previousState: Option[Responder] = None,
+                      override val sharedBeliefs: Map[Node[String], Boolean] = Map.empty,
+                      presetInferredBeliefs: Option[Map[Node[String], Boolean]] = None,
+                      maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor(
       beliefNetwork,
       priorBeliefs,
       previousState,
-      communicatedBeliefs,
+      sharedBeliefs,
       presetInferredBeliefs,
       maxUtteranceLength
     ) {
@@ -54,7 +54,7 @@ case class Responder(
 //    println("[Responder.repairFormulation]")
     // calculate V_request = V \ V_communicated
     val vRequest: Set[Node[String]] =
-      allBeliefTruthValueAssignments.keySet -- communicatedBeliefs.keySet
+      allBeliefTruthValueAssignments.keySet -- sharedBeliefs.keySet
 
     // Generate all possible repair requests
     val allPossibleRequests: Set[Map[Node[String], Boolean]] = {
@@ -88,7 +88,7 @@ case class Responder(
       beliefNetwork = beliefNetwork.addFoundationalAssignment(utterance),
       priorBeliefs = priorBeliefs,
       previousState = Some(this),
-      communicatedBeliefs = communicatedBeliefs ++ utterance,
+      sharedBeliefs = sharedBeliefs ++ utterance,
       presetInferredBeliefs = None,
       maxUtteranceLength
     )
@@ -99,7 +99,7 @@ case class Responder(
         v ->
           (List.empty :::
             (if (priorBeliefs.contains(v)) List("deeppink") else List()) :::
-            (if (communicatedBeliefs.contains(v)) List("aquamarine") else List()))
+            (if (sharedBeliefs.contains(v)) List("aquamarine") else List()))
       )
       .toMap
     super.toDOTString("Responder", Some(colorMaps), Some(3), msg = msg, xOffset = 10)
