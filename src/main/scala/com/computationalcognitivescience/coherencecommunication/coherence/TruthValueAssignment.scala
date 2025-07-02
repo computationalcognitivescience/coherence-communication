@@ -78,7 +78,7 @@ case class TruthValueAssignment(
     * \text{if } x\in A\\ T_B(x) & \text{if } x\in B\\ \text{undefined} & \text{thatwise}
     * \end{cases} $$
     *
-    * @param that
+    * @param truthValueAssignment
     *   The truth-value assignment to merge with `this`.
     * @return
     */
