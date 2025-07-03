@@ -11,6 +11,11 @@ import com.computationalcognitivescience.coherencecommunication.coherence.{
 import mathlib.set.SetTheory._
 import mathlib.graph._
 
+case class UtteranceInitiatorPair(
+    utteranceOption: Option[TruthValueAssignment],
+    nextInitiator: Initiator
+)
+
 //NOTES:
 // PRIOR BELIEFS AND COMMUNICATIVE INTENT CAN OVERLAP
 // WE ALLOW FOR EMPTY UTTERANCES BY DIVIDING BY UTTERANCE SIZE + 1
@@ -54,7 +59,7 @@ case class Initiator(
     * TODO Include updated LaTeX definition.
     * @return
     */
-  def produceUtterance(): Option[TruthValueAssignment] = {
+  def produceUtterance(): UtteranceInitiatorPair = {
     val allPossibleUtteranceBeliefs: Set[TruthValueAssignment] =
       if (maxUtteranceLength.isDefined)
         (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) \ Set.empty)
@@ -69,7 +74,11 @@ case class Initiator(
 
     val allPossibleOptimalUtterances =
       argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
-    allPossibleOptimalUtterances.random
+    val utteranceOption = allPossibleOptimalUtterances.random
+    UtteranceInitiatorPair(
+      utteranceOption,
+      nextInitiator = this.addSharedBeliefs(utteranceOption.getOrElse(TruthValueAssignment.emtpy))
+    )
   }
 
   /** Computes <span style="font-variant-caps: normal;">Perceived Mutual Understanding</span> for
@@ -99,6 +108,16 @@ case class Initiator(
     )
     allBeliefs.subAssignment(offer.beliefs)
   }
+
+  override protected def addSharedBeliefs(utterance: TruthValueAssignment): Initiator = Initiator(
+    graph = graph,
+    negativeConstraints = negativeConstraints,
+    ownBeliefs = ownBeliefs,
+    sharedBeliefs = sharedBeliefs ++ utterance,
+    communicativeIntent = communicativeIntent,
+    previousState = Some(this),
+    maxUtteranceLength = maxUtteranceLength
+  )
 
   //
 ////  override val inferredBeliefs: Map[Node[String], Boolean] =
@@ -245,4 +264,5 @@ case class Initiator(
 //      .toMap
 //    super.toDOTString("Initiator", Some(colorMap), Some(3), msg = msg)
 //  }
+
 }

@@ -21,6 +21,7 @@ trait Interlocutor {
   )
   val allBeliefs: TruthValueAssignment      = beliefInference()
   val inferredBeliefs: TruthValueAssignment = allBeliefs \ ownBeliefs \ sharedBeliefs
+  lazy val coherence: Double                = foundationalBeliefNetwork.coh(allBeliefs)
 
   /** Computes the belief revision for `ownBeliefs` as defined in <span style="font-variant-caps:
     * normal;">Belief Revision</span>.
@@ -37,14 +38,21 @@ trait Interlocutor {
     val tMax: Set[TruthValueAssignment] = foundationalBeliefNetwork.coherenceSolutions()
 
     if (previousState.isDefined) {
-      val tPrev: TruthValueAssignment = previousState.get.inferredBeliefs
+      val tPrev: TruthValueAssignment = previousState.get.allBeliefs
       tMax.argMax(tva => tva ~ tPrev).random.get
     } else {
       tMax.random.get
     }
   }
 
-//
+  /** Returns a new interlocutor (either [[Initiator]] or [[Responder]]) with the new utterance
+    * added to the shared beliefs.
+    * @param utterance The beliefs to add to shared beliefs.
+    * @return
+    */
+  protected def addSharedBeliefs(utterance: TruthValueAssignment): Interlocutor
+
+  //
 //  protected def compare(
 //      a: Node[String],
 //      condidateInference: Map[Node[String], Boolean],

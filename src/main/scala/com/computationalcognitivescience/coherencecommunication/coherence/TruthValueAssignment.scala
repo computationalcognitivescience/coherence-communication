@@ -28,8 +28,8 @@ case class TruthValueAssignment(
     val overlap = beliefs.intersect(that.beliefs)
     TruthValueAssignment(
       beliefs.union(that.beliefs),
-      (this -- overlap).truthValueAssignment     // Remove beliefs from this overlapping with that
-        \/ that.truthValueAssignment             // Add beliefs from that
+      (this -- overlap).truthValueAssignment // Remove beliefs from this overlapping with that
+        \/ that.truthValueAssignment         // Add beliefs from that
     )
   }
 
@@ -60,13 +60,14 @@ case class TruthValueAssignment(
       truthValueAssignment.filter(_._1 == belief) + (belief -> truthValue)
     )
 
-  /**
-   * Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
-   * the productive version of Definition 2 and [[subsetEquivalence()]]. Note that this returns an empty
-   * truth-value assignment if none of the beliefs in `utteranceBeliefs` are in `this.beliefs`.
-   * @param utteranceBeliefs The subset of beliefs to return the value assignments for.
-   * @return
-   */
+  /** Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
+    * the productive version of Definition 2 and [[subsetEquivalence()]]. Note that this returns an
+    * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
+    * `this.beliefs`.
+    * @param utteranceBeliefs
+    *   The subset of beliefs to return the value assignments for.
+    * @return
+    */
   def subAssignment(utteranceBeliefs: Set[Belief]) = TruthValueAssignment(
     beliefs = utteranceBeliefs,
     truthValueAssignment = truthValueAssignment.filter(_._1 in utteranceBeliefs)
@@ -75,17 +76,17 @@ case class TruthValueAssignment(
   /** Returns the number of beliefs in the truth-value assignment. */
   def size = beliefs.size
 
-  /**
-   * Does this truth value assignment contain `belief`?
-   *
-   * @param belief The belief to test existence for.
-   * @return
-   */
+  /** Does this truth value assignment contain `belief`?
+    *
+    * @param belief
+    *   The belief to test existence for.
+    * @return
+    */
   def contains(belief: Belief): Boolean = beliefs.contains(belief)
 
   /** Removed the truth value assignment for belief.
-   *
-   * @param belief
+    *
+    * @param belief
     *   The belief to be removed.
     * @return
     *   The updated truth value assignment.
@@ -94,12 +95,12 @@ case class TruthValueAssignment(
     TruthValueAssignment(beliefs - belief, truthValueAssignment.filter(_._1 == belief))
 
   /** Removed the beliefs from `that` truth-value assignment from `this` one.
-   *
-   * @param that
-   *   The truth-value assignment whose beliefs are to be removed.
-   * @return
-   *   The updated truth value assignment.
-   */
+    *
+    * @param that
+    *   The truth-value assignment whose beliefs are to be removed.
+    * @return
+    *   The updated truth value assignment.
+    */
   def \(that: TruthValueAssignment): TruthValueAssignment =
     TruthValueAssignment(beliefs \ that.beliefs, truthValueAssignment.filter(_._1 in that.beliefs))
 
@@ -221,9 +222,10 @@ case class TruthValueAssignment(
   def ~(subset: Set[Belief])(that: TruthValueAssignment): Int =
     this.structuralSimilarity(that, subset)
 
+
 }
 
-case object TruthValueAssignment {
+object TruthValueAssignment {
 
   /** Constructs a truth value assignment based on a set of pairs only.
     * @param truthValueAssignment
@@ -237,4 +239,13 @@ case object TruthValueAssignment {
     * @return
     */
   def emtpy: TruthValueAssignment = TruthValueAssignment(Set.empty, Set.empty)
+
+  implicit case class ImplMap(map: Map[Belief, Boolean]) {
+    def toTruthValueAssignment: TruthValueAssignment = TruthValueAssignment(
+      beliefs = map.keySet,
+      truthValueAssignment = map.toSet
+    )
+  }
 }
+
+
