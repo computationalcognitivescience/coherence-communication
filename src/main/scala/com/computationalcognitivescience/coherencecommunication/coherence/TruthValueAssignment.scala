@@ -101,7 +101,7 @@ case class TruthValueAssignment(
    *   The updated truth value assignment.
    */
   def \(that: TruthValueAssignment): TruthValueAssignment =
-    TruthValueAssignment(beliefs - that.beliefs, truthValueAssignment.filter(_._1 in that.beliefs))
+    TruthValueAssignment(beliefs \ that.beliefs, truthValueAssignment.filter(_._1 in that.beliefs))
 
   /** Truth-value assignment merge as defined in Definition 1. Here, $T_A$ is `this` instance and
     * $T_B$ is the `that` argument, and $A$ and $B$ are the sets of beliefs respectively:

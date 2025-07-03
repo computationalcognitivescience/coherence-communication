@@ -57,14 +57,14 @@ case class Initiator(
   def produceUtterance(): Option[TruthValueAssignment] = {
     val allPossibleUtteranceBeliefs: Set[TruthValueAssignment] =
       if (maxUtteranceLength.isDefined)
-        powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get)
+        (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) \ Set.empty)
           .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
       else
-        powerset(graph.vertices \ sharedBeliefs.beliefs)
+        (powerset(graph.vertices \ sharedBeliefs.beliefs) \ Set.empty)
           .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
 
     def relativeStructuralSimilarity(utterance: TruthValueAssignment): Double = {
-      1.0 / (utterance.size) * (utterance ~ perspectiveTaking(utterance))
+      1.0 / (utterance.size) * (communicativeIntent ~ perspectiveTaking(utterance))
     }
 
     val allPossibleOptimalUtterances =
@@ -72,13 +72,15 @@ case class Initiator(
     allPossibleOptimalUtterances.random
   }
 
-  /** Computes <span style="font-variant-caps: normal;">Perceived Mutual Understanding</span> for this
-    * [[Initiator]], relative to an optional offer from the [[Responder]].
+  /** Computes <span style="font-variant-caps: normal;">Perceived Mutual Understanding</span> for
+    * this [[Initiator]], relative to an optional offer from the [[Responder]].
     *
     * TODO Include updated LaTeX definition.
     *
-    * @param offer An optional restricted offer from a [[Responder]].
-    * @return Yes, NotYet, or No understanding.
+    * @param offer
+    *   An optional restricted offer from a [[Responder]].
+    * @return
+    *   Yes, NotYet, or No understanding.
     */
   def perceivedMutualUnderstanding(offer: Option[TruthValueAssignment]): Understanding = {
     if (offer.isEmpty) Understandings.NotYet
@@ -89,7 +91,16 @@ case class Initiator(
       else Understandings.No
     }
   }
-//
+
+  def repairSolution(offer: TruthValueAssignment): TruthValueAssignment = {
+    assert(
+      offer.beliefs /\ sharedBeliefs.beliefs == Set.empty,
+      "Restricted offer contains previously communicated beliefs, something went wrong."
+    )
+    allBeliefs.subAssignment(offer.beliefs)
+  }
+
+  //
 ////  override val inferredBeliefs: Map[Node[String], Boolean] =
 ////    if (previousState.isDefined)
 ////      previousState.get.inferredBeliefs // If not first time initiator, keep old beliefs.
