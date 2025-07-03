@@ -63,7 +63,7 @@ case class Conversation(
             restrictedOffer = restrictedOffer,
           ) +: data
         } else {
-          val (trouble, nextResponder) = responder.troubleIdentification()
+          val (trouble, nextResponder) = responder.troubleIdentification(utterance.get)
           val restrictedOffer = responder.repairFormulation(utterance.get)
           val roundData = ConversationData(
             initiatorState = nextInitiator,

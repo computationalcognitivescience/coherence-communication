@@ -3,14 +3,13 @@ package com.computationalcognitivescience.coherencecommunication
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
 import mathlib.graph.{Node, WUnDiEdge}
 import mathlib.set.SetTheory._
-import upickle.default.{macroRW, ReadWriter => RW}
 
 case class ConversationData(
-                             initiatorState: Initiator,
-                             responderState: Responder,
-                             round: Int,
-                             utterance: Option[TruthValueAssignment],
-                             restrictedOffer: Option[TruthValueAssignment],
+    initiatorState: Initiator,
+    responderState: Responder,
+    round: Int,
+    utterance: Option[TruthValueAssignment],
+    restrictedOffer: Option[TruthValueAssignment]
 ) {
 
   val asymmetryAllBeliefs: Double = {

@@ -16,7 +16,6 @@ lazy val root = (project in file("."))
     name := "coherence-communication",
     libraryDependencies += "com.markblokpoel" %% "mathlib" % "0.9.2-b2",
     libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.9.1",
-    libraryDependencies += "com.lihaoyi" %% "upickle" % "4.0.2",
     libraryDependencies += "io.kontainers" %% "purecsv" % "1.3.10",
     libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
     libraryDependencies ++= Seq(
