@@ -59,7 +59,7 @@ case class Initiator(
     * TODO Include updated LaTeX definition.
     * @return
     */
-  def produceUtterance(): UtteranceInitiatorPair = {
+  def produceUtterance(): (Option[TruthValueAssignment], Initiator) = {
     val allPossibleUtteranceBeliefs: Set[TruthValueAssignment] =
       if (maxUtteranceLength.isDefined)
         (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) \ Set.empty)
@@ -75,9 +75,9 @@ case class Initiator(
     val allPossibleOptimalUtterances =
       argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
     val utteranceOption = allPossibleOptimalUtterances.random
-    UtteranceInitiatorPair(
+    (
       utteranceOption,
-      nextInitiator = this.addSharedBeliefs(utteranceOption.getOrElse(TruthValueAssignment.emtpy))
+      this.addSharedBeliefs(utteranceOption.getOrElse(TruthValueAssignment.emtpy))
     )
   }
 

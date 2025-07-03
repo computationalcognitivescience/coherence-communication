@@ -1,8 +1,9 @@
 package com.computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.coherence.FoundationalBeliefNetwork
+import com.computationalcognitivescience.coherencecommunication.coherence.{FoundationalBeliefNetwork, TruthValueAssignment}
 import mathlib.graph.{Node, WUnDiGraph}
 import mathlib.set.SetTheory._
+import coherence.TruthValueAssignment._
 
 import java.time.{LocalDateTime, ZoneOffset}
 import scala.collection.parallel.CollectionConverters._
@@ -81,31 +82,35 @@ case class Simulation(
           .take((randomGraph.size * parameters.beliefNetworkPCRatio).intValue)
           .toSet
 
-        val initiatorPrior: Map[Node[String], Boolean] = Random
+        val initiatorOwnBeliefs = Random
           .shuffle(randomGraph.vertices.toSeq)
           .take((randomGraph.vertices.size * parameters.initiatorPriorRatio).intValue)
           .map(belief => (belief, Random.nextBoolean()))
-          .toMap
+          .toMap.toTruthValueAssignment
         val initiatorCommunicativeIntent = Random
-          .shuffle((randomGraph.vertices \ initiatorPrior.keySet).toSeq)
+          .shuffle((randomGraph.vertices \ initiatorOwnBeliefs.beliefs).toSeq)
           .take((randomGraph.vertices.size * parameters.initiatorCommunicativeIntentRatio).intValue)
           .map(belief => (belief, Random.nextBoolean()))
-          .toMap
+          .toMap.toTruthValueAssignment
 
-        val initiatorBeliefNetwork = new FoundationalBeliefNetwork(
+
+//        override val graph: WUnDiGraph[String],
+//        override val negativeConstraints: Set[WUnDiEdge[Belief]],
+//        override val ownBeliefs: TruthValueAssignment,
+//        override val sharedBeliefs: TruthValueAssignment,
+//        communicativeIntent: TruthValueAssignment,
+//        override val previousState: Option[Initiator] = None,
+//        override val maxUtteranceLength: Option[Int] = None
+        val initiator = Initiator(
           randomGraph,
           negativeConstraints,
-          initiatorPrior.keySet \/ initiatorCommunicativeIntent.keySet,
-          initiatorPrior ++ initiatorCommunicativeIntent
+          initiatorOwnBeliefs,
+          sharedBeliefs = TruthValueAssignment.emtpy,
+          initiatorCommunicativeIntent,
+          maxUtteranceLength = Some(parameters.maxUtteranceLength)
         )
 
-        val initiator = Initiator(
-          initiatorBeliefNetwork,
-          initiatorPrior,
-          initiatorCommunicativeIntent
-        )
-
-        val initiatorPriorVertices = initiatorPrior.keySet.toSeq
+        val initiatorPriorVertices = initiatorOwnBeliefs.beliefs.toSeq
         val responderOverlappingPriorVertices = Random
           .shuffle(initiatorPriorVertices)
           .take((initiatorPriorVertices.size * parameters.priorsOverlapRatio).intValue)
@@ -113,7 +118,7 @@ case class Simulation(
         val responderOverlappingSymmetricPrior: Map[Node[String], Boolean] = Random
           .shuffle(responderOverlappingPriorVertices)
           .take((responderOverlappingPriorVertices.size * parameters.priorsAsymmetryRatio).intValue)
-          .map(belief => (belief, initiatorPrior(belief)))
+          .map(belief => (belief, initiatorOwnBeliefs(belief)))
           .toMap
         val responderOverlappingAssymetricPrior: Map[Node[String], Boolean] =
           (initiatorPriorVertices.toSet \ responderOverlappingSymmetricPrior.keySet)
@@ -187,7 +192,7 @@ object Simulation {
       println(
         turn.round + "i: " + turn.utterance.getOrElse(
           Map.empty
-        ) + "\n" + turn.round + "r: " + turn.repair.getOrElse(Map.empty)
+        ) + "\n" + turn.round + "r: " + turn.restrictedOffer.getOrElse(Map.empty)
       )
     )
     orderedData.last.initiatorState.allBeliefTruthValueAssignments.keySet.toList

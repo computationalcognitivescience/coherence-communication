@@ -19,8 +19,8 @@ trait Interlocutor {
     priorBeliefs = ownBeliefs.beliefs \/ sharedBeliefs.beliefs,
     priorBeliefsAssignment = ownBeliefs ++ sharedBeliefs
   )
-  val allBeliefs: TruthValueAssignment      = beliefInference()
-  val inferredBeliefs: TruthValueAssignment = allBeliefs \ ownBeliefs \ sharedBeliefs
+  lazy val allBeliefs: TruthValueAssignment      = beliefInference()
+  lazy val inferredBeliefs: TruthValueAssignment = allBeliefs \ ownBeliefs \ sharedBeliefs
   lazy val coherence: Double                = foundationalBeliefNetwork.coh(allBeliefs)
 
   /** Computes the belief revision for `ownBeliefs` as defined in <span style="font-variant-caps:
@@ -34,7 +34,7 @@ trait Interlocutor {
     *
     * @return
     */
-  protected def beliefInference(): TruthValueAssignment = {
+  private def beliefInference(): TruthValueAssignment = {
     val tMax: Set[TruthValueAssignment] = foundationalBeliefNetwork.coherenceSolutions()
 
     if (previousState.isDefined) {

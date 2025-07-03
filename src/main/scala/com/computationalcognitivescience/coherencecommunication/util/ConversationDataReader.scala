@@ -56,8 +56,8 @@ case class ConversationDataReader(file: Path) {
       ),
       round = pcd.round,
       utterance = Some(unpickleTruthValueAssignment(pcd.utterance.getOrElse(Map.empty))),
-      communicatedBeliefs = unpickleTruthValueAssignment(pcd.communicatedBeliefs),
-      repair = Some(unpickleTruthValueAssignment(pcd.repair.getOrElse(Map.empty))),
+      sharedBeliefs = unpickleTruthValueAssignment(pcd.communicatedBeliefs),
+      restrictedOffer = Some(unpickleTruthValueAssignment(pcd.repair.getOrElse(Map.empty))),
       utteranceLengthsInitiator = pcd.utteranceLengthsInitiator,
       repairLengthsResponder = pcd.repairLengthsResponder
     )

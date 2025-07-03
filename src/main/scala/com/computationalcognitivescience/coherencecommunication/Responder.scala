@@ -24,10 +24,10 @@ case class Responder(
     * the previous truth-value assignment.
     * @return
     */
-  def troubleIdentification(): Boolean = {
+  def troubleIdentification(utterance: TruthValueAssignment): (Boolean, Responder) = {
     require(previousState.isDefined, "Trouble idenfitication is called without a previous state.")
-    val prev = previousState.get
-    foundationalBeliefNetwork.coh(allBeliefs) < prev.foundationalBeliefNetwork.coh(prev.allBeliefs)
+    val nextResponder = this.addSharedBeliefs(utterance)
+    (nextResponder.coherence < this.coherence, nextResponder)
   }
 
   /** Computes <span style="font-variant-caps: normal;">Repair Formulation</span> for this
@@ -40,7 +40,7 @@ case class Responder(
     * @return
     *   A restricted offer or None.
     */
-  def repairFormulation(utterance: TruthValueAssignment): UtteranceResponderPair = {
+  def repairFormulation(utterance: TruthValueAssignment): Option[TruthValueAssignment] = {
     val allPossibleOfferBeliefs: Set[Set[Belief]] =
       if (maxUtteranceLength.isDefined)
         (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get))
@@ -56,14 +56,12 @@ case class Responder(
 
     val allOptimalTOffers = argMax(allTOffers, relativeTOfferCoherence)
 
-    val finalOffer = if (previousState.isDefined) {
+    if (previousState.isDefined) {
       val tPrev: TruthValueAssignment = previousState.get.allBeliefs
       allOptimalTOffers.argMax(tva => tva ~ tPrev).random
     } else {
       allOptimalTOffers.random
     }
-
-    UtteranceResponderPair(finalOffer, this.addSharedBeliefs(utterance))
   }
 
   override protected def addSharedBeliefs(utterance: TruthValueAssignment): Responder = Responder(

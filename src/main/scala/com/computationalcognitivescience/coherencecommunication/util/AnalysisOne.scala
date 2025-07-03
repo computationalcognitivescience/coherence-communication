@@ -26,7 +26,7 @@ object AnalysisOne {
       .filter(row => {
         val conversationDataSorted = row._2.sortBy(_.round)
         val conversationDataLast = conversationDataSorted.last
-        !conversationDataLast.initiatorState.communicativeIntent.forall(b => conversationDataLast.communicatedBeliefs.contains(b._1))
+        !conversationDataLast.initiatorState.communicativeIntent.forall(b => conversationDataLast.sharedBeliefs.contains(b._1))
       })
       .map(row => {
       val conversationDataSorted = row._2.sortBy(_.round)
