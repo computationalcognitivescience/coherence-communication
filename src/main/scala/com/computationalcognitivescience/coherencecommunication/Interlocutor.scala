@@ -2,30 +2,28 @@ package com.computationalcognitivescience.coherencecommunication
 
 import mathlib.set.SetTheory._
 import coherence.Belief.Belief
-import coherence.{BeliefNetwork, FoundationalBeliefNetwork, TruthValueAssignment}
+import coherence.{FoundationalBeliefNetwork, TruthValueAssignment}
 import mathlib.graph.{WUnDiEdge, WUnDiGraph}
 
-import scala.math.{cos, sin}
-
 trait Interlocutor {
-  val graph: WUnDiGraph[String],
-  val negativeConstraints: Set[WUnDiEdge[Belief]],
-  val ownBeliefs: TruthValueAssignment,
-  val sharedBeliefs: TruthValueAssignment = TruthValueAssignment.emtpy,
-  val previousState: Option[Interlocutor] = None,
-  val maxUtteranceLength: Option[Int] = None
+  val graph: WUnDiGraph[String]
+  val negativeConstraints: Set[WUnDiEdge[Belief]]
+  val ownBeliefs: TruthValueAssignment
+  val sharedBeliefs: TruthValueAssignment = TruthValueAssignment.emtpy
+  val previousState: Option[Interlocutor] = None
+  val maxUtteranceLength: Option[Int]     = None
 
-  protected val foundationalBeliefNetwork = FoundationalBeliefNetwork(
+  protected val foundationalBeliefNetwork: FoundationalBeliefNetwork = FoundationalBeliefNetwork(
     graph = graph,
     negativeConstraints = negativeConstraints,
     priorBeliefs = ownBeliefs.beliefs \/ sharedBeliefs.beliefs,
     priorBeliefsAssignment = ownBeliefs ++ sharedBeliefs
   )
-  val allBeliefs: TruthValueAssignment      = beliefRevision()
+  val allBeliefs: TruthValueAssignment      = beliefInference()
   val inferredBeliefs: TruthValueAssignment = allBeliefs \ ownBeliefs \ sharedBeliefs
 
-  /** Computes the belief revision for `ownBeliefs` as defined in <span style="small-caps">Belief
-    * Revision</span>.
+  /** Computes the belief revision for `ownBeliefs` as defined in <span style="font-variant-caps:
+    * normal;">Belief Revision</span>.
     *
     * A truth-value assignment over all beliefs, $T$ that is maximally coherent and conforms to the
     * prior as defined by the set:
@@ -35,7 +33,7 @@ trait Interlocutor {
     *
     * @return
     */
-  protected def beliefRevision(): TruthValueAssignment = {
+  protected def beliefInference(): TruthValueAssignment = {
     val tMax: Set[TruthValueAssignment] = foundationalBeliefNetwork.coherenceSolutions()
 
     if (previousState.isDefined) {

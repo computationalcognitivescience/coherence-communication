@@ -1,24 +1,18 @@
 package com.computationalcognitivescience.coherencecommunication
 
 import coherence._
+import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
 case class Responder(
-                      override val beliefNetwork: FoundationalBeliefNetwork,
-                      override val priorBeliefs: Map[Node[String], Boolean],
-                      override val previousState: Option[Responder] = None,
-                      override val sharedBeliefs: Map[Node[String], Boolean] = Map.empty,
-                      presetInferredBeliefs: Option[Map[Node[String], Boolean]] = None,
-                      maxUtteranceLength: Option[Int] = None
-) extends Interlocutor(
-      beliefNetwork,
-      priorBeliefs,
-      previousState,
-      sharedBeliefs,
-      presetInferredBeliefs,
-      maxUtteranceLength
-    ) {
+    override val graph: WUnDiGraph[String],
+    override val negativeConstraints: Set[WUnDiEdge[Belief]],
+    override val ownBeliefs: TruthValueAssignment,
+    override val sharedBeliefs: TruthValueAssignment,
+    override val previousState: Option[Responder] = None,
+    override val maxUtteranceLength: Option[Int] = None
+) extends Interlocutor {
 
   /** Based on (van Arkel, 2021, p. 22)
     * @return

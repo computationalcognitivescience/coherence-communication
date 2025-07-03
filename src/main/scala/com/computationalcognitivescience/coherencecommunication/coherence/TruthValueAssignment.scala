@@ -1,6 +1,7 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
+import com.computationalcognitivescience.coherencecommunication.util.SetTheoryDev._
 import mathlib.set.SetTheory._
 
 import scala.annotation.tailrec
@@ -60,7 +61,23 @@ case class TruthValueAssignment(
     )
 
   /**
+   * Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
+   * the productive version of Definition 2 and [[subsetEquivalence()]]. Note that this returns an empty
+   * truth-value assignment if none of the beliefs in `utteranceBeliefs` are in `this.beliefs`.
+   * @param utteranceBeliefs The subset of beliefs to return the value assignments for.
+   * @return
+   */
+  def subAssignment(utteranceBeliefs: Set[Belief]) = TruthValueAssignment(
+    beliefs = utteranceBeliefs,
+    truthValueAssignment = truthValueAssignment.filter(_._1 in utteranceBeliefs)
+  )
+
+  /** Returns the number of beliefs in the truth-value assignment. */
+  def size = beliefs.size
+
+  /**
    * Does this truth value assignment contain `belief`?
+   *
    * @param belief The belief to test existence for.
    * @return
    */
@@ -115,10 +132,6 @@ case class TruthValueAssignment(
       return this - head.head
     (this - head.head) -- tail
   }
-
-  // TODO Replace with mathlib import when update is published.
-  private def forall[A](set: Set[A], f: A => Boolean): Boolean = set.forall(f)
-  private def exists[A](set: Set[A], f: A => Boolean): Boolean = set.exists(f)
 
   /** Subset equivalence as defined in Definition 2. Returns true if and only if all beliefs in
     * `subset` are contained in both `this` and `that`, and the truth-value assignments are equal.
