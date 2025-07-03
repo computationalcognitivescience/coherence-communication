@@ -1,13 +1,16 @@
 package com.computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.coherence.{FoundationalBeliefNetwork, TruthValueAssignment}
-import mathlib.graph.{Node, WUnDiGraph}
+import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
+import mathlib.graph.WUnDiGraph
 import mathlib.set.SetTheory._
 import coherence.TruthValueAssignment._
 
 import java.time.{LocalDateTime, ZoneOffset}
 import scala.collection.parallel.CollectionConverters._
 import scala.util._
+
+import io.circe.generic.auto._
+import io.circe.syntax._
 
 case class Simulation(
     beliefNetworkSizes: List[Int],
@@ -51,24 +54,26 @@ case class Simulation(
       }
 
     // Hack to set id without global var
-    val allParameters = (allPar.indices zip allPar).map(tmp => Parameters(
-        tmp._1.intValue,
-      tmp._2._1,
-      tmp._2._2,
-      tmp._2._3,
-      tmp._2._4,
-      tmp._2._5,
-      tmp._2._6,
-      tmp._2._7,
-      tmp._2._8,
-      tmp._2._9,
-      tmp._2._10,
+    val allParameters = (allPar.indices zip allPar)
+      .map(tmp =>
+        Parameters(
+          tmp._1.intValue,
+          tmp._2._1,
+          tmp._2._2,
+          tmp._2._3,
+          tmp._2._4,
+          tmp._2._5,
+          tmp._2._6,
+          tmp._2._7,
+          tmp._2._8,
+          tmp._2._9,
+          tmp._2._10
+        )
       )
-    ).sortBy(_.id)
+      .sortBy(_.id)
 
     // Parallelize computations
-    allParameters
-      .par
+    allParameters.par
       .map(parameters => {
         val randomGraph =
           WUnDiGraph.preferentialAttachment(parameters.beliefNetworkSize + 2, 2, 1.0)
@@ -86,21 +91,15 @@ case class Simulation(
           .shuffle(randomGraph.vertices.toSeq)
           .take((randomGraph.vertices.size * parameters.initiatorPriorRatio).intValue)
           .map(belief => (belief, Random.nextBoolean()))
-          .toMap.toTruthValueAssignment
+          .toMap
+          .toTruthValueAssignment
         val initiatorCommunicativeIntent = Random
           .shuffle((randomGraph.vertices \ initiatorOwnBeliefs.beliefs).toSeq)
           .take((randomGraph.vertices.size * parameters.initiatorCommunicativeIntentRatio).intValue)
           .map(belief => (belief, Random.nextBoolean()))
-          .toMap.toTruthValueAssignment
+          .toMap
+          .toTruthValueAssignment
 
-
-//        override val graph: WUnDiGraph[String],
-//        override val negativeConstraints: Set[WUnDiEdge[Belief]],
-//        override val ownBeliefs: TruthValueAssignment,
-//        override val sharedBeliefs: TruthValueAssignment,
-//        communicativeIntent: TruthValueAssignment,
-//        override val previousState: Option[Initiator] = None,
-//        override val maxUtteranceLength: Option[Int] = None
         val initiator = Initiator(
           randomGraph,
           negativeConstraints,
@@ -115,34 +114,40 @@ case class Simulation(
           .shuffle(initiatorPriorVertices)
           .take((initiatorPriorVertices.size * parameters.priorsOverlapRatio).intValue)
 
-        val responderOverlappingSymmetricPrior: Map[Node[String], Boolean] = Random
+        val responderOverlappingSymmetricOwnBeliefs = Random
           .shuffle(responderOverlappingPriorVertices)
           .take((responderOverlappingPriorVertices.size * parameters.priorsAsymmetryRatio).intValue)
-          .map(belief => (belief, initiatorOwnBeliefs(belief)))
+          .map(belief => (belief, initiatorOwnBeliefs(belief).get))
           .toMap
-        val responderOverlappingAssymetricPrior: Map[Node[String], Boolean] =
-          (initiatorPriorVertices.toSet \ responderOverlappingSymmetricPrior.keySet)
-            .map(belief => (belief, !initiatorPrior(belief)))
+          .toTruthValueAssignment
+        val responderOverlappingAsymmetricOwnBeliefs =
+          (initiatorPriorVertices.toSet \ responderOverlappingSymmetricOwnBeliefs.beliefs)
+            .map(belief => (belief, !initiatorOwnBeliefs(belief).get))
             .toMap
-
-        val responderNonOverlappingPrior: Map[Node[String], Boolean] = Random
+            .toTruthValueAssignment
+        val responderNonOverlappingOwnBeliefs = Random
           .shuffle(randomGraph.vertices.toSeq)
           .take((randomGraph.vertices.size * parameters.responderPriorRatio).intValue)
           .map(belief => (belief, Random.nextBoolean()))
           .toMap
-        val responderPrior: Map[Node[String], Boolean] =
-          responderOverlappingSymmetricPrior ++ responderOverlappingAssymetricPrior ++ responderNonOverlappingPrior
+          .toTruthValueAssignment
+        val responderOwnBeliefs = responderOverlappingSymmetricOwnBeliefs ++
+          responderOverlappingAsymmetricOwnBeliefs ++
+          responderNonOverlappingOwnBeliefs
 
-        val responderBeliefNetwork = new FoundationalBeliefNetwork(
+
+//        override val graph: WUnDiGraph[String],
+//        override val negativeConstraints: Set[WUnDiEdge[Belief]],
+//        override val ownBeliefs: TruthValueAssignment,
+//        override val sharedBeliefs: TruthValueAssignment,
+//        override val previousState: Option[Responder] = None,
+//        override val maxUtteranceLength: Option[Int] = None
+        val responder = Responder(
           randomGraph,
           negativeConstraints,
-          responderPrior.keySet,
-          responderPrior
-        )
-
-        val responder = Responder(
-          responderBeliefNetwork,
-          responderPrior
+          responderOwnBeliefs,
+          sharedBeliefs = TruthValueAssignment.emtpy,
+          maxUtteranceLength = Some(parameters.maxUtteranceLength)
         )
 
         val conversation = Conversation(
@@ -175,41 +180,47 @@ object Simulation {
       numberOfSimulations = 10
     ).run()
 
-//    println("\n===")
-    println(data.last._2.head.initiatorState.beliefNetwork.vertices)
-//    println("Intent is: " + data.head._2.head.initiatorState.communicativeIntent)
-    val orderedData: Seq[ConversationData] = data.last._2.reverse
-
-    orderedData.head.initiatorState.allBeliefTruthValueAssignments.keySet.toList
-      .sortBy(_.label)
-      .foreach(node => {
-        val i    = orderedData.head.initiatorState.allBeliefTruthValueAssignments(node)
-        val r    = orderedData.head.responderState.allBeliefTruthValueAssignments(node)
-        val mark = if (i == r) "*" else ""
-//        println(node + " i(" + i + ") r(" + r + ") " + mark)
-      })
-    orderedData.foreach(turn =>
-      println(
-        turn.round + "i: " + turn.utterance.getOrElse(
-          Map.empty
-        ) + "\n" + turn.round + "r: " + turn.restrictedOffer.getOrElse(Map.empty)
-      )
-    )
-    orderedData.last.initiatorState.allBeliefTruthValueAssignments.keySet.toList
-      .sortBy(_.label)
-      .foreach(node => {
-        val i    = orderedData.last.initiatorState.allBeliefTruthValueAssignments(node)
-        val r    = orderedData.last.responderState.allBeliefTruthValueAssignments(node)
-        val mark = if (i == r) "*" else ""
-//        println(node + " i(" + i + ") r(" + r +") " + mark)
-      })
-
-    val dataDir  = os.pwd / "output"
+    val dataDir = os.pwd / "output"
     val filename = "out" + LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) + ".json"
     os.write(
       dataDir / filename,
-      upickle.default.write(data.map(bla => (bla._1, bla._2.map(_.toPicklableConversationData))))
+      upickle.default.write(data.asJson.toString())
     )
+////    println("\n===")
+//    println(data.last._2.head.initiatorState.beliefNetwork.vertices)
+////    println("Intent is: " + data.head._2.head.initiatorState.communicativeIntent)
+//    val orderedData: Seq[ConversationData] = data.last._2.reverse
+//
+//    orderedData.head.initiatorState.allBeliefTruthValueAssignments.keySet.toList
+//      .sortBy(_.label)
+//      .foreach(node => {
+//        val i    = orderedData.head.initiatorState.allBeliefTruthValueAssignments(node)
+//        val r    = orderedData.head.responderState.allBeliefTruthValueAssignments(node)
+//        val mark = if (i == r) "*" else ""
+////        println(node + " i(" + i + ") r(" + r + ") " + mark)
+//      })
+//    orderedData.foreach(turn =>
+//      println(
+//        turn.round + "i: " + turn.utterance.getOrElse(
+//          Map.empty
+//        ) + "\n" + turn.round + "r: " + turn.restrictedOffer.getOrElse(Map.empty)
+//      )
+//    )
+//    orderedData.last.initiatorState.allBeliefTruthValueAssignments.keySet.toList
+//      .sortBy(_.label)
+//      .foreach(node => {
+//        val i    = orderedData.last.initiatorState.allBeliefTruthValueAssignments(node)
+//        val r    = orderedData.last.responderState.allBeliefTruthValueAssignments(node)
+//        val mark = if (i == r) "*" else ""
+////        println(node + " i(" + i + ") r(" + r +") " + mark)
+//      })
+//
+//    val dataDir  = os.pwd / "output"
+//    val filename = "out" + LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) + ".json"
+//    os.write(
+//      dataDir / filename,
+//      upickle.default.write(data.map(bla => (bla._1, bla._2.map(_.toPicklableConversationData))))
+//    )
 
 //    os.write(dataDir/filename,
 //      """

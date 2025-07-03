@@ -240,7 +240,7 @@ object TruthValueAssignment {
     */
   def emtpy: TruthValueAssignment = TruthValueAssignment(Set.empty, Set.empty)
 
-  implicit case class ImplMap(map: Map[Belief, Boolean]) {
+  implicit class ImplMap(map: Map[Belief, Boolean]) {
     def toTruthValueAssignment: TruthValueAssignment = TruthValueAssignment(
       beliefs = map.keySet,
       truthValueAssignment = map.toSet
