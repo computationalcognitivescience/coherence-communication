@@ -25,7 +25,6 @@ case class Responder(
     * @return
     */
   def troubleIdentification(utterance: TruthValueAssignment): (Boolean, Responder) = {
-    require(previousState.isDefined, "Trouble idenfitication is called without a previous state.")
     val nextResponder = this.addSharedBeliefs(utterance)
     (nextResponder.coherence < this.coherence, nextResponder)
   }
