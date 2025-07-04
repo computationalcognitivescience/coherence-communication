@@ -61,20 +61,21 @@ case class TruthValueAssignment(
     )
 
   /** Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
-    * the productive version of Definition 2 and [[subsetEquivalence()]]. Note that this returns an
-    * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
-    * `this.beliefs`.
-    * @param utteranceBeliefs
-    *   The subset of beliefs to return the value assignments for.
-    * @return
-    */
-  def subAssignment(utteranceBeliefs: Set[Belief]) = TruthValueAssignment(
+   * the productive version of Definition 2 and [[subsetEquivalence()]]. Note that this returns an
+   * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
+   * `this.beliefs`.
+   *
+   * @param utteranceBeliefs
+   * The subset of beliefs to return the value assignments for.
+   * @return
+   */
+  def subAssignment(utteranceBeliefs: Set[Belief]): TruthValueAssignment = TruthValueAssignment(
     beliefs = utteranceBeliefs,
     truthValueAssignment = truthValueAssignment.filter(_._1 in utteranceBeliefs)
   )
 
   /** Returns the number of beliefs in the truth-value assignment. */
-  def size = beliefs.size
+  def size: Int = beliefs.size
 
   /** Does this truth value assignment contain `belief`?
     *

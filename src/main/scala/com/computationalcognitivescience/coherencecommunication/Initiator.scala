@@ -11,10 +11,6 @@ import com.computationalcognitivescience.coherencecommunication.coherence.{
 import mathlib.set.SetTheory._
 import mathlib.graph._
 
-case class UtteranceInitiatorPair(
-    utteranceOption: Option[TruthValueAssignment],
-    nextInitiator: Initiator
-)
 
 //NOTES:
 // PRIOR BELIEFS AND COMMUNICATIVE INTENT CAN OVERLAP
@@ -69,7 +65,7 @@ case class Initiator(
           .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
 
     def relativeStructuralSimilarity(utterance: TruthValueAssignment): Double = {
-      1.0 / (utterance.size) * (communicativeIntent ~ perspectiveTaking(utterance))
+      1.0 / utterance.size * (communicativeIntent ~ perspectiveTaking(utterance))
     }
 
     val allPossibleOptimalUtterances =

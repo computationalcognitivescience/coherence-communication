@@ -85,8 +85,8 @@ case class FoundationalBeliefNetwork(
   override def ac1(
       unassignedMinus: Set[Belief] // All nodes incident to a negative constraint
   ): Set[TruthValueAssignment] =
-    (unassignedMinus
-      .allMappings(Set(true, false)))
+    unassignedMinus
+      .allMappings(Set(true, false))
       .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))
       .map(_ ++ priorBeliefsAssignment)
 }

@@ -6,11 +6,6 @@ import mathlib.graph._
 import mathlib.set.SetTheory._
 import coherence.TruthValueAssignment._
 
-case class UtteranceResponderPair(
-    restrictedOfferOption: Option[TruthValueAssignment],
-    nextResponder: Responder
-)
-
 case class Responder(
     override val graph: WUnDiGraph[String],
     override val negativeConstraints: Set[WUnDiEdge[Belief]],
@@ -42,9 +37,9 @@ case class Responder(
   def repairFormulation(utterance: TruthValueAssignment): Option[TruthValueAssignment] = {
     val allPossibleOfferBeliefs: Set[Set[Belief]] =
       if (maxUtteranceLength.isDefined)
-        (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get))
+        powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get)
       else
-        (powerset(graph.vertices \ sharedBeliefs.beliefs))
+        powerset(graph.vertices \ sharedBeliefs.beliefs)
 
     val allTOffers: Set[TruthValueAssignment] = allPossibleOfferBeliefs
       .flatMap((offers: Set[Belief]) => offers.allMappings(Set(true, false)))
