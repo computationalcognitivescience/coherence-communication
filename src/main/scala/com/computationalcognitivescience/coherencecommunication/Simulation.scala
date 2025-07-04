@@ -1,9 +1,11 @@
 package com.computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
+import coherence.TruthValueAssignment
+import coherence.TruthValueAssignment._
+import SimulationData._
+
 import mathlib.graph.WUnDiGraph
 import mathlib.set.SetTheory._
-import coherence.TruthValueAssignment._
 
 import java.time.{LocalDateTime, ZoneOffset}
 import scala.collection.parallel.CollectionConverters._
@@ -25,7 +27,7 @@ case class Simulation(
     maxRoundLengths: List[Int],
     numberOfSimulations: Int
 ) {
-  def run(): Map[Parameters, Seq[ConversationData]] = {
+  def run(): List[SimulationData] = {
     val allPar =
       for (
         beliefNetworkSize             <- beliefNetworkSizes;
@@ -77,11 +79,11 @@ case class Simulation(
       .map(parameters => {
         val randomGraph =
           WUnDiGraph.preferentialAttachment(parameters.beliefNetworkSize + 2, 2, 1.0)
-//          WUnDiGraph.uniform(
-//            n = parameters.beliefNetworkSize,
-//            numberEdges =
-//              (parameters.beliefNetworkSize * parameters.beliefNetworkConstraintsRatio).intValue
-//          )
+        //          WUnDiGraph.uniform(
+        //            n = parameters.beliefNetworkSize,
+        //            numberEdges =
+        //              (parameters.beliefNetworkSize * parameters.beliefNetworkConstraintsRatio).intValue
+        //          )
         val negativeConstraints = scala.util.Random
           .shuffle(randomGraph.edges.toSeq)
           .take((randomGraph.size * parameters.beliefNetworkPCRatio).intValue)
@@ -135,13 +137,6 @@ case class Simulation(
           responderOverlappingAsymmetricOwnBeliefs ++
           responderNonOverlappingOwnBeliefs
 
-
-//        override val graph: WUnDiGraph[String],
-//        override val negativeConstraints: Set[WUnDiEdge[Belief]],
-//        override val ownBeliefs: TruthValueAssignment,
-//        override val sharedBeliefs: TruthValueAssignment,
-//        override val previousState: Option[Responder] = None,
-//        override val maxUtteranceLength: Option[Int] = None
         val responder = Responder(
           randomGraph,
           negativeConstraints,
@@ -157,10 +152,9 @@ case class Simulation(
         )
         val conversationData = conversation.simulate()
         println(s"${parameters.id}/${allParameters.size}")
-        parameters -> conversationData
+       SimulationData(parameters, conversationData)
       })
       .toList
-      .toMap
   }
 }
 
