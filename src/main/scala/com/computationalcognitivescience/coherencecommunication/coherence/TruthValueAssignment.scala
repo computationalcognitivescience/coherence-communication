@@ -128,10 +128,13 @@ case class TruthValueAssignment(
     */
   @tailrec
   final def --(beliefs: Set[Belief]): TruthValueAssignment = {
-    val (head, tail) = beliefs.splitAt(1)
-    if (tail.isEmpty)
-      return this - head.head
-    (this - head.head) -- tail
+    if(beliefs.isEmpty) this
+    else {
+      val (head, tail) = beliefs.splitAt(1)
+      if (tail.isEmpty)
+        return this - head.head
+      (this - head.head) -- tail
+    }
   }
 
   /** Subset equivalence as defined in Definition 2. Returns true if and only if all beliefs in

@@ -182,7 +182,7 @@ object Simulation {
 
     val dataDir = os.pwd / "output"
     val filename = "out" + LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) + ".json"
-    os.write(dataDir / filename, data.asJson.toString())
+//    os.write(dataDir / filename, data.asJson.toString())
 ////    println("\n===")
 //    println(data.last._2.head.initiatorState.beliefNetwork.vertices)
 ////    println("Intent is: " + data.head._2.head.initiatorState.communicativeIntent)

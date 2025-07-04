@@ -1,7 +1,6 @@
 package com.computationalcognitivescience.coherencecommunication
 
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
-import mathlib.graph.{Node, WUnDiEdge}
 import mathlib.set.SetTheory._
 
 case class ConversationData(
@@ -22,12 +21,20 @@ case class ConversationData(
       initiatorState.communicativeIntent.beliefs
     )
 
-  val priorOverlap: Double =
-    1.0 - (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size
+  val ownBeliefsOverlap: Double = {
+    val ownBeliefsMinSize =
+      scala.math.min(initiatorState.ownBeliefs.beliefs.size, responderState.ownBeliefs.beliefs.size)
+    if (ownBeliefsMinSize == 0) 0.0
+    else
+      (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size / ownBeliefsMinSize.doubleValue
+  }
 
-  val priorAsymmetry: Double =
-    1.0 - (initiatorState.ownBeliefs ~ responderState.ownBeliefs
-      / (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size)
+  val ownBeliefAsymmetry: Double = {
+    if(ownBeliefsOverlap == 0.0) 0.0
+    else
+      1.0 - (initiatorState.ownBeliefs ~ responderState.ownBeliefs
+        / (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size)
+  }
 
   /*
   id: Int
