@@ -1,10 +1,11 @@
 package com.computationalcognitivescience.coherencecommunication.util
 
+import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
 import com.computationalcognitivescience.coherencecommunication.JSON.loadJson
 import com.computationalcognitivescience.coherencecommunication.{
-  ConversationData,
   Parameters,
-  SimulationData
+  SimulationData,
+  TurnData
 }
 import os.Path
 import purecsv.safe._
@@ -13,8 +14,8 @@ import purecsv.unsafe.RecordSplitter.defaultFieldSeparatorStr
 object CSV {
   def main(args: Array[String]): Unit = {
 
-    val dataFolderPath: Path = os.pwd / "output" / "1751635313"
-    val dataFilename: String   = "complete.json"
+    val dataFolderPath: Path = os.pwd / "output" / "1751822806"
+    val dataFilename: String = "complete.json"
 
     println("Loading JSON data...")
     val data: List[SimulationData] = loadJson(dataFolderPath / dataFilename)
@@ -25,7 +26,7 @@ object CSV {
     println("Writing to CSV...")
 
     os.write(
-      dataFolderPath / dataFilename.split("\\.").dropRight(1).mkString.concat(".csv") ,
+      dataFolderPath / dataFilename.split("\\.").dropRight(1).mkString.concat(".csv"),
       FlatData.parameters.mkString(defaultFieldSeparatorStr).concat("\n"),
       createFolders = true
     )
@@ -33,7 +34,7 @@ object CSV {
       .toCSVLines()
       .foreach(line =>
         os.write.append(
-          dataFolderPath / dataFilename.split("\\.").dropRight(1).mkString.concat(".csv") ,
+          dataFolderPath / dataFilename.split("\\.").dropRight(1).mkString.concat(".csv"),
           line.concat("\n"),
           createFolders = true
         )
@@ -44,7 +45,7 @@ object CSV {
   }
 
   case class FlatData(
-      parameterId: Long,
+      id: Long,
       networkSize: Int,
       networkConstraints: Int,
       networkPCRatio: Double,
@@ -82,40 +83,46 @@ object CSV {
 
     private def perParameterCombination(
         parameters: Parameters,
-        conversations: Iterable[ConversationData]
-    ): Option[FlatData] = {
-      if (conversations.nonEmpty) {
-        val firstTurn = conversations.last
-        val lastTurn  = conversations.head
-        Some(
-          FlatData(
-            parameterId = parameters.id,
-            networkSize = parameters.beliefNetworkSize,
-            networkConstraints = firstTurn.networkConstraints,
-            networkPCRatio = firstTurn.networkPCRatio,
-            initiatorIntentSize = firstTurn.initiatorIntentSize,
-            initiatorOwnBeliefsSize = firstTurn.initiatorState.ownBeliefs.size,
-            responderOwnBeliefsSize = firstTurn.responderState.ownBeliefs.size,
-            nRounds = conversations.size,
-            nrOffers = conversations.count(turn =>
-              turn.restrictedOffer.isDefined && turn.restrictedOffer.get.nonEmpty
-            ),
-            asymmetryAllBeliefsFirst = firstTurn.asymmetryAllBeliefs,
-            asymmetryIntentionBeliefsFirst = firstTurn.asymmetryIntentionBeliefs,
-            asymmetryAllBeliefsLast = lastTurn.asymmetryAllBeliefs,
-            asymmetryIntentionBeliefsLast = lastTurn.asymmetryIntentionBeliefs,
-            ownBeliefsOverlap = firstTurn.ownBeliefsOverlap,
-            ownBeliefsAsymmetry = firstTurn.ownBeliefAsymmetry
-          )
-        )
-      } else None
+        conversations: Seq[ConversationData]
+    ): Seq[FlatData] = {
+      conversations.indices
+        .map(conversationIndex => {
+          val conversation = conversations(conversationIndex)
+          if (conversation.nonEmpty) {
+            val firstTurn = conversation.last
+            val lastTurn  = conversation.head
+            Some(
+              FlatData(
+                id = parameters.id * conversations.size + conversationIndex,
+                networkSize = parameters.beliefNetworkSize,
+                networkConstraints = firstTurn.networkConstraints,
+                networkPCRatio = firstTurn.networkPCRatio,
+                initiatorIntentSize = firstTurn.initiatorIntentSize,
+                initiatorOwnBeliefsSize = firstTurn.initiatorState.ownBeliefs.size,
+                responderOwnBeliefsSize = firstTurn.responderState.ownBeliefs.size,
+                nRounds = conversation.size,
+                nrOffers = conversation.count(turn =>
+                  turn.restrictedOffer.isDefined && turn.restrictedOffer.get.nonEmpty
+                ),
+                asymmetryAllBeliefsFirst = firstTurn.asymmetryAllBeliefs,
+                asymmetryIntentionBeliefsFirst = firstTurn.asymmetryIntentionBeliefs,
+                asymmetryAllBeliefsLast = lastTurn.asymmetryAllBeliefs,
+                asymmetryIntentionBeliefsLast = lastTurn.asymmetryIntentionBeliefs,
+                ownBeliefsOverlap = firstTurn.ownBeliefsOverlap,
+                ownBeliefsAsymmetry = firstTurn.ownBeliefAsymmetry
+              )
+            )
+          } else None
+        })
+        .filter(_.isDefined)
+        .map(_.get)
     }
 
     def flattenToCSV(data: List[SimulationData]): List[FlatData] =
       data
-        .map(simData => FlatData.perParameterCombination(simData.parameters, simData.conversations))
-        .filter(_.isDefined)
-        .map(_.get)
+        .flatMap(simData =>
+          FlatData.perParameterCombination(simData.parameters, simData.conversations)
+        )
   }
 }
 

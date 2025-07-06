@@ -1,7 +1,9 @@
 package com.computationalcognitivescience.coherencecommunication
 
+import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
 import com.computationalcognitivescience.coherencecommunication.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
+
 import scala.annotation.tailrec
 
 case class Conversation(
@@ -10,21 +12,21 @@ case class Conversation(
     maxRounds: Int
 ) {
 
-  private val preFirstRoundConversationData = ConversationData(
+  private val preFirstRoundConversationData = TurnData(
     initiatorState = initialInitiator,
     responderState = initialResponder,
     round = 0,
     utterance = None,
     restrictedOffer = None
   )
-  def simulate(): Seq[ConversationData] = simulateRound(initialInitiator, initialResponder)
+  def simulate(): ConversationData = simulateRound(initialInitiator, initialResponder)
   @tailrec
   private def simulateRound(
       initiator: Initiator,
       responder: Responder,
       restrictedOffer: Option[TruthValueAssignment] = None,
-      data: Seq[ConversationData] = Seq(preFirstRoundConversationData)
-  ): Seq[ConversationData] = {
+      data: Seq[TurnData] = Seq(preFirstRoundConversationData)
+  ): Seq[TurnData] = {
 //    println("[Conversation.run] Round " + (data.length - 1))
     if (data.length > maxRounds) {
       // Stop conversation if it takes more than maxRounds
@@ -35,7 +37,7 @@ case class Conversation(
       val perceivedMutualUnderstanding = initiator.perceivedMutualUnderstanding(restrictedOffer)
       if (perceivedMutualUnderstanding == Yes) {
         // Conversation is finished.
-        ConversationData(
+        TurnData(
           initiatorState = initiator,
           responderState = responder,
           round = data.head.round + 1,
@@ -55,7 +57,7 @@ case class Conversation(
           }
         if(utterance.isEmpty) {
           // No reply or utterance was produced, end the conversation.
-          ConversationData(
+          TurnData(
             initiatorState = nextInitiator,
             responderState = responder,
             round = data.head.round + 1,
@@ -65,7 +67,7 @@ case class Conversation(
         } else {
           val (trouble, nextResponder) = responder.troubleIdentification(utterance.get)
           val restrictedOffer = responder.repairFormulation(utterance.get)
-          val roundData = ConversationData(
+          val roundData = TurnData(
             initiatorState = nextInitiator,
             responderState = nextResponder,
             round = data.head.round + 1,

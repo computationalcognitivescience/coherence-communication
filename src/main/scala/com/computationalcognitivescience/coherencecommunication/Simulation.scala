@@ -3,6 +3,7 @@ package com.computationalcognitivescience.coherencecommunication
 import coherence.TruthValueAssignment
 import coherence.TruthValueAssignment._
 import SimulationData._
+import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
 import mathlib.graph.WUnDiGraph
 import mathlib.set.SetTheory._
 
@@ -76,18 +77,15 @@ case class Simulation(
       .sortBy(_.id)
 
     // Create batches
-    val batchSize = 50
-    val batches   = allParameters.toList.grouped(batchSize).toList
 
     // Parallelize computations
 
-    println(s"Created ${batches.size} batches of size $batchSize with each $numberOfSimulations conversations.")
+    println(s"Created ${allParameters.size} batches of $numberOfSimulations agent pairs.")
     println("Starting simulation.")
-    var index = 0
-    for (batch <- batches) {
-      index += 1
-      val batchData = batch.par
-        .map(parameters => {
+    for (parameters <- allParameters) {
+      val agentPairId = 0 until numberOfSimulations
+      val batchConversationData: Seq[ConversationData] = agentPairId.par
+        .map(id => {
           val randomGraph =
             WUnDiGraph.preferentialAttachment(parameters.beliefNetworkSize + 2, 2, 1.0)
           //          WUnDiGraph.uniform(
@@ -165,12 +163,20 @@ case class Simulation(
             responder,
             parameters.maxRoundLength
           )
-          val conversationData = conversation.simulate()
-          SimulationData(parameters, conversationData)
+          conversation.simulate()
         })
         .toList
-      println(s"Batch $index / ${batches.size}")
-      os.write(dataFolderPath / s"part-$index.json", batchData.asJson.toString(), createFolders = true)
+      val batchData = SimulationData(
+        parameters = parameters,
+        conversations = batchConversationData
+      )
+
+      println(s"Batch ${parameters.id} / ${allParameters.size}")
+      os.write(
+        dataFolderPath / s"part-${parameters.id}.json",
+        batchData.asJson.toString(),
+        createFolders = true
+      )
     }
   }
 }
@@ -179,17 +185,19 @@ object Simulation {
 
   def mergeDatafileParts(dataFolderPath: Path): Unit = {
     val fileList = os.list(dataFolderPath).filter(_.toString().contains("part"))
-    val data: List[SimulationData] = fileList.flatMap(dataFilePath => {
-      val jsonDecoding = decode[List[SimulationData]](os.read.lines(dataFilePath).mkString).toOption
-      if(jsonDecoding.isEmpty) List.empty[SimulationData]
-      else jsonDecoding.get
-    }).toList
+    val data: List[SimulationData] = fileList
+      .map(dataFilePath => {
+          decode[SimulationData](os.read.lines(dataFilePath).mkString).toOption
+      })
+      .filter(_.isDefined)
+      .map(_.get)
+      .toList
     os.write(dataFolderPath / s"complete.json", data.asJson.toString(), createFolders = true)
   }
 
   def main(args: Array[String]): Unit = {
-    val dataDir  = os.pwd / "output"
-    val dataFolderPath = dataDir /  LocalDateTime.now().toEpochSecond(ZoneOffset.UTC).toString
+    val dataDir        = os.pwd / "output"
+    val dataFolderPath = dataDir / LocalDateTime.now().toEpochSecond(ZoneOffset.UTC).toString
 
 //    Simulation(
 //      beliefNetworkSizes = List(10),
@@ -206,8 +214,8 @@ object Simulation {
 //    ).run(dataDir)
     Simulation(
       beliefNetworkSizes = List(8),
-            beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
-            beliefNetworkPCRatios = List(.25, .5, .75, 1.0),
+      beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
+      beliefNetworkPCRatios = List(.25, .5, .75, 1.0),
       intentionRatios = List(0.2),
       initiatorPriorRatios = List(0, .2, .4),
       responderPriorRatios = List(0, .2, .4),
@@ -218,8 +226,6 @@ object Simulation {
       numberOfSimulations = 5
     ).run(dataFolderPath)
     mergeDatafileParts(dataFolderPath)
-
-
 
 ////    println("\n===")
 //    println(data.last._2.head.initiatorState.beliefNetwork.vertices)

@@ -12,4 +12,8 @@ object JSON {
     else jsonDecoding.get
   }
 
-}
+  def main(args: Array[String]): Unit = {
+    Simulation.mergeDatafileParts(os.pwd / "output" / "1751822806")
+  }
+
+  }
