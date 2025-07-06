@@ -45,9 +45,16 @@ case class TruthValueAssignment(
       Some(truthValueAssignment.find(_._1 == belief).get._2)
     else None
 
+  /** Is true is this truth-value assignment is not empty. */
+  def nonEmpty: Boolean = beliefs.nonEmpty
+
+  /** Is true is this truth-value assignment is empty. */
+  def isEmpty: Boolean = beliefs.isEmpty
+
   /** Adds the truth value for a belief, will overwrite existing truth value is belief is in the
     * current truth value assignment.
-    * @param belief
+   *
+   * @param belief
     *   The belief to be added.
     * @param truthValue
     *   The truth value.
