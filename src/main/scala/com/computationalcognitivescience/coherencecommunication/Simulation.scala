@@ -179,6 +179,7 @@ case class Simulation(
         createFolders = true
       )
     }
+    println("Done simulating.")
   }
 }
 
@@ -186,6 +187,8 @@ object Simulation {
 
   def mergeDatafileParts(dataFolderPath: Path): Unit = {
     val fileList = os.list(dataFolderPath).filter(_.toString().contains("part"))
+    val outputFile = dataFolderPath / s"complete.json"
+    println(s"Merging datafile parts into ${outputFile.toString()}...")
     val data: List[SimulationData] = fileList
       .map(dataFilePath => {
           decode[SimulationData](os.read.lines(dataFilePath).mkString).toOption
@@ -193,7 +196,8 @@ object Simulation {
       .filter(_.isDefined)
       .map(_.get)
       .toList
-    os.write(dataFolderPath / s"complete.json", data.asJson.toString(), createFolders = true)
+    os.write(outputFile, data.asJson.toString(), createFolders = true)
+    println("Done.")
   }
 
   def main(args: Array[String]): Unit = {
@@ -230,6 +234,8 @@ object Simulation {
     mergeDatafileParts(dataFolderPath)
 
     CSV.jsonToCSV(dataFolderPath, "complete.json")
+
+    println("Finished, exiting.")
 
 ////    println("\n===")
 //    println(data.last._2.head.initiatorState.beliefNetwork.vertices)

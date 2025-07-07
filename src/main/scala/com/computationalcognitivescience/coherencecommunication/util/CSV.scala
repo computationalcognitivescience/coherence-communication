@@ -12,7 +12,7 @@ import purecsv.unsafe.RecordSplitter.defaultFieldSeparatorStr
 
 object CSV {
   def main(args: Array[String]): Unit = {
-    val dataFolderPath: Path = os.pwd / "output" / "1751822806"
+    val dataFolderPath: Path = os.pwd / "output" / "1751883356"
     val dataFilename: String = "complete.json"
     jsonToCSV(dataFolderPath, dataFilename)
   }
@@ -24,10 +24,12 @@ object CSV {
     println("Flattening data...")
     val flatData: Seq[FlatData] = FlatData.flattenToCSV(data)
     println("Done.")
-    println("Writing to CSV...")
+
+    val outputFile = dataFolderPath / dataFilename.split("\\.").dropRight(1).mkString.concat(".csv")
+    println(s"Writing to CSV file ${outputFile.toString()}...")
 
     os.write(
-      dataFolderPath / dataFilename.split("\\.").dropRight(1).mkString.concat(".csv"),
+      outputFile,
       FlatData.parameters.mkString(defaultFieldSeparatorStr).concat("\n"),
       createFolders = true
     )
@@ -42,7 +44,6 @@ object CSV {
       )
 
     println("Done.")
-    println("Finished, exiting.")
   }
 
   case class FlatData(
