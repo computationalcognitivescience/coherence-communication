@@ -20,10 +20,10 @@ case class Simulation(
     beliefNetworkConstraintsRatios: List[Double],
     beliefNetworkPCRatios: List[Double],
     intentionRatios: List[Double],
-    initiatorPriorRatios: List[Double],
-    responderPriorRatios: List[Double],
-    priorsOverlapRatios: List[Double],
-    priorsAsymmetryRatios: List[Double],
+    initiatorOwnBeliefsRatios: List[Double],
+    responderOwnBeliefsRatios: List[Double],
+    ownBeliefsOverlapRatios: List[Double],
+    ownBeliefsAsymmetryRatios: List[Double],
     maxUtteranceLengths: List[Int],
     maxRoundLengths: List[Int],
     numberOfSimulations: Int
@@ -37,10 +37,10 @@ case class Simulation(
         beliefNetworkConstraintsRatio <- beliefNetworkConstraintsRatios;
         beliefNetworkPCRatio          <- beliefNetworkPCRatios;
         intentionRatio                <- intentionRatios;
-        initiatorPriorRatio           <- initiatorPriorRatios;
-        responderPriorRatio           <- responderPriorRatios;
-        priorOverlap                  <- priorsOverlapRatios;
-        priorAsymmetry                <- priorsAsymmetryRatios;
+        initiatorPriorRatio           <- initiatorOwnBeliefsRatios;
+        responderPriorRatio           <- responderOwnBeliefsRatios;
+        priorOverlap                  <- ownBeliefsOverlapRatios;
+        priorAsymmetry                <- ownBeliefsAsymmetryRatios;
         maxUtteranceLength            <- maxUtteranceLengths;
         maxRoundLength                <- maxRoundLengths
       ) yield {
@@ -187,12 +187,12 @@ case class Simulation(
 object Simulation {
 
   def mergeDatafileParts(dataFolderPath: Path): Unit = {
-    val fileList = os.list(dataFolderPath).filter(_.toString().contains("part"))
+    val fileList   = os.list(dataFolderPath).filter(_.toString().contains("part"))
     val outputFile = dataFolderPath / s"complete.json"
     println(s"Merging datafile parts into ${outputFile.toString()}...")
     val data: List[SimulationData] = fileList
       .map(dataFilePath => {
-          decode[SimulationData](os.read.lines(dataFilePath).mkString).toOption
+        decode[SimulationData](os.read.lines(dataFilePath).mkString).toOption
       })
       .filter(_.isDefined)
       .map(_.get)
@@ -205,6 +205,9 @@ object Simulation {
     val dataDir        = os.pwd / "output"
     val dataFolderPath = dataDir / LocalDateTime.now().toEpochSecond(ZoneOffset.UTC).toString
 
+    /*
+    Large Simulation settings.
+     */
 //    Simulation(
 //      beliefNetworkSizes = List(10),
 //      beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
@@ -218,15 +221,18 @@ object Simulation {
 //      maxRoundLengths = List(5),
 //      numberOfSimulations = 10
 //    ).run(dataDir)
+    /*
+    Small simulation settings.
+     */
     Simulation(
       beliefNetworkSizes = List(8),
       beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
       beliefNetworkPCRatios = List(.25, .5, .75, 1.0),
-      intentionRatios = List(0.2),
-      initiatorPriorRatios = List(0, .2, .4),
-      responderPriorRatios = List(0, .2, .4),
-      priorsOverlapRatios = List(.5),
-      priorsAsymmetryRatios = List(.5),
+      intentionRatios = List(.25, 0.4),
+      initiatorOwnBeliefsRatios = List(0, .2, .4),
+      responderOwnBeliefsRatios = List(0, .2, .4),
+      ownBeliefsOverlapRatios = List(.5),
+      ownBeliefsAsymmetryRatios = List(.5),
       maxUtteranceLengths = List(5),
       maxRoundLengths = List(5),
       numberOfSimulations = 5

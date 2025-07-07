@@ -37,16 +37,17 @@ case class Responder(
   def repairFormulation(utterance: TruthValueAssignment): Option[TruthValueAssignment] = {
     val allPossibleOfferBeliefs: Set[Set[Belief]] =
       if (maxUtteranceLength.isDefined)
-        powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get)
+        powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) \ Set(Set.empty)
       else
-        powerset(graph.vertices \ sharedBeliefs.beliefs)
+        powerset(graph.vertices \ sharedBeliefs.beliefs) \ Set(Set.empty)
 
     val allTOffers: Set[TruthValueAssignment] = allPossibleOfferBeliefs
       .flatMap((offers: Set[Belief]) => offers.allMappings(Set(true, false)))
       .map(_.toTruthValueAssignment)
 
-    def relativeTOfferCoherence(offer: TruthValueAssignment): Double =
+    def relativeTOfferCoherence(offer: TruthValueAssignment): Double = {
       addSharedBeliefs(offer).coherence / offer.size
+    }
 
     val allOptimalTOffers = argMax(allTOffers, relativeTOfferCoherence)
 
