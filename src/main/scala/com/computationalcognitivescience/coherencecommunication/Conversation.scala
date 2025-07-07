@@ -1,6 +1,5 @@
 package com.computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
 import com.computationalcognitivescience.coherencecommunication.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
 
@@ -16,17 +15,18 @@ case class Conversation(
     initiatorState = initialInitiator,
     responderState = initialResponder,
     round = 0,
+    initiatorPerceivedMutualUnderstanding = Understandings.No,
     utterance = None,
     restrictedOffer = None
   )
-  def simulate(): ConversationData = simulateRound(initialInitiator, initialResponder)
+  def simulate(): List[TurnData] = simulateRound(initialInitiator, initialResponder)
   @tailrec
   private def simulateRound(
       initiator: Initiator,
       responder: Responder,
       restrictedOffer: Option[TruthValueAssignment] = None,
-      data: Seq[TurnData] = Seq(preFirstRoundConversationData)
-  ): Seq[TurnData] = {
+      data: List[TurnData] = List(preFirstRoundConversationData)
+  ): List[TurnData] = {
 //    println("[Conversation.run] Round " + (data.length - 1))
     if (data.length > maxRounds) {
       // Stop conversation if it takes more than maxRounds
@@ -41,8 +41,9 @@ case class Conversation(
           initiatorState = initiator,
           responderState = responder,
           round = data.head.round + 1,
+          initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
           utterance = None,
-          restrictedOffer = restrictedOffer,
+          restrictedOffer = restrictedOffer
         ) +: data
       } else {
         val (utterance, nextInitiator) =
@@ -51,30 +52,38 @@ case class Conversation(
             initiator.produceUtterance()
           } else {
             // Offer was given, not yet perceived mutual understanding
-            val reply: TruthValueAssignment          = initiator.repairSolution(restrictedOffer.get) // Figure Step 6
+            val reply: TruthValueAssignment =
+              initiator.repairSolution(restrictedOffer.get) // Figure Step 6
             val (additionalUtterance, nextInitiator) = initiator.produceUtterance() // Figure Step 7
-            (Some(reply ++ additionalUtterance.getOrElse(TruthValueAssignment.emtpy)), nextInitiator)
+            (
+              Some(reply ++ additionalUtterance.getOrElse(TruthValueAssignment.emtpy)),
+              nextInitiator
+            )
           }
-        if(utterance.isEmpty) {
+        if (utterance.isEmpty) {
           // No reply or utterance was produced, end the conversation.
           TurnData(
             initiatorState = nextInitiator,
             responderState = responder,
             round = data.head.round + 1,
+            initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
             utterance = None,
-            restrictedOffer = restrictedOffer,
+            restrictedOffer = restrictedOffer
           ) +: data
         } else {
           val (trouble, nextResponder) = responder.troubleIdentification(utterance.get)
-          val restrictedOffer = responder.repairFormulation(utterance.get)
+          val restrictedOfferOption =
+            if (trouble) nextResponder.repairFormulation(utterance.get)
+            else None
           val roundData = TurnData(
             initiatorState = nextInitiator,
             responderState = nextResponder,
             round = data.head.round + 1,
+            initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
             utterance = utterance,
-            restrictedOffer = restrictedOffer,
+            restrictedOffer = restrictedOfferOption
           )
-          simulateRound(nextInitiator, nextResponder, restrictedOffer, roundData +: data)
+          simulateRound(nextInitiator, nextResponder, restrictedOfferOption, roundData +: data)
         }
       }
 

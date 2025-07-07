@@ -1,5 +1,6 @@
 package com.computationalcognitivescience.coherencecommunication
 
+import com.computationalcognitivescience.coherencecommunication.Understandings.Understanding
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
 import util.SetTheoryDev._
 import mathlib.set.SetTheory._
@@ -8,6 +9,7 @@ case class TurnData(
     initiatorState: Initiator,
     responderState: Responder,
     round: Int,
+    initiatorPerceivedMutualUnderstanding: Understanding,
     utterance: Option[TruthValueAssignment],
     restrictedOffer: Option[TruthValueAssignment]
 ) {
@@ -54,5 +56,5 @@ case class TurnData(
   def initiatorIntentSize: Int = initiatorState.communicativeIntent.size
 }
 
-case object TurnData {
+object TurnData {
 }

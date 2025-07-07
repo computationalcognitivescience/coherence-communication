@@ -1,6 +1,5 @@
 package com.computationalcognitivescience.coherencecommunication.util
 
-import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
 import com.computationalcognitivescience.coherencecommunication.JSON.loadJson
 import com.computationalcognitivescience.coherencecommunication.{
   Parameters,
@@ -13,10 +12,12 @@ import purecsv.unsafe.RecordSplitter.defaultFieldSeparatorStr
 
 object CSV {
   def main(args: Array[String]): Unit = {
-
     val dataFolderPath: Path = os.pwd / "output" / "1751822806"
     val dataFilename: String = "complete.json"
+    jsonToCSV(dataFolderPath, dataFilename)
+  }
 
+  def jsonToCSV(dataFolderPath: Path, dataFilename: String): Unit = {
     println("Loading JSON data...")
     val data: List[SimulationData] = loadJson(dataFolderPath / dataFilename)
     println("Done.")
@@ -83,7 +84,7 @@ object CSV {
 
     private def perParameterCombination(
         parameters: Parameters,
-        conversations: Seq[ConversationData]
+        conversations: Seq[Seq[TurnData]]
     ): Seq[FlatData] = {
       conversations.indices
         .map(conversationIndex => {
