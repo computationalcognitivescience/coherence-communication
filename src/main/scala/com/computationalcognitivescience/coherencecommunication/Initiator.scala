@@ -1,16 +1,11 @@
 package com.computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.Understandings.Understanding
+import com.computationalcognitivescience.coherencecommunication.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import com.computationalcognitivescience.coherencecommunication.util.SetTheoryDev._
-import com.computationalcognitivescience.coherencecommunication.coherence.{
-  BeliefNetwork,
-  FoundationalBeliefNetwork,
-  TruthValueAssignment
-}
+import com.computationalcognitivescience.coherencecommunication.coherence.{BeliefNetwork, FoundationalBeliefNetwork, TruthValueAssignment}
 import mathlib.set.SetTheory._
 import mathlib.graph._
-
 
 //NOTES:
 // PRIOR BELIEFS AND COMMUNICATIVE INTENT CAN OVERLAP
@@ -58,18 +53,21 @@ case class Initiator(
   def produceUtterance(): (Option[TruthValueAssignment], Initiator) = {
     val allPossibleUtteranceBeliefs: Set[TruthValueAssignment] =
       if (maxUtteranceLength.isDefined)
-        (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) \ Set.empty)
+        (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) \ Set(
+          Set.empty
+        ))
           .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
       else
-        (powerset(graph.vertices \ sharedBeliefs.beliefs) \ Set.empty)
+        (powerset(graph.vertices \ sharedBeliefs.beliefs) \ Set(Set.empty))
           .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
 
     def relativeStructuralSimilarity(utterance: TruthValueAssignment): Double = {
-      1.0 / utterance.size * (communicativeIntent ~ perspectiveTaking(utterance))
+      val similarity = communicativeIntent ~ perspectiveTaking(utterance)
+      if (similarity == 0) 0.0
+      else 1.0 / (utterance.size * similarity)
     }
 
-    val allPossibleOptimalUtterances =
-      argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
+    val allPossibleOptimalUtterances = argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
     val utteranceOption = allPossibleOptimalUtterances.random
     (
       utteranceOption,
@@ -88,8 +86,11 @@ case class Initiator(
     *   Yes, NotYet, or No understanding.
     */
   def perceivedMutualUnderstanding(offer: Option[TruthValueAssignment]): Understanding = {
-    if (offer.isEmpty) Understandings.NotYet
-    else {
+    if (offer.isEmpty) {
+      if(forall(allBeliefs.beliefs, (belief: Belief) => sharedBeliefs.contains(belief)))
+        Understandings.Yes
+      else Understandings.NotYet
+    } else {
       val perspective                      = perspectiveTaking(offer.get)
       def compare(belief: Belief): Boolean = allBeliefs(belief) == perspective(belief)
       if (forall(communicativeIntent.beliefs, compare)) Understandings.Yes

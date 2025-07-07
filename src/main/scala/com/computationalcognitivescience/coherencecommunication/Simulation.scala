@@ -84,6 +84,7 @@ case class Simulation(
     println(s"Created ${allParameters.size} batches of $numberOfSimulations agent pairs.")
     println("Starting simulation.")
     for (parameters <- allParameters) {
+      println(s"Batch ${parameters.id} / ${allParameters.size}")
       val agentPairId = (0 until numberOfSimulations).toList
       val batchConversationData: Seq[ConversationData] = agentPairId.par
         .map(id => {
@@ -173,7 +174,6 @@ case class Simulation(
         conversations = batchConversationData
       )
 
-      println(s"Batch ${parameters.id} / ${allParameters.size}")
       os.write(
         dataFolderPath / s"part-${parameters.id}.json",
         batchData.asJson.toString(),
