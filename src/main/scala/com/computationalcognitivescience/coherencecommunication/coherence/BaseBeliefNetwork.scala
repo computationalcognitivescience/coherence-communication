@@ -16,9 +16,9 @@ trait BaseBeliefNetwork {
   )
   val positiveConstraints: Set[WUnDiEdge[Belief]] = graph.edges \ negativeConstraints
 
-  def vertices: Set[Belief] = graph.vertices
+  def vertices: Set[Belief]         = graph.vertices
   def edges: Set[WUnDiEdge[Belief]] = graph.edges
-  def size: Int = graph.size
+  def size: Int                     = graph.size
 
   /** Check if in the given truth-value assignment a positive constraint is satisfied
     *
@@ -86,7 +86,7 @@ trait BaseBeliefNetwork {
 
     satisfiedNegativeConstraints.toList
       .map((edge: WUnDiEdge[Belief]) => edge.weight) // Get weights
-      .sum                                                 // Sum weights
+      .sum                                           // Sum weights
 
   }
 
@@ -115,8 +115,10 @@ trait BaseBeliefNetwork {
   def coherenceSolutions(): Set[TruthValueAssignment] = {
     // Get the truth-assignment that maximizes coherence
     val allAssignments =
-      (graph.vertices allMappings Set(true, false))               // Generate all possible truth-value assignments
-        .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))  // Convert Map to TruthValueAssignment
+      (graph.vertices allMappings Set(true, false)) // Generate all possible truth-value assignments
+        .map(tva =>
+          TruthValueAssignment(tva.keySet, tva.toSet)
+        ) // Convert Map to TruthValueAssignment
     allAssignments.argMax(coh)
   }
 
@@ -139,7 +141,8 @@ trait BaseBeliefNetwork {
   protected def ac1(
       unassignedMinus: Set[Belief] // All nodes incident to a negative constraint
   ): Set[TruthValueAssignment] =
-    unassignedMinus.allMappings(Set(true, false))
+    unassignedMinus
+      .allMappings(Set(true, false))
       .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))
 
   /** Given a graph and a truth-value assignment, remove all determined constraints from the graph
@@ -180,7 +183,7 @@ trait BaseBeliefNetwork {
 
       satisfiedPositiveConstraints.toList
         .map((edge: WUnDiEdge[Belief]) => edge.weight) // Get weights
-        .sum                                                 // Sum weights
+        .sum                                           // Sum weights
     }
 
     // For a set of determined negative constraints, get the coherence value
@@ -203,7 +206,7 @@ trait BaseBeliefNetwork {
 
       satisfiedNegativeConstraints.toList
         .map((edge: WUnDiEdge[Belief]) => edge.weight) // Get weights
-        .sum                                                 // Sum weights
+        .sum                                           // Sum weights
     }
 
     // For each truth-value assignment, get the coherence from already determined constraints
@@ -515,9 +518,9 @@ trait BaseBeliefNetwork {
     // with each of the edges that went to a removed node being replace with an edge with the same weight going to the single true/false nodes.
     val maxFlowGraphs: Set[
       (
-          WUnDiGraph[String],         // Graph
+          WUnDiGraph[String],   // Graph
           TruthValueAssignment, // Truth-value assignment of determined Nodes
-          Double                      // Coherence value of determined edges
+          Double                // Coherence value of determined edges
       )
     ] = // Coherence value of determined constraints
       // Apply AC3 to the graph, pass the truth-value assignment and coherence value as is
@@ -597,7 +600,7 @@ trait BaseBeliefNetwork {
 
     // Create directed graph
     val edges: Set[WDiEdge[Belief]] = graph.edges.flatMap(createDirectedEdges)
-    val dirGraph: WDiGraph[String]        = WDiGraph(graph.vertices, edges)
+    val dirGraph: WDiGraph[String]  = WDiGraph(graph.vertices, edges)
 
     /** Recursively finds the augmenting path through the given Weighted Directed Graph and updates
       * the graph by updating edges
@@ -972,7 +975,8 @@ trait BaseBeliefNetwork {
 
     // Combine the found truth-value assignments
     val assignmentAsMap = trueComponent.map((_, true)).toMap ++ falseComponent.map((_, false)).toMap
-    val assignment: TruthValueAssignment = TruthValueAssignment(assignmentAsMap.keySet, assignmentAsMap.toSet)
+    val assignment: TruthValueAssignment =
+      TruthValueAssignment(assignmentAsMap.keySet, assignmentAsMap.toSet)
 
     // Calculate coherence over the max-flow subgraph
     val tempBeliefNet: BeliefNetwork = new BeliefNetwork(graph, Set.empty)

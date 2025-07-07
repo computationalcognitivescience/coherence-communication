@@ -50,5 +50,4 @@ case class TurnData(
   def initiatorIntentSize: Int = initiatorState.communicativeIntent.size
 }
 
-object TurnData {
-}
+object TurnData {}

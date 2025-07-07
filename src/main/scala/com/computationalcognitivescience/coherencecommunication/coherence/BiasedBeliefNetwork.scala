@@ -87,9 +87,11 @@ case object BiasedBeliefNetwork {
     val biasBeliefs = scala.util.Random
       .shuffle(graph.vertices)
       .take(scala.math.round(graph.size * ratioBiasBeliefs).intValue)
-    val (trueBias, falseBias) = scala.util.Random.shuffle(biasBeliefs).splitAt(scala.math.round(biasBeliefs.size * ratioBiasBeliefsAssignment).intValue)
+    val (trueBias, falseBias) = scala.util.Random
+      .shuffle(biasBeliefs)
+      .splitAt(scala.math.round(biasBeliefs.size * ratioBiasBeliefsAssignment).intValue)
 
-    val biasAssignment =  trueBias.map(_ -> true).toMap ++ falseBias.map(_ -> false).toMap
+    val biasAssignment = trueBias.map(_ -> true).toMap ++ falseBias.map(_ -> false).toMap
 
     BiasedBeliefNetwork(
       graph,
@@ -98,7 +100,8 @@ case object BiasedBeliefNetwork {
         .take(scala.math.round(graph.edges.size * ratioNegativeEdges).intValue),
       biasBeliefs,
       biasAssignment = TruthValueAssignment(biasAssignment.keySet, biasAssignment.toSet),
-      biasWeights = biasBeliefs.map(_ -> scala.util.Random.nextDouble()*biasBeliefsWeightUpperbound).toMap
+      biasWeights =
+        biasBeliefs.map(_ -> scala.util.Random.nextDouble() * biasBeliefsWeightUpperbound).toMap
     )
   }
 }

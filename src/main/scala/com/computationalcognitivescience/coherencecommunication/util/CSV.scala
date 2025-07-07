@@ -11,25 +11,25 @@ import purecsv.safe._
 import purecsv.unsafe.RecordSplitter.defaultFieldSeparatorStr
 
 object CSV {
-  def main(args: Array[String]): Unit = {
-    val dataFolderPath: Path = os.pwd / "output" / "1751883356"
-    val dataFilename: String = "complete.json"
-    jsonToCSV(dataFolderPath, dataFilename)
-  }
 
-  def simulationDataToCVSV(data: List[SimulationData], dataFolderPath: Path, dataFilename: String): Unit = {
-    println("Flattening data...")
-    val flatData: Seq[FlatData] = FlatData.flattenToCSV(data)
-    println("Done.")
-
+  def simulationDataToCVSV(
+      data: SimulationData,
+      dataFolderPath: Path,
+      dataFilename: String
+  ): Unit = {
     val outputFile = dataFolderPath / dataFilename.split("\\.").dropRight(1).mkString.concat(".csv")
-    println(s"Writing to CSV file ${outputFile.toString()}...")
+    if (!os.exists(outputFile)) {
+      println(s"Creating new CSV file ${outputFile.toString()}...")
+      os.write(
+        outputFile,
+        FlatData.parameters.mkString(defaultFieldSeparatorStr).concat("\n"),
+        createFolders = true
+      )
+    }
 
-    os.write(
-      outputFile,
-      FlatData.parameters.mkString(defaultFieldSeparatorStr).concat("\n"),
-      createFolders = true
-    )
+    val flatData: Seq[FlatData] =
+      FlatData.perParameterCombination(data.parameters, data.conversations)
+
     flatData
       .toCSVLines()
       .foreach(line =>
@@ -39,16 +39,15 @@ object CSV {
           createFolders = true
         )
       )
-
-    println("Done.")
   }
-
 
   def jsonToCSV(dataFolderPath: Path, dataFilename: String): Unit = {
     println("Loading JSON data...")
     val data: List[SimulationData] = loadJson(dataFolderPath / dataFilename)
     println("Done.")
-    simulationDataToCVSV(data, dataFolderPath, dataFilename)
+    println("Writing CSV...")
+    data.foreach(simulationDataToCVSV(_, dataFolderPath, dataFilename))
+    println("Done.")
   }
 
   case class FlatData(
@@ -88,7 +87,7 @@ object CSV {
       "ownBeliefsAsymmetry"
     )
 
-    private def perParameterCombination(
+    def perParameterCombination(
         parameters: Parameters,
         conversations: Seq[Seq[TurnData]]
     ): Seq[FlatData] = {
@@ -132,19 +131,3 @@ object CSV {
         )
   }
 }
-
-//  val csvHeaders: String =
-//    "networkSize,networkConstraints,networkPCRatio,initiatorIntentSize,initiatiorPriorSize,responderPriorSize,nRounds,nRequests,asymmetryAllBeliefsFirst,asymmetryIntentionBeliefsFirst,asymmetryAllBeliefsLast,asymmetryIntentionBeliefsLast,priorOverlap,priorAsymmtery"
-//  def main(args: Array[String]): Unit = {
-//    val filename = "out1734105925"
-//    val cdr      = ConversationDataReader(os.pwd / "output" / s"$filename.json")
-//
-//    val data         = cdr.readAll()
-//    val analyzedData = flattenToCSV(data).toSeq
-//
-//    os.write(
-//      os.pwd / "output" / s"$filename-analysisOne.csv",
-//      csvHeaders + "\n" + analyzedData.toCSV(),
-//      createFolders = true
-//    )
-//  }

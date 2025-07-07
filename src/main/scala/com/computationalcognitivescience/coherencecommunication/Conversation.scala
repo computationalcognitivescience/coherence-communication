@@ -87,50 +87,6 @@ case class Conversation(
           simulateRound(nextInitiator, nextResponder, restrictedOfferOption, roundData +: data)
         }
       }
-
-//      // Start or continue conversation
-//      val utterance: Map[Node[String], Boolean] =
-//        if (repairRequest.isEmpty)
-//          initiator.produceUtterance() // No repair request, produce utterance
-//        else
-//          initiator.repairSolution(
-//            repairRequest.get
-//          ) // Repair request made, produce repair solution
-//
-////      println("[Conversation.run] initiator says: " + utterance)
-//      // Update the interlocutors
-//      val updatedInitiator = initiator.addCommunicatedBeliefs(utterance)
-//      val updatedResponder = responder.addCommunicatedBeliefs(utterance)
-//////      println("[Conversation.run] "+updatedInitiator.inferredBeliefs.keySet.toList.sortBy(_.label).map(b => b.label + "i(" + updatedInitiator.inferredBeliefs(b) + ") r(" + updatedResponder.inferredBeliefs(b)+")").mkString(" "))
-////      println(
-//        "[Conversation.run] Initiator's communicated beliefs: " + updatedInitiator.sharedBeliefs
-////      )
-////      println(
-//        "[Conversation.run] Responder's communicated beliefs: " + updatedResponder.sharedBeliefs
-////      )
-//
-//      // See if responder has a repair request
-//      val newRepairRequest = updatedResponder.troubleIdentification(responder)
-//
-//      val updatedConversationData = ConversationData(
-//        initiatorState = updatedInitiator,
-//        responderState = updatedResponder,
-//        round = data.head.round + 1,
-//        Some(utterance),
-//        communicatedBeliefs = updatedInitiator.sharedBeliefs,
-//        newRepairRequest,
-//        utteranceLengthsInitiator = Some(utterance.size),
-//        repairLengthsResponder = Some(newRepairRequest.size),
-//      ) +: data
-//
-//      if (repairRequest.isDefined && initiator.endConversation(repairRequest)) {
-////        println(s"Initiator believes that they are understood.")
-//        // Stop conversation if the repair request makes the initiator belief the intention is understood
-//        updatedConversationData
-//      } else {
-//        // Continue conversation
-//        simulateRound(updatedInitiator, updatedResponder, newRepairRequest, updatedConversationData)
-//      }
     }
   }
 }

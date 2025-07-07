@@ -53,8 +53,8 @@ case class TruthValueAssignment(
 
   /** Adds the truth value for a belief, will overwrite existing truth value is belief is in the
     * current truth value assignment.
-   *
-   * @param belief
+    *
+    * @param belief
     *   The belief to be added.
     * @param truthValue
     *   The truth value.
@@ -68,14 +68,14 @@ case class TruthValueAssignment(
     )
 
   /** Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
-   * the productive version of Definition 2 and [[subsetEquivalence()]]. Note that this returns an
-   * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
-   * `this.beliefs`.
-   *
-   * @param utteranceBeliefs
-   * The subset of beliefs to return the value assignments for.
-   * @return
-   */
+    * the productive version of Definition 2 and [[subsetEquivalence()]]. Note that this returns an
+    * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
+    * `this.beliefs`.
+    *
+    * @param utteranceBeliefs
+    *   The subset of beliefs to return the value assignments for.
+    * @return
+    */
   def subAssignment(utteranceBeliefs: Set[Belief]): TruthValueAssignment = TruthValueAssignment(
     beliefs = utteranceBeliefs,
     truthValueAssignment = truthValueAssignment.filter(_._1 in utteranceBeliefs)
@@ -136,7 +136,7 @@ case class TruthValueAssignment(
     */
   @tailrec
   final def --(beliefs: Set[Belief]): TruthValueAssignment = {
-    if(beliefs.isEmpty) this
+    if (beliefs.isEmpty) this
     else {
       val (head, tail) = beliefs.splitAt(1)
       if (tail.isEmpty)
@@ -233,7 +233,6 @@ case class TruthValueAssignment(
   def ~(subset: Set[Belief])(that: TruthValueAssignment): Int =
     this.structuralSimilarity(that, subset)
 
-
 }
 
 object TruthValueAssignment {
@@ -258,5 +257,3 @@ object TruthValueAssignment {
     )
   }
 }
-
-

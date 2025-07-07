@@ -47,7 +47,6 @@ case class FoundationalBeliefNetwork(
     allAssignments.argMax(coh)
   }
 
-
   /** Check if truth-value assignment is valid (i.e. all foundational vertices have their required
     * truth-value)
     *

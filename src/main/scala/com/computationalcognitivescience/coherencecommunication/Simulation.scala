@@ -173,34 +173,24 @@ case class Simulation(
         parameters = parameters,
         conversations = batchConversationData
       )
-
+      /*
+      Write full simulation to JSON.
+       */
       os.write(
         dataFolderPath / s"part-${parameters.id}.json",
         batchData.asJson.toString(),
         createFolders = true
       )
+      /*
+      Write summary to CSV.
+       */
+      CSV.simulationDataToCVSV(batchData, dataFolderPath, dataFilename = "summary.csv")
     }
     println("Done simulating.")
   }
 }
 
 object Simulation {
-
-  def mergeDatafileParts(dataFolderPath: Path): List[SimulationData] = {
-    val fileList   = os.list(dataFolderPath).filter(_.toString().contains("part"))
-    val outputFile = dataFolderPath / s"complete.json"
-    println(s"Merging datafile parts into ${outputFile.toString()}...")
-    val data: List[SimulationData] = fileList
-      .map(dataFilePath => {
-        decode[SimulationData](os.read.lines(dataFilePath).mkString).toOption
-      })
-      .filter(_.isDefined)
-      .map(_.get)
-      .toList
-    os.write(outputFile, data.asJson.toString(), createFolders = true)
-    println("Done.")
-    data
-  }
 
   def main(args: Array[String]): Unit = {
     val dataDir        = os.pwd / "output"
@@ -239,47 +229,11 @@ object Simulation {
       numberOfSimulations = 5
     ).run(dataFolderPath)
 
-    val simulationData = mergeDatafileParts(dataFolderPath)
-
-    CSV.simulationDataToCVSV(simulationData, dataFolderPath, "complete.json")
+//    Uncomment line below to merge all json files into a single json file. Memory intensive.
+//    JSON.mergeDatafileParts(dataFolderPath)
 
     println("Finished, exiting.")
 
-////    println("\n===")
-//    println(data.last._2.head.initiatorState.beliefNetwork.vertices)
-////    println("Intent is: " + data.head._2.head.initiatorState.communicativeIntent)
-//    val orderedData: Seq[ConversationData] = data.last._2.reverse
-//
-//    orderedData.head.initiatorState.allBeliefTruthValueAssignments.keySet.toList
-//      .sortBy(_.label)
-//      .foreach(node => {
-//        val i    = orderedData.head.initiatorState.allBeliefTruthValueAssignments(node)
-//        val r    = orderedData.head.responderState.allBeliefTruthValueAssignments(node)
-//        val mark = if (i == r) "*" else ""
-////        println(node + " i(" + i + ") r(" + r + ") " + mark)
-//      })
-//    orderedData.foreach(turn =>
-//      println(
-//        turn.round + "i: " + turn.utterance.getOrElse(
-//          Map.empty
-//        ) + "\n" + turn.round + "r: " + turn.restrictedOffer.getOrElse(Map.empty)
-//      )
-//    )
-//    orderedData.last.initiatorState.allBeliefTruthValueAssignments.keySet.toList
-//      .sortBy(_.label)
-//      .foreach(node => {
-//        val i    = orderedData.last.initiatorState.allBeliefTruthValueAssignments(node)
-//        val r    = orderedData.last.responderState.allBeliefTruthValueAssignments(node)
-//        val mark = if (i == r) "*" else ""
-////        println(node + " i(" + i + ") r(" + r +") " + mark)
-//      })
-//
-//    val dataDir  = os.pwd / "output"
-//    val filename = "out" + LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) + ".json"
-//    os.write(
-//      dataDir / filename,
-//      upickle.default.write(data.map(bla => (bla._1, bla._2.map(_.toPicklableConversationData))))
-//    )
 
 //    os.write(dataDir/filename,
 //      """

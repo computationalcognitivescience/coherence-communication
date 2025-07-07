@@ -7,6 +7,8 @@ object Understandings extends Enumeration {
 
   val Yes, No, NotYet = Value
 
-  implicit val genderDecoder: Decoder[Understandings.Value] = Decoder.decodeEnumeration(Understandings)
-  implicit val genderEncoder: Encoder[Understandings.Value] = Encoder.encodeEnumeration(Understandings)
+  implicit val genderDecoder: Decoder[Understandings.Value] =
+    Decoder.decodeEnumeration(Understandings)
+  implicit val genderEncoder: Encoder[Understandings.Value] =
+    Encoder.encodeEnumeration(Understandings)
 }

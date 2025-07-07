@@ -3,7 +3,6 @@ package com.computationalcognitivescience.coherencecommunication.coherence
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import mathlib.graph._
 
-
 /** A belief network representing positive and negative cohering beliefs.
   * @param graph
   *   A weighted directed graph, where the vertices with string values represent beliefs.

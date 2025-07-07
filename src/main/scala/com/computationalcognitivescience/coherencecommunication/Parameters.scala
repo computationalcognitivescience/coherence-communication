@@ -1,6 +1,5 @@
 package com.computationalcognitivescience.coherencecommunication
 
-
 case class Parameters(
     id: Long,
     beliefNetworkSize: Int,
