@@ -1,5 +1,6 @@
 package com.computationalcognitivescience.coherencecommunication
 
+import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
 import com.computationalcognitivescience.coherencecommunication.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
 
@@ -19,14 +20,14 @@ case class Conversation(
     utterance = None,
     restrictedOffer = None
   )
-  def simulate(): List[TurnData] = simulateRound(initialInitiator, initialResponder)
+  def simulate(): ConversationData = simulateRound(initialInitiator, initialResponder)
   @tailrec
   private def simulateRound(
       initiator: Initiator,
       responder: Responder,
       restrictedOffer: Option[TruthValueAssignment] = None,
-      data: List[TurnData] = List(preFirstRoundConversationData)
-  ): List[TurnData] = {
+      data:ConversationData = List(preFirstRoundConversationData)
+  ): ConversationData = {
 //    println("[Conversation.run] Round " + (data.length - 1))
     if (data.length > maxRounds) {
       // Stop conversation if it takes more than maxRounds

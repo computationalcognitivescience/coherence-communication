@@ -1,8 +1,10 @@
 package com.computationalcognitivescience.coherencecommunication
 
+import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
+
 case class SimulationData(
     parameters: Parameters,
-    conversations: Seq[Seq[TurnData]]
+    conversations: Seq[ConversationData]
 )
 
 object SimulationData

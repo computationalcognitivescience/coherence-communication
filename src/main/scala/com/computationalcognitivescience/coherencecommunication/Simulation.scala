@@ -2,6 +2,7 @@ package com.computationalcognitivescience.coherencecommunication
 
 import coherence.TruthValueAssignment
 import coherence.TruthValueAssignment._
+import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
 import com.computationalcognitivescience.coherencecommunication.util.CSV
 import mathlib.graph.WUnDiGraph
 import mathlib.set.SetTheory._
@@ -84,7 +85,7 @@ case class Simulation(
     println("Starting simulation.")
     for (parameters <- allParameters) {
       val agentPairId = (0 until numberOfSimulations).toList
-      val batchConversationData: Seq[Seq[TurnData]] = agentPairId.par
+      val batchConversationData: Seq[ConversationData] = agentPairId.par
         .map(id => {
           val randomGraph =
             WUnDiGraph.preferentialAttachment(parameters.beliefNetworkSize + 2, 2, 1.0)
