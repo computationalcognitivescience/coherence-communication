@@ -17,10 +17,7 @@ object CSV {
     jsonToCSV(dataFolderPath, dataFilename)
   }
 
-  def jsonToCSV(dataFolderPath: Path, dataFilename: String): Unit = {
-    println("Loading JSON data...")
-    val data: List[SimulationData] = loadJson(dataFolderPath / dataFilename)
-    println("Done.")
+  def simulationDataToCVSV(data: List[SimulationData], dataFolderPath: Path, dataFilename: String): Unit = {
     println("Flattening data...")
     val flatData: Seq[FlatData] = FlatData.flattenToCSV(data)
     println("Done.")
@@ -44,6 +41,14 @@ object CSV {
       )
 
     println("Done.")
+  }
+
+
+  def jsonToCSV(dataFolderPath: Path, dataFilename: String): Unit = {
+    println("Loading JSON data...")
+    val data: List[SimulationData] = loadJson(dataFolderPath / dataFilename)
+    println("Done.")
+    simulationDataToCVSV(data, dataFolderPath, dataFilename)
   }
 
   case class FlatData(
@@ -106,10 +111,10 @@ object CSV {
                 nrOffers = conversation.count(turn =>
                   turn.restrictedOffer.isDefined && turn.restrictedOffer.get.nonEmpty
                 ),
-                asymmetryAllBeliefsFirst = firstTurn.asymmetryAllBeliefs,
-                asymmetryIntentionBeliefsFirst = firstTurn.asymmetryIntentionBeliefs,
-                asymmetryAllBeliefsLast = lastTurn.asymmetryAllBeliefs,
-                asymmetryIntentionBeliefsLast = lastTurn.asymmetryIntentionBeliefs,
+                asymmetryAllBeliefsFirst = firstTurn.allBeliefsAsymmetry,
+                asymmetryIntentionBeliefsFirst = firstTurn.intentionBeliefAsymmetry,
+                asymmetryAllBeliefsLast = lastTurn.allBeliefsAsymmetry,
+                asymmetryIntentionBeliefsLast = lastTurn.intentionBeliefAsymmetry,
                 ownBeliefsOverlap = firstTurn.ownBeliefsOverlap,
                 ownBeliefsAsymmetry = firstTurn.ownBeliefAsymmetry
               )

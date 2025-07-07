@@ -14,15 +14,13 @@ case class TurnData(
     restrictedOffer: Option[TruthValueAssignment]
 ) {
 
-  val asymmetryAllBeliefs: Double = {
+  val allBeliefsAsymmetry: Double = {
     1.0 - (initiatorState.allBeliefs ~ responderState.allBeliefs / initiatorState.graph.vertices.size.doubleValue)
   }
 
-  val asymmetryIntentionBeliefs: Double =
-    1.0 - initiatorState.allBeliefs.structuralSimilarity(
-      responderState.allBeliefs,
-      initiatorState.communicativeIntent.beliefs
-    )
+  val intentionBeliefAsymmetry: Double =
+    1.0 - (initiatorState.communicativeIntent ~ responderState.allBeliefs) /
+      initiatorState.communicativeIntent.beliefs.size
 
   val ownBeliefsOverlap: Double = {
     val ownBeliefsMinSize =
@@ -38,10 +36,6 @@ case class TurnData(
       1.0 - (initiatorState.ownBeliefs ~ responderState.ownBeliefs
         / (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size)
   }
-
-  val intentionBeliefAsymmetry: Double =
-    1.0 - (initiatorState.communicativeIntent ~ responderState.allBeliefs) /
-      initiatorState.communicativeIntent.beliefs.size
 
   val factualUnderstanding: Boolean =
     initiatorState.communicativeIntent ~ responderState.allBeliefs == 1

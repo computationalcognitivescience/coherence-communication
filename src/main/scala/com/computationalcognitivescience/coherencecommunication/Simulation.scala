@@ -186,7 +186,7 @@ case class Simulation(
 
 object Simulation {
 
-  def mergeDatafileParts(dataFolderPath: Path): Unit = {
+  def mergeDatafileParts(dataFolderPath: Path): List[SimulationData] = {
     val fileList   = os.list(dataFolderPath).filter(_.toString().contains("part"))
     val outputFile = dataFolderPath / s"complete.json"
     println(s"Merging datafile parts into ${outputFile.toString()}...")
@@ -199,6 +199,7 @@ object Simulation {
       .toList
     os.write(outputFile, data.asJson.toString(), createFolders = true)
     println("Done.")
+    data
   }
 
   def main(args: Array[String]): Unit = {
@@ -238,9 +239,9 @@ object Simulation {
       numberOfSimulations = 5
     ).run(dataFolderPath)
 
-    mergeDatafileParts(dataFolderPath)
+    val simulationData = mergeDatafileParts(dataFolderPath)
 
-    CSV.jsonToCSV(dataFolderPath, "complete.json")
+    CSV.simulationDataToCVSV(simulationData, dataFolderPath, "complete.json")
 
     println("Finished, exiting.")
 
