@@ -19,8 +19,8 @@ case class TurnData(
   }
 
   val intentionBeliefAsymmetry: Double =
-    1.0 - (initiatorState.communicativeIntent ~ responderState.allBeliefs) /
-      initiatorState.communicativeIntent.beliefs.size
+    1.0 - (initiatorState.communicativeIntent ~ responderState.allBeliefs /
+      initiatorState.communicativeIntent.beliefs.size.doubleValue)
 
   val ownBeliefsOverlap: Double = {
     val ownBeliefsMinSize =
@@ -34,7 +34,13 @@ case class TurnData(
     if (ownBeliefsOverlap == 0.0) 0.0
     else
       1.0 - (initiatorState.ownBeliefs ~ responderState.ownBeliefs
-        / (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size)
+        / (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size.doubleValue)
+  }
+
+  def ownBeliefsChangedResponder(otherOwnBeliefs: TruthValueAssignment): Double = {
+    if (responderState.ownBeliefs.size == 0.0) 0.0
+    else
+      1.0 - (responderState.ownBeliefs ~ otherOwnBeliefs / responderState.ownBeliefs.size.doubleValue)
   }
 
   val factualUnderstanding: Boolean =

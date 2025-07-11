@@ -26,7 +26,7 @@ case class Conversation(
       initiator: Initiator,
       responder: Responder,
       restrictedOffer: Option[TruthValueAssignment] = None,
-      data:ConversationData = List(preFirstRoundConversationData)
+      data: ConversationData = List(preFirstRoundConversationData)
   ): ConversationData = {
 //    println("[Conversation.run] Round " + (data.length - 1))
     if (data.length > maxRounds) {
@@ -47,34 +47,35 @@ case class Conversation(
           restrictedOffer = restrictedOffer
         ) +: data
       } else {
-        val (utterance, nextInitiator) =
+        val (reply, utterance) =
           if (perceivedMutualUnderstanding == NotYet) {
-            // No offer was given, Figure Step 1
-            initiator.produceUtterance()
+            // No offer was given
+            (TruthValueAssignment.emtpy, initiator.produceUtterance()) // Figure Step 1
           } else {
             // Offer was given, not yet perceived mutual understanding
-            val reply: TruthValueAssignment =
-              initiator.repairSolution(restrictedOffer.get) // Figure Step 6
-            val (additionalUtterance, nextInitiator) = initiator.produceUtterance() // Figure Step 7
+            val repairSolution = initiator.repairSolution(restrictedOffer.get)
             (
-              Some(reply ++ additionalUtterance.getOrElse(TruthValueAssignment.emtpy)),
-              nextInitiator
+              repairSolution,       // Figure Step 6
+              initiator.addSharedBeliefs(repairSolution).produceUtterance() // Figure Step 7
             )
+
           }
         if (utterance.isEmpty) {
-          // No reply or utterance was produced, end the conversation.
+          // No utterance was produced, end the conversation.
           TurnData(
-            initiatorState = nextInitiator,
-            responderState = responder,
+            initiatorState = initiator.addSharedBeliefs(reply),
+            responderState = responder.addSharedBeliefs(reply),
             round = data.head.round + 1,
             initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
             utterance = None,
             restrictedOffer = restrictedOffer
           ) +: data
         } else {
-          val (trouble, nextResponder) = responder.troubleIdentification(utterance.get)
+          val nextInitiator = initiator.addSharedBeliefs(reply ++ utterance.get)
+          val nextResponder = responder.addSharedBeliefs(reply ++ utterance.get)
+          val trouble       = nextResponder.troubleIdentification
           val restrictedOfferOption =
-            if (trouble) nextResponder.repairFormulation(utterance.get)
+            if (trouble) nextResponder.repairFormulation
             else None
           val roundData = TurnData(
             initiatorState = nextInitiator,

@@ -3,7 +3,11 @@ package com.computationalcognitivescience.coherencecommunication
 import com.computationalcognitivescience.coherencecommunication.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import com.computationalcognitivescience.coherencecommunication.util.SetTheoryDev._
-import com.computationalcognitivescience.coherencecommunication.coherence.{BeliefNetwork, FoundationalBeliefNetwork, TruthValueAssignment}
+import com.computationalcognitivescience.coherencecommunication.coherence.{
+  BeliefNetwork,
+  FoundationalBeliefNetwork,
+  TruthValueAssignment
+}
 import mathlib.set.SetTheory._
 import mathlib.graph._
 
@@ -47,29 +51,23 @@ case class Initiator(
     * TODO Include updated LaTeX definition.
     * @return
     */
-  def produceUtterance(): (Option[TruthValueAssignment], Initiator) = {
+  def produceUtterance(): Option[TruthValueAssignment] = {
     val allPossibleUtteranceBeliefs: Set[TruthValueAssignment] =
       if (maxUtteranceLength.isDefined)
-        (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) \ Set(
-          Set.empty
-        ))
+        (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) - Set.empty)
           .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
       else
-        (powerset(graph.vertices \ sharedBeliefs.beliefs) \ Set(Set.empty))
+        (powerset(graph.vertices \ sharedBeliefs.beliefs) - Set.empty)
           .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
 
     def relativeStructuralSimilarity(utterance: TruthValueAssignment): Double = {
       val similarity = communicativeIntent ~ perspectiveTaking(utterance)
       if (similarity == 0) 0.0
-      else 1.0 / (utterance.size * similarity)
+      else (1.0 / utterance.size) * similarity
     }
 
-    val allPossibleOptimalUtterances = argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
-    val utteranceOption = allPossibleOptimalUtterances.random
-    (
-      utteranceOption,
-      this.addSharedBeliefs(utteranceOption.getOrElse(TruthValueAssignment.emtpy))
-    )
+    argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
+      .random
   }
 
   /** Computes <span style="font-variant-caps: normal;">Perceived Mutual Understanding</span> for
@@ -84,7 +82,7 @@ case class Initiator(
     */
   def perceivedMutualUnderstanding(offer: Option[TruthValueAssignment]): Understanding = {
     if (offer.isEmpty) {
-      if(forall(allBeliefs.beliefs, (belief: Belief) => sharedBeliefs.contains(belief)))
+      if (forall(allBeliefs.beliefs, (belief: Belief) => sharedBeliefs.contains(belief)))
         Understandings.Yes
       else Understandings.NotYet
     } else {
@@ -103,7 +101,7 @@ case class Initiator(
     allBeliefs.subAssignment(offer.beliefs)
   }
 
-  override protected def addSharedBeliefs(utterance: TruthValueAssignment): Initiator = Initiator(
+  override def addSharedBeliefs(utterance: TruthValueAssignment): Initiator = Initiator(
     graph = graph,
     negativeConstraints = negativeConstraints,
     ownBeliefs = ownBeliefs,

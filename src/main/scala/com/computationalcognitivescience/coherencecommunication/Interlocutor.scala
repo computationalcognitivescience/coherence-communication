@@ -50,5 +50,5 @@ trait Interlocutor {
     * @param utterance The beliefs to add to shared beliefs.
     * @return
     */
-  protected def addSharedBeliefs(utterance: TruthValueAssignment): Interlocutor
+  def addSharedBeliefs(utterance: TruthValueAssignment): Interlocutor
 }

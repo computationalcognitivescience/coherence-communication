@@ -4,7 +4,7 @@ import coherence.TruthValueAssignment
 import coherence.TruthValueAssignment._
 import com.computationalcognitivescience.coherencecommunication.ConversationData.ConversationData
 import com.computationalcognitivescience.coherencecommunication.util.CSV
-import mathlib.graph.WUnDiGraph
+import mathlib.graph.{WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
 import java.time.{LocalDateTime, ZoneOffset}
@@ -88,8 +88,12 @@ case class Simulation(
       val agentPairId = (0 until numberOfSimulations).toList
       val batchConversationData: Seq[ConversationData] = agentPairId.par
         .map(id => {
-          val randomGraph =
+          val randomGraph1 =
             WUnDiGraph.preferentialAttachment(parameters.beliefNetworkSize + 2, 2, 1.0)
+          val randomGraph = WUnDiGraph(
+            randomGraph1.vertices,
+            randomGraph1.edges.map(edge => WUnDiEdge(edge.left, edge.right, 1.0))
+          )
           //          WUnDiGraph.uniform(
           //            n = parameters.beliefNetworkSize,
           //            numberEdges =
@@ -176,11 +180,11 @@ case class Simulation(
       /*
       Write full simulation to JSON.
        */
-      os.write(
-        dataFolderPath / s"part-${parameters.id}.json",
-        batchData.asJson.toString(),
-        createFolders = true
-      )
+//      os.write(
+//        dataFolderPath / s"part-${parameters.id}.json",
+//        batchData.asJson.toString(),
+//        createFolders = true
+//      )
       /*
       Write summary to CSV.
        */
@@ -233,7 +237,6 @@ object Simulation {
 //    JSON.mergeDatafileParts(dataFolderPath)
 
     println("Finished, exiting.")
-
 
 //    os.write(dataDir/filename,
 //      """

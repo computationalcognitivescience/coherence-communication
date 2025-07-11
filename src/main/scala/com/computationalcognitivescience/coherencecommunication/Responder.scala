@@ -19,29 +19,26 @@ case class Responder(
     * the previous truth-value assignment.
     * @return
     */
-  def troubleIdentification(utterance: TruthValueAssignment): (Boolean, Responder) = {
-    val nextResponder = this.addSharedBeliefs(utterance)
-    (nextResponder.coherence < this.coherence, nextResponder)
-  }
+  def troubleIdentification: Boolean =
+    if (previousState.isDefined) this.coherence < previousState.get.coherence
+    else false
 
   /** Computes <span style="font-variant-caps: normal;">Repair Formulation</span> for this
     * [[Responder]].
     *
     * TODO Include updated LaTeX definition.
     *
-    * @param utterance
-    *   The utterance to integrate into beliefs and formulate a restricted offer for.
     * @return
     *   A restricted offer or None.
     */
-  def repairFormulation(utterance: TruthValueAssignment): Option[TruthValueAssignment] = {
+  def repairFormulation: Option[TruthValueAssignment] = {
     val allPossibleOfferBeliefs: Set[Set[Belief]] =
       if (maxUtteranceLength.isDefined)
-        powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) \ Set(Set.empty)
+        powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) - Set.empty
       else
-        powerset(graph.vertices \ sharedBeliefs.beliefs) \ Set(Set.empty)
+        powerset(graph.vertices \ sharedBeliefs.beliefs) - Set.empty
 
-    val allTOffers: Set[TruthValueAssignment] = allPossibleOfferBeliefs
+    val allPossibleOffers: Set[TruthValueAssignment] = allPossibleOfferBeliefs
       .flatMap((offers: Set[Belief]) => offers.allMappings(Set(true, false)))
       .map(_.toTruthValueAssignment)
 
@@ -49,20 +46,20 @@ case class Responder(
       addSharedBeliefs(offer).coherence / offer.size
     }
 
-    val allOptimalTOffers = argMax(allTOffers, relativeTOfferCoherence)
-
-    if (previousState.isDefined) {
-      val tPrev: TruthValueAssignment = previousState.get.allBeliefs
-      allOptimalTOffers.argMax(tva => tva ~ tPrev).random
-    } else {
-      allOptimalTOffers.random
-    }
+    val allOptimalOffers = argMax(
+      argMax(allPossibleOffers, relativeTOfferCoherence),
+      (tOffer: TruthValueAssignment) => tOffer ~ allBeliefs
+    )
+    if(allOptimalOffers.isEmpty) None
+    else Some(allOptimalOffers.random.get)
   }
 
-  override protected def addSharedBeliefs(utterance: TruthValueAssignment): Responder = Responder(
+  override def addSharedBeliefs(utterance: TruthValueAssignment): Responder = Responder(
     graph = graph,
     negativeConstraints = negativeConstraints,
-    ownBeliefs = ownBeliefs,
+    ownBeliefs = (ownBeliefs ++ sharedBeliefs ++ utterance).subAssignment(
+      ownBeliefs.beliefs
+    ), // When own beliefs are overruled by the shared beliefs.
     sharedBeliefs = sharedBeliefs ++ utterance,
     previousState = Some(this),
     maxUtteranceLength = maxUtteranceLength
