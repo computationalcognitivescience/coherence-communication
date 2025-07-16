@@ -88,85 +88,16 @@ case class Simulation(
       val agentPairId = (1 to numberOfSimulations).toList
       val batchConversationData: Seq[ConversationData] = agentPairId//.par
         .map(id => {
-          val randomGraph1 =
-            WUnDiGraph.preferentialAttachment(parameters.beliefNetworkSize + 2, 2, 1.0)
-          val randomGraph = WUnDiGraph(
-            randomGraph1.vertices,
-            randomGraph1.edges.map(edge => WUnDiEdge(edge.left, edge.right, 1.0))
-          )
-          //          WUnDiGraph.uniform(
-          //            n = parameters.beliefNetworkSize,
-          //            numberEdges =
-          //              (parameters.beliefNetworkSize * parameters.beliefNetworkConstraintsRatio).intValue
-          //          )
-          val negativeConstraints = scala.util.Random
-            .shuffle(randomGraph.edges.toSeq)
-            .take((randomGraph.edges.size * parameters.beliefNetworkPCRatio).intValue)
-            .toSet
-
-          val initiatorOwnBeliefs = Random
-            .shuffle(randomGraph.vertices.toSeq)
-            .take((randomGraph.vertices.size * parameters.initiatorPriorRatio).intValue)
-            .map(belief => (belief, Random.nextBoolean()))
-            .toMap
-            .toTruthValueAssignment
-          val initiatorCommunicativeIntent = Random
-            .shuffle((randomGraph.vertices \ initiatorOwnBeliefs.beliefs).toSeq)
-            .take(
-              (randomGraph.vertices.size * parameters.initiatorCommunicativeIntentRatio).intValue
-            )
-            .map(belief => (belief, Random.nextBoolean()))
-            .toMap
-            .toTruthValueAssignment
-
-          val initiator = Initiator(
-            randomGraph,
-            negativeConstraints,
-            initiatorOwnBeliefs,
-            sharedBeliefs = TruthValueAssignment.empty,
-            initiatorCommunicativeIntent,
-            maxUtteranceLength = Some(parameters.maxUtteranceLength)
-          )
-
-          val initiatorPriorVertices = initiatorOwnBeliefs.beliefs.toSeq
-          val responderOverlappingPriorVertices = Random
-            .shuffle(initiatorPriorVertices)
-            .take((initiatorPriorVertices.size * parameters.priorsOverlapRatio).intValue)
-
-          val responderOverlappingSymmetricOwnBeliefs = Random
-            .shuffle(responderOverlappingPriorVertices)
-            .take(
-              (responderOverlappingPriorVertices.size * parameters.priorsAsymmetryRatio).intValue
-            )
-            .map(belief => (belief, initiatorOwnBeliefs(belief).get))
-            .toMap
-            .toTruthValueAssignment
-          val responderOverlappingAsymmetricOwnBeliefs =
-            (initiatorPriorVertices.toSet \ responderOverlappingSymmetricOwnBeliefs.beliefs)
-              .map(belief => (belief, !initiatorOwnBeliefs(belief).get))
-              .toMap
-              .toTruthValueAssignment
-          val responderNonOverlappingOwnBeliefs = Random
-            .shuffle((randomGraph.vertices \ responderOverlappingSymmetricOwnBeliefs.beliefs).toSeq)
-            .take((randomGraph.vertices.size * parameters.responderPriorRatio).intValue)
-            .map(belief => (belief, Random.nextBoolean()))
-            .toMap
-            .toTruthValueAssignment
-          val responderOwnBeliefs = responderOverlappingSymmetricOwnBeliefs ++
-            responderOverlappingAsymmetricOwnBeliefs ++
-            responderNonOverlappingOwnBeliefs
-
-          val responder = Responder(
-            randomGraph,
-            negativeConstraints,
-            responderOwnBeliefs,
-            sharedBeliefs = TruthValueAssignment.empty,
-            maxUtteranceLength = Some(parameters.maxUtteranceLength)
-          )
-
-          val conversation = Conversation(
-            initiator,
-            responder,
+          val conversation: Conversation = Simulation.randomConversation(
+            parameters.beliefNetworkSize,
+            preferentialAttachementM = 2,
+            parameters.beliefNetworkPCRatio,
+            parameters.initiatorPriorRatio,
+            parameters.initiatorCommunicativeIntentRatio,
+            parameters.maxUtteranceLength,
+            parameters.priorsOverlapRatio,
+            parameters.priorsAsymmetryRatio,
+            parameters.responderPriorRatio,
             parameters.maxRoundLength
           )
           conversation.simulate()
@@ -218,7 +149,7 @@ object Simulation {
 //    ).run(dataDir)
     /*
    Medium simulation settings.
-    */
+     */
 //    Simulation(
 //      beliefNetworkSizes = List(10),
 //      beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
@@ -237,13 +168,13 @@ object Simulation {
 //     */
     Simulation(
       beliefNetworkSizes = List(8),
-      beliefNetworkConstraintsRatios = List(1/3,2/3,1.0),
+      beliefNetworkConstraintsRatios = List(1.0), // not used in preferential attachement
       beliefNetworkPCRatios = List(.25, .5, .75),
-      intentionRatios = List(.25, 0.4),
-      initiatorOwnBeliefsRatios = List(0,.2,.4),
-      responderOwnBeliefsRatios = List(0,.2,.4),
-      ownBeliefsOverlapRatios = List(0,.5,1),
-      ownBeliefsAsymmetryRatios = List(0,.5,1),
+      intentionRatios = List(3.0/8, 4.0/8),
+      initiatorOwnBeliefsRatios = List(0, 1.0/8, 2.0/8, 3.0/8),
+      responderOwnBeliefsRatios = List(0, 1.0/8, 2.0/8, 3.0/8),
+      ownBeliefsOverlapRatios = List(0, .5, 1),
+      ownBeliefsAsymmetryRatios = List(0, .5, 1),
       maxUtteranceLengths = List(5),
       maxRoundLengths = List(5),
       numberOfSimulations = 5
@@ -314,5 +245,100 @@ object Simulation {
 //    })
 //    os.write.append(dataDir / filename, "];\n</script>")
 
+  }
+
+  def randomConversation(
+      beliefNetworkSize: Int,
+      preferentialAttachementM: Int,
+      beliefNetworkPCRatio: Double,
+      initiatorPriorRatio: Double,
+      initiatorCommunicativeIntentRatio: Double,
+      maxUtteranceLength: Int,
+      priorsOverlapRatio: Double,
+      priorsAsymmetryRatio: Double,
+      responderPriorRatio: Double,
+      maxRoundLength: Int
+  ): Conversation = {
+    val randomGraph1 =
+      WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, preferentialAttachementM, 1.0)
+    val randomGraph = WUnDiGraph(
+      randomGraph1.vertices,
+      randomGraph1.edges.map(edge => WUnDiEdge(edge.left, edge.right, 1.0))
+    )
+    //          WUnDiGraph.uniform(
+    //            n = parameters.beliefNetworkSize,
+    //            numberEdges =
+    //              (parameters.beliefNetworkSize * parameters.beliefNetworkConstraintsRatio).intValue
+    //          )
+    val negativeConstraints = scala.util.Random
+      .shuffle(randomGraph.edges.toSeq)
+      .take((randomGraph.edges.size * beliefNetworkPCRatio).intValue)
+      .toSet
+
+    val initiatorOwnBeliefs = Random
+      .shuffle(randomGraph.vertices.toSeq)
+      .take((randomGraph.vertices.size * initiatorPriorRatio).intValue)
+      .map(belief => (belief, Random.nextBoolean()))
+      .toMap
+      .toTruthValueAssignment
+    val initiatorCommunicativeIntent = Random
+      .shuffle((randomGraph.vertices \ initiatorOwnBeliefs.beliefs).toSeq)
+      .take(
+        (randomGraph.vertices.size * initiatorCommunicativeIntentRatio).intValue
+      )
+      .map(belief => (belief, Random.nextBoolean()))
+      .toMap
+      .toTruthValueAssignment
+
+    val initiator = Initiator(
+      randomGraph,
+      negativeConstraints,
+      initiatorOwnBeliefs,
+      sharedBeliefs = TruthValueAssignment.empty,
+      initiatorCommunicativeIntent,
+      maxUtteranceLength = Some(maxUtteranceLength)
+    )
+
+    val initiatorPriorVertices = initiatorOwnBeliefs.beliefs.toSeq
+    val responderOverlappingPriorVertices = Random
+      .shuffle(initiatorPriorVertices)
+      .take((initiatorPriorVertices.size * priorsOverlapRatio).intValue)
+
+    val responderOverlappingSymmetricOwnBeliefs = Random
+      .shuffle(responderOverlappingPriorVertices)
+      .take(
+        (responderOverlappingPriorVertices.size * priorsAsymmetryRatio).intValue
+      )
+      .map(belief => (belief, initiatorOwnBeliefs(belief).get))
+      .toMap
+      .toTruthValueAssignment
+    val responderOverlappingAsymmetricOwnBeliefs =
+      (initiatorPriorVertices.toSet \ responderOverlappingSymmetricOwnBeliefs.beliefs)
+        .map(belief => (belief, !initiatorOwnBeliefs(belief).get))
+        .toMap
+        .toTruthValueAssignment
+    val responderNonOverlappingOwnBeliefs = Random
+      .shuffle((randomGraph.vertices \ responderOverlappingPriorVertices.toSet).toSeq)
+      .take((randomGraph.vertices.size * responderPriorRatio).intValue - responderOverlappingPriorVertices.size)
+      .map(belief => (belief, Random.nextBoolean()))
+      .toMap
+      .toTruthValueAssignment
+    val responderOwnBeliefs = responderOverlappingSymmetricOwnBeliefs ++
+      responderOverlappingAsymmetricOwnBeliefs ++
+      responderNonOverlappingOwnBeliefs
+
+    val responder = Responder(
+      randomGraph,
+      negativeConstraints,
+      responderOwnBeliefs,
+      sharedBeliefs = TruthValueAssignment.empty,
+      maxUtteranceLength = Some(maxUtteranceLength)
+    )
+
+    Conversation(
+      initiator,
+      responder,
+      maxRoundLength
+    )
   }
 }

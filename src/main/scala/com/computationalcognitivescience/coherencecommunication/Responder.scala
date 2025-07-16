@@ -19,9 +19,13 @@ case class Responder(
     * the previous truth-value assignment.
     * @return
     */
-  def troubleIdentification: Boolean =
-    if (previousState.isDefined) this.coherence < previousState.get.coherence
+  def troubleIdentification: Boolean = {
+    if (previousState.isDefined) {
+//      println(this.coherence + " < " + previousState.get.coherence)
+      this.coherence < previousState.get.coherence
+    }
     else false
+  }
 
   /** Computes <span style="font-variant-caps: normal;">Repair Formulation</span> for this
     * [[Responder]].

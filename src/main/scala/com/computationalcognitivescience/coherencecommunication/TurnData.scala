@@ -10,7 +10,7 @@ case class TurnData(
     responderState: Responder,
     round: Int,
     initiatorPerceivedMutualUnderstanding: Understanding,
-    utterance: TruthValueAssignment,
+    utterance: Option[TruthValueAssignment],
     restrictedOffer: Option[TruthValueAssignment]
 ) {
 
@@ -46,6 +46,20 @@ case class TurnData(
     initiatorState.negativeConstraints.size.doubleValue / networkConstraints
 
   def initiatorIntentSize: Int = initiatorState.communicativeIntent.size
+
+  override def toString: String =
+    s"""$round
+       |utterance $utterance
+       |offer $restrictedOffer ${restrictedOffer.getOrElse(TruthValueAssignment.empty).subsetEquivalence(initiatorState.communicativeIntent)}
+       |perceived $initiatorPerceivedMutualUnderstanding
+       |i_sha ${initiatorState.sharedBeliefs}
+       |r_sha ${responderState.sharedBeliefs}
+       |i_own ${initiatorState.ownBeliefs}
+       |r_own ${responderState.ownBeliefs}
+       |i_inf ${initiatorState.inferredBeliefs}
+       |r_inf ${responderState.inferredBeliefs}
+       |intent ${initiatorState.communicativeIntent}
+       |""".stripMargin
 }
 
 object TurnData {}
