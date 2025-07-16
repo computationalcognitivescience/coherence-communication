@@ -15,31 +15,5 @@ case class BeliefNetwork(
 ) extends BaseBeliefNetwork
 
 case object BeliefNetwork {
-  def random(
-      size: Int,
-      density: Double,
-      ratioNegativeEdges: Double,
-      weightUpperbound: Double = 1.0
-  ): BeliefNetwork = {
-    require(
-      0.0 <= density && density <= 1.0,
-      s"Density $density is not between 0.0 and 1.0 inclusive."
-    )
-    require(
-      0.0 <= ratioNegativeEdges && ratioNegativeEdges <= 1.0,
-      s"Ratio negative edges $ratioNegativeEdges is not between 0.0 and 1.0 inclusive."
-    )
 
-    val graph = WUnDiGraph.preferentialAttachment(
-      size,
-      scala.math.round(density * size).intValue,
-      weightUpperbound
-    )
-    BeliefNetwork(
-      graph,
-      negativeConstraints = scala.util.Random
-        .shuffle(graph.edges)
-        .take(scala.math.round(graph.edges.size * ratioNegativeEdges).intValue)
-    )
-  }
 }

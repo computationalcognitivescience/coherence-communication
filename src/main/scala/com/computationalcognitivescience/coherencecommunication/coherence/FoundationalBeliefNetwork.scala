@@ -1,6 +1,7 @@
 package com.computationalcognitivescience.coherencecommunication.coherence
 
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
+import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
@@ -34,14 +35,13 @@ case class FoundationalBeliefNetwork(
     */
   override def coherenceSolutions(): Set[TruthValueAssignment] = {
     // Get truth-value assignment over non-foundational nodes
-    val notFoundationalBeliefs: Set[Belief] = graph.vertices -- priorBeliefs
-    val otherAssignments: Set[TruthValueAssignment] =
-      (notFoundationalBeliefs allMappings Set(true, false))
-        .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))
+    val nonPriorBeliefs: Set[Belief] = graph.vertices -- priorBeliefs
+    val allPossibleNonPriorAssignments: Set[TruthValueAssignment] =
+      (nonPriorBeliefs allMappings Set(true, false)).map(_.toTruthValueAssignment)
 
     // Add foundational truth-value assignments
     val allAssignments: Set[TruthValueAssignment] =
-      otherAssignments.map(_ ++ priorBeliefsAssignment)
+      allPossibleNonPriorAssignments.map(_ ++ priorBeliefsAssignment)
 
     // Get highest coherence solutions
     allAssignments.argMax(coh)
@@ -91,53 +91,5 @@ case class FoundationalBeliefNetwork(
 }
 
 case object FoundationalBeliefNetwork {
-  def random(
-      size: Int,
-      density: Double,
-      ratioNegativeEdges: Double,
-      ratioFoundationalBeliefs: Double,
-      ratioFoundationalBeliefsAssignment: Double,
-      weightUpperbound: Double = 1.0
-  ): FoundationalBeliefNetwork = {
-    require(
-      0.0 <= density && density <= 1.0,
-      s"Density $density is not between 0.0 and 1.0 inclusive."
-    )
-    require(
-      0.0 <= ratioNegativeEdges && ratioNegativeEdges <= 1.0,
-      s"Ratio negative edges $ratioNegativeEdges is not between 0.0 and 1.0 inclusive."
-    )
-    require(
-      0.0 <= ratioFoundationalBeliefs && ratioFoundationalBeliefs <= 1.0,
-      s"Ratio foundational beliefs $ratioFoundationalBeliefs is not between 0.0 and 1.0 inclusive."
-    )
 
-    val graph = WUnDiGraph.preferentialAttachment(
-      size,
-      scala.math.round(density * size).intValue,
-      weightUpperbound
-    )
-
-    val foundationalBeliefs = scala.util.Random
-      .shuffle(graph.vertices)
-      .take(scala.math.round(graph.size * ratioFoundationalBeliefs).intValue)
-    val (trueFoundation, falseFoundation) = scala.util.Random
-      .shuffle(foundationalBeliefs)
-      .splitAt(
-        scala.math.round(foundationalBeliefs.size * ratioFoundationalBeliefsAssignment).intValue
-      )
-
-    val foundationalAssignment =
-      trueFoundation.map(_ -> true).toMap ++ falseFoundation.map(_ -> false).toMap
-
-    FoundationalBeliefNetwork(
-      graph,
-      negativeConstraints = scala.util.Random
-        .shuffle(graph.edges)
-        .take(scala.math.round(graph.edges.size * ratioNegativeEdges).intValue),
-      foundationalBeliefs,
-      priorBeliefsAssignment =
-        TruthValueAssignment(foundationalAssignment.keySet, foundationalAssignment.toSet)
-    )
-  }
 }
