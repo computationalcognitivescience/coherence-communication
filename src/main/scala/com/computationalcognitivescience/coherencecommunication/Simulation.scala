@@ -86,7 +86,7 @@ case class Simulation(
     for (parameters <- allParameters) {
       println(s"Batch ${parameters.id} / ${allParameters.size}")
       val agentPairId = (1 to numberOfSimulations).toList
-      val batchConversationData: Seq[ConversationData] = agentPairId.par
+      val batchConversationData: Seq[ConversationData] = agentPairId//.par
         .map(id => {
           val randomGraph1 =
             WUnDiGraph.preferentialAttachment(parameters.beliefNetworkSize + 2, 2, 1.0)
@@ -101,7 +101,7 @@ case class Simulation(
           //          )
           val negativeConstraints = scala.util.Random
             .shuffle(randomGraph.edges.toSeq)
-            .take((randomGraph.size * parameters.beliefNetworkPCRatio).intValue)
+            .take((randomGraph.edges.size * parameters.beliefNetworkPCRatio).intValue)
             .toSet
 
           val initiatorOwnBeliefs = Random
@@ -147,7 +147,7 @@ case class Simulation(
               .toMap
               .toTruthValueAssignment
           val responderNonOverlappingOwnBeliefs = Random
-            .shuffle(randomGraph.vertices.toSeq)
+            .shuffle((randomGraph.vertices \ responderOverlappingSymmetricOwnBeliefs.beliefs).toSeq)
             .take((randomGraph.vertices.size * parameters.responderPriorRatio).intValue)
             .map(belief => (belief, Random.nextBoolean()))
             .toMap
@@ -237,13 +237,13 @@ object Simulation {
 //     */
     Simulation(
       beliefNetworkSizes = List(8),
-      beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
+      beliefNetworkConstraintsRatios = List(1/3,2/3,1.0),
       beliefNetworkPCRatios = List(.25, .5, .75),
       intentionRatios = List(.25, 0.4),
-      initiatorOwnBeliefsRatios = List(0, .2, .4),
-      responderOwnBeliefsRatios = List(0, .2, .4),
-      ownBeliefsOverlapRatios = List(.5),
-      ownBeliefsAsymmetryRatios = List(.5),
+      initiatorOwnBeliefsRatios = List(0,.2,.4),
+      responderOwnBeliefsRatios = List(0,.2,.4),
+      ownBeliefsOverlapRatios = List(0,.5,1),
+      ownBeliefsAsymmetryRatios = List(0,.5,1),
       maxUtteranceLengths = List(5),
       maxRoundLengths = List(5),
       numberOfSimulations = 5
