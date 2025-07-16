@@ -10,17 +10,14 @@ case class TurnData(
     responderState: Responder,
     round: Int,
     initiatorPerceivedMutualUnderstanding: Understanding,
-    utterance: Option[TruthValueAssignment],
+    utterance: TruthValueAssignment,
     restrictedOffer: Option[TruthValueAssignment]
 ) {
 
-  val allBeliefsAsymmetry: Double = {
-    1.0 - (initiatorState.allBeliefs ~ responderState.allBeliefs / initiatorState.graph.vertices.size.doubleValue)
-  }
+  val allBeliefsAsymmetry: Double = initiatorState.allBeliefs.asymmetry(responderState.allBeliefs)
 
   val intentionBeliefAsymmetry: Double =
-    1.0 - (initiatorState.communicativeIntent ~ responderState.allBeliefs /
-      initiatorState.communicativeIntent.beliefs.size.doubleValue)
+    initiatorState.communicativeIntent.asymmetry(responderState.allBeliefs)
 
   val ownBeliefsOverlap: Double = {
     val ownBeliefsMinSize =
@@ -30,18 +27,13 @@ case class TurnData(
       (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size / ownBeliefsMinSize.doubleValue
   }
 
-  val ownBeliefAsymmetry: Double = {
-    if (ownBeliefsOverlap == 0.0) 0.0
-    else
-      1.0 - (initiatorState.ownBeliefs ~ responderState.ownBeliefs
-        / (initiatorState.ownBeliefs.beliefs /\ responderState.ownBeliefs.beliefs).size.doubleValue)
-  }
+  val ownBeliefAsymmetry: Double = initiatorState.ownBeliefs.asymmetry(responderState.ownBeliefs)
 
-  def ownBeliefsChangedResponder(otherOwnBeliefs: TruthValueAssignment): Double = {
-    if (responderState.ownBeliefs.size == 0.0) 0.0
-    else
-      1.0 - (responderState.ownBeliefs ~ otherOwnBeliefs / responderState.ownBeliefs.size.doubleValue)
-  }
+  def allBeliefsChangedResponder(otherAllBeliefs: TruthValueAssignment): Double =
+    responderState.allBeliefs.asymmetry(otherAllBeliefs)
+
+  def ownBeliefsChangedResponder(otherOwnBeliefs: TruthValueAssignment): Double =
+    responderState.ownBeliefs.asymmetry(otherOwnBeliefs)
 
   val factualUnderstanding: Boolean =
     initiatorState.communicativeIntent ~ responderState.allBeliefs == 1

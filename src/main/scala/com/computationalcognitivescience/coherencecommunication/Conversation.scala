@@ -17,7 +17,7 @@ case class Conversation(
     responderState = initialResponder,
     round = 0,
     initiatorPerceivedMutualUnderstanding = Understandings.No,
-    utterance = None,
+    utterance = TruthValueAssignment.empty,
     restrictedOffer = None
   )
   def simulate(): ConversationData = simulateRound(initialInitiator, initialResponder)
@@ -28,10 +28,8 @@ case class Conversation(
       restrictedOffer: Option[TruthValueAssignment] = None,
       data: ConversationData = List(preFirstRoundConversationData)
   ): ConversationData = {
-//    println("[Conversation.run] Round " + (data.length - 1))
     if (data.length > maxRounds) {
       // Stop conversation if it takes more than maxRounds
-//      println("[Conversation.run] Max round " + maxRounds + " length reached.")
       data
     } else {
       // Figure Step 5 (or 0)
@@ -43,51 +41,39 @@ case class Conversation(
           responderState = responder,
           round = data.head.round + 1,
           initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-          utterance = None,
+          utterance = TruthValueAssignment.empty,
           restrictedOffer = restrictedOffer
         ) +: data
       } else {
-        val (reply, utterance) =
+        val utterance: TruthValueAssignment =
           if (perceivedMutualUnderstanding == NotYet) {
             // No offer was given
-            (TruthValueAssignment.emtpy, initiator.produceUtterance()) // Figure Step 1
+            initiator.produceUtterance() // Figure Step 1
           } else {
             // Offer was given, not yet perceived mutual understanding
-            val repairSolution = initiator.repairSolution(restrictedOffer.get)
-            (
-              repairSolution,       // Figure Step 6
-              initiator.addSharedBeliefs(repairSolution).produceUtterance() // Figure Step 7
-            )
-
+            val repairSolution = initiator.repairSolution(restrictedOffer.get) // Figure Step 6
+            val utterance = initiator
+              .addSharedBeliefs(repairSolution)
+              .produceUtterance() // Figure Step 7
+            repairSolution ++ utterance
           }
-        if (utterance.isEmpty) {
-          // No utterance was produced, end the conversation.
-          TurnData(
-            initiatorState = initiator.addSharedBeliefs(reply),
-            responderState = responder.addSharedBeliefs(reply),
-            round = data.head.round + 1,
-            initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-            utterance = None,
-            restrictedOffer = restrictedOffer
-          ) +: data
-        } else {
-          val nextInitiator = initiator.addSharedBeliefs(reply ++ utterance.get)
-          val nextResponder = responder.addSharedBeliefs(reply ++ utterance.get)
-          val trouble       = nextResponder.troubleIdentification
-          val restrictedOfferOption =
-            if (trouble) nextResponder.repairFormulation
-            else None
-          val roundData = TurnData(
-            initiatorState = nextInitiator,
-            responderState = nextResponder,
-            round = data.head.round + 1,
-            initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-            utterance = utterance,
-            restrictedOffer = restrictedOfferOption
-          )
-          simulateRound(nextInitiator, nextResponder, restrictedOfferOption, roundData +: data)
-        }
+        val nextInitiator = initiator.addSharedBeliefs(utterance)
+        val nextResponder = responder.addSharedBeliefs(utterance)
+        val trouble       = nextResponder.troubleIdentification
+        val restrictedOfferOption =
+          if (trouble) nextResponder.repairFormulation
+          else None
+        val turnData = TurnData(
+          initiatorState = nextInitiator,
+          responderState = nextResponder,
+          round = data.head.round + 1,
+          initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
+          utterance = utterance,
+          restrictedOffer = restrictedOfferOption
+        )
+        simulateRound(nextInitiator, nextResponder, restrictedOfferOption, turnData +: data)
       }
     }
   }
+
 }

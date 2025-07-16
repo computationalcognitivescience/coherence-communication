@@ -9,7 +9,7 @@ trait Interlocutor {
   val graph: WUnDiGraph[String]
   val negativeConstraints: Set[WUnDiEdge[Belief]]
   val ownBeliefs: TruthValueAssignment
-  val sharedBeliefs: TruthValueAssignment = TruthValueAssignment.emtpy
+  val sharedBeliefs: TruthValueAssignment = TruthValueAssignment.empty
   val previousState: Option[Interlocutor] = None
   val maxUtteranceLength: Option[Int]     = None
 
@@ -34,7 +34,7 @@ trait Interlocutor {
     *
     * @return
     */
-  private def beliefInference(): TruthValueAssignment = {
+  protected def beliefInference(): TruthValueAssignment = {
     val tMax: Set[TruthValueAssignment] = foundationalBeliefNetwork.coherenceSolutions()
 
     if (previousState.isDefined) {

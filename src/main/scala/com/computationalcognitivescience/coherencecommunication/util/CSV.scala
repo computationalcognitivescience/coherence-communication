@@ -67,7 +67,8 @@ object CSV {
       ownBeliefsOverlap: Double,
       ownBeliefsAsymmetryFirst: Double,
       ownBeliefsAsymmetryLast: Double,
-      ownBeliefsResponderChanged: Double
+      ownBeliefsResponderChanged: Double,
+      allBeliefsResponderChanged: Double
   )
 
   private case object FlatData {
@@ -88,7 +89,8 @@ object CSV {
       "ownBeliefsOverlap",
       "ownBeliefsAsymmetryFirst",
       "ownBeliefsAsymmetryLast",
-      "ownBeliefsResponderChanged"
+      "ownBeliefsResponderChanged",
+      "allBeliefsResponderChanged"
     )
 
     def perParameterCombination(
@@ -121,7 +123,8 @@ object CSV {
                 ownBeliefsOverlap = firstTurn.ownBeliefsOverlap,
                 ownBeliefsAsymmetryFirst = firstTurn.ownBeliefAsymmetry,
                 ownBeliefsAsymmetryLast = lastTurn.ownBeliefAsymmetry,
-                ownBeliefsResponderChanged = lastTurn.ownBeliefsChangedResponder(firstTurn.responderState.ownBeliefs)
+                ownBeliefsResponderChanged = lastTurn.ownBeliefsChangedResponder(firstTurn.responderState.ownBeliefs),
+                allBeliefsResponderChanged = lastTurn.allBeliefsChangedResponder(firstTurn.responderState.allBeliefs)
               )
             )
           } else None

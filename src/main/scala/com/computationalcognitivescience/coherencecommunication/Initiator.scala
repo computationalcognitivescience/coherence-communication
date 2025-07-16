@@ -20,6 +20,8 @@ case class Initiator(
     override val previousState: Option[Initiator] = None,
     override val maxUtteranceLength: Option[Int] = None
 ) extends Interlocutor {
+  override lazy val allBeliefs: TruthValueAssignment = if(previousState.isDefined) previousState.get.allBeliefs
+  else beliefInference()
 
   assert(
     communicativeIntent.beliefs.forall(graph.vertices.contains),
@@ -36,9 +38,9 @@ case class Initiator(
     val perspective = Initiator(
       graph = graph,
       negativeConstraints = negativeConstraints,
-      ownBeliefs = TruthValueAssignment.emtpy,
+      ownBeliefs = TruthValueAssignment.empty,
       sharedBeliefs = sharedBeliefs ++ beliefs,
-      communicativeIntent = TruthValueAssignment.emtpy,
+      communicativeIntent = TruthValueAssignment.empty,
       previousState = Some(this),
       maxUtteranceLength = maxUtteranceLength
     )
@@ -51,7 +53,7 @@ case class Initiator(
     * TODO Include updated LaTeX definition.
     * @return
     */
-  def produceUtterance(): Option[TruthValueAssignment] = {
+  def produceUtterance(): TruthValueAssignment = {
     val allPossibleUtteranceBeliefs: Set[TruthValueAssignment] =
       if (maxUtteranceLength.isDefined)
         (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) - Set.empty)
@@ -68,6 +70,7 @@ case class Initiator(
 
     argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
       .random
+      .getOrElse(TruthValueAssignment.empty)
   }
 
   /** Computes <span style="font-variant-caps: normal;">Perceived Mutual Understanding</span> for

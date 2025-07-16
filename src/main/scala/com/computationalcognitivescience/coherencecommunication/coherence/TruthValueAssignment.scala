@@ -15,23 +15,17 @@ case class TruthValueAssignment(
     * $T_B$ is the `that` argument, and $A$ and $B$ are the sets of beliefs respectively:
     *
     * Let $T_A:A\rightarrow\{true,false\}$ and $T_B:B\rightarrow\{true,false\}$ be two truth-value
-    * assignments. We define the merger $T_A\oplus T_B$ as an ordered relationship with $T_A$ taking
-    * precedence if a belief $x\in A$ and $x\in B$: $$ (T_A\oplus T_B)(x) \begin{cases} T_A(x) &
-    * \text{if } x\in A\\ T_B(x) & \text{if } x\in B\\ \text{undefined} & \text{thatwise}
+    * assignments. We define the merger $T_A\oplus T_B$ as an ordered relationship with $T_B$ taking
+    * precedence if a belief $x\in B$ and $x\in A$: $$ (T_A\oplus T_B)(x) \begin{cases} T_B(x) &
+    * \text{if } x\in B\\ T_A(x) & \text{if } x\in A\\ \text{undefined} & \text{thatwise}
     * \end{cases} $$
     *
     * @param that
     *   The truth-value assignment to merge with `this`.
     * @return
     */
-  def merge(that: TruthValueAssignment): TruthValueAssignment = {
-    val overlap = beliefs.intersect(that.beliefs)
-    TruthValueAssignment(
-      beliefs.union(that.beliefs),
-      (this -- overlap).truthValueAssignment // Remove beliefs from this overlapping with that
-        \/ that.truthValueAssignment         // Add beliefs from that
-    )
-  }
+  def merge(that: TruthValueAssignment): TruthValueAssignment =
+    that.truthValueAssignment.foldLeft(this)(_ + _)
 
   /** Returns an option containing the associated truth value for `belief` if the belief is in this
     * truth-value assignment.
@@ -55,16 +49,14 @@ case class TruthValueAssignment(
     * current truth value assignment.
     *
     * @param belief
-    *   The belief to be added.
-    * @param truthValue
-    *   The truth value.
+    *   The belief and its associated truth value to be added.
     * @return
     *   The updated truth value assignment.
     */
-  def +(belief: Belief, truthValue: Boolean): TruthValueAssignment =
+  def +(belief: (Belief, Boolean)): TruthValueAssignment =
     TruthValueAssignment(
-      beliefs + belief,
-      truthValueAssignment.filter(_._1 == belief) + (belief -> truthValue)
+      beliefs + belief._1,
+      truthValueAssignment.filterNot(_._1 == belief._1) + belief
     )
 
   /** Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
@@ -72,13 +64,13 @@ case class TruthValueAssignment(
     * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
     * `this.beliefs`.
     *
-    * @param utteranceBeliefs
+    * @param subset
     *   The subset of beliefs to return the value assignments for.
     * @return
     */
-  def subAssignment(utteranceBeliefs: Set[Belief]): TruthValueAssignment = TruthValueAssignment(
-    beliefs = utteranceBeliefs,
-    truthValueAssignment = truthValueAssignment.filter(_._1 in utteranceBeliefs)
+  def subAssignment(subset: Set[Belief]): TruthValueAssignment = TruthValueAssignment(
+    beliefs = subset,
+    truthValueAssignment = truthValueAssignment.filter(_._1 in subset)
   )
 
   /** Returns the number of beliefs in the truth-value assignment. */
@@ -100,7 +92,7 @@ case class TruthValueAssignment(
     *   The updated truth value assignment.
     */
   def -(belief: Belief): TruthValueAssignment =
-    TruthValueAssignment(beliefs - belief, truthValueAssignment.filter(_._1 == belief))
+    TruthValueAssignment(beliefs - belief, truthValueAssignment.filterNot(_._1 == belief))
 
   /** Removed the beliefs from `that` truth-value assignment from `this` one.
     *
@@ -110,7 +102,8 @@ case class TruthValueAssignment(
     *   The updated truth value assignment.
     */
   def \(that: TruthValueAssignment): TruthValueAssignment =
-    TruthValueAssignment(beliefs \ that.beliefs, truthValueAssignment.filter(_._1 in that.beliefs))
+    this -- that.beliefs
+//    TruthValueAssignment(beliefs \ that.beliefs, truthValueAssignment.filterNot(_._1 in that.beliefs))
 
   /** Truth-value assignment merge as defined in Definition 1. Here, $T_A$ is `this` instance and
     * $T_B$ is the `that` argument, and $A$ and $B$ are the sets of beliefs respectively:
@@ -134,15 +127,11 @@ case class TruthValueAssignment(
     * @return
     *   The updated truth value assignment.
     */
-  @tailrec
   final def --(beliefs: Set[Belief]): TruthValueAssignment = {
-    if (beliefs.isEmpty) this
-    else {
-      val (head, tail) = beliefs.splitAt(1)
-      if (tail.isEmpty)
-        return this - head.head
-      (this - head.head) -- tail
-    }
+    TruthValueAssignment(
+      this.beliefs \ beliefs,
+      this.truthValueAssignment.filterNot(_._1 in beliefs)
+    )
   }
 
   /** Subset equivalence as defined in Definition 2. Returns true if and only if all beliefs in
@@ -185,11 +174,8 @@ case class TruthValueAssignment(
     * @return
     *   The number of equivalent beliefs.
     */
-  def structuralSimilarity(that: TruthValueAssignment): Int = {
-    val intersectingBeliefs              = beliefs /\ that.beliefs
-    def compare(belief: Belief): Boolean = this(belief) == that(belief)
-    (intersectingBeliefs | compare _).size
-  }
+  def structuralSimilarity(that: TruthValueAssignment): Int =
+    structuralSimilarity(that, this.beliefs)
 
   /** Structural similarity as defined in Definition 3. Returns the number of beliefs that have the
     * same truth value and are in both `this` and `that`.
@@ -233,6 +219,19 @@ case class TruthValueAssignment(
   def ~(subset: Set[Belief])(that: TruthValueAssignment): Int =
     this.structuralSimilarity(that, subset)
 
+  /** Asymmetry between two truth-value assignments, normalized by the size of the intersection:
+    * $asymmetry(this, other)=1-\frac{this ~ other}{|this \cap other|}$
+    * @param other
+    *   The truth-value assignment to compute asymmetry with.
+    * @return
+    *   The normalized asymmetry.
+    */
+  def asymmetry(other: TruthValueAssignment): Double = {
+    val intersection = this.beliefs /\ other.beliefs
+    if (intersection.isEmpty) 0.0
+    else 1.0 - (this ~ other).doubleValue / intersection.size
+  }
+
 }
 
 object TruthValueAssignment {
@@ -248,7 +247,7 @@ object TruthValueAssignment {
   /** Constructs an empty truth value assignment.
     * @return
     */
-  def emtpy: TruthValueAssignment = TruthValueAssignment(Set.empty, Set.empty)
+  def empty: TruthValueAssignment = TruthValueAssignment(Set.empty, Set.empty)
 
   implicit class ImplMap(map: Map[Belief, Boolean]) {
     def toTruthValueAssignment: TruthValueAssignment = TruthValueAssignment(

@@ -85,7 +85,7 @@ case class Simulation(
     println("Starting simulation.")
     for (parameters <- allParameters) {
       println(s"Batch ${parameters.id} / ${allParameters.size}")
-      val agentPairId = (0 until numberOfSimulations).toList
+      val agentPairId = (1 to numberOfSimulations).toList
       val batchConversationData: Seq[ConversationData] = agentPairId.par
         .map(id => {
           val randomGraph1 =
@@ -123,7 +123,7 @@ case class Simulation(
             randomGraph,
             negativeConstraints,
             initiatorOwnBeliefs,
-            sharedBeliefs = TruthValueAssignment.emtpy,
+            sharedBeliefs = TruthValueAssignment.empty,
             initiatorCommunicativeIntent,
             maxUtteranceLength = Some(parameters.maxUtteranceLength)
           )
@@ -160,7 +160,7 @@ case class Simulation(
             randomGraph,
             negativeConstraints,
             responderOwnBeliefs,
-            sharedBeliefs = TruthValueAssignment.emtpy,
+            sharedBeliefs = TruthValueAssignment.empty,
             maxUtteranceLength = Some(parameters.maxUtteranceLength)
           )
 
@@ -217,12 +217,28 @@ object Simulation {
 //      numberOfSimulations = 10
 //    ).run(dataDir)
     /*
-    Small simulation settings.
-     */
+   Medium simulation settings.
+    */
+//    Simulation(
+//      beliefNetworkSizes = List(10),
+//      beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
+//      beliefNetworkPCRatios = List(.25, .5, .75),
+//      intentionRatios = List(.2, .4),
+//      initiatorOwnBeliefsRatios = List(0, .2, .4),
+//      responderOwnBeliefsRatios = List(0, .2, .4),
+//      ownBeliefsOverlapRatios = List(0, .5, 1),
+//      ownBeliefsAsymmetryRatios = List(0, .5, 1),
+//      maxUtteranceLengths = List(5),
+//      maxRoundLengths = List(5),
+//      numberOfSimulations = 10
+//    ).run(dataFolderPath)
+//    /*
+//    Small simulation settings.
+//     */
     Simulation(
       beliefNetworkSizes = List(8),
       beliefNetworkConstraintsRatios = List(1.0 / 3.0, 2.0 / 3.0, 1.0),
-      beliefNetworkPCRatios = List(.25, .5, .75, 1.0),
+      beliefNetworkPCRatios = List(.25, .5, .75),
       intentionRatios = List(.25, 0.4),
       initiatorOwnBeliefsRatios = List(0, .2, .4),
       responderOwnBeliefsRatios = List(0, .2, .4),
