@@ -232,6 +232,8 @@ case class TruthValueAssignment(
     else 1.0 - (this ~ other).doubleValue / intersection.size
   }
 
+  override def toString: String = this.truthValueAssignment.toList.sortBy(_._1.toString).mkString("TruthValueAssignment(",",",")")
+
 }
 
 object TruthValueAssignment {
