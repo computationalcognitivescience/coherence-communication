@@ -88,6 +88,9 @@ case class FoundationalBeliefNetwork(
       .allMappings(Set(true, false))
       .map(tva => TruthValueAssignment(tva.keySet, tva.toSet))
       .map(_ ++ priorBeliefsAssignment)
+
+  /** Returns the set of beliefs. */
+  def beliefs: Set[Belief] = vertices
 }
 
 case object FoundationalBeliefNetwork {

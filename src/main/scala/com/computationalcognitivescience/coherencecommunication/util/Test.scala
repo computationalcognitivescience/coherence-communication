@@ -1,10 +1,7 @@
 package com.computationalcognitivescience.coherencecommunication.util
 
-import com.computationalcognitivescience.coherencecommunication.{Initiator, Responder, Simulation}
-import com.computationalcognitivescience.coherencecommunication.coherence.{
-  FoundationalBeliefNetwork,
-  TruthValueAssignment
-}
+import com.computationalcognitivescience.coherencecommunication.{Conversation, Initiator, Responder, Simulation}
+import com.computationalcognitivescience.coherencecommunication.coherence.{FoundationalBeliefNetwork, TruthValueAssignment}
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
 import mathlib.graph.GraphImplicits.N
 import mathlib.graph.{WUnDiEdge, WUnDiGraph}
@@ -33,20 +30,20 @@ object Test {
 //    println("t2 \\ t1:\t" + t2 \ t1)
 
 
-//
-//    val c = Simulation.randomConversation(
-//      beliefNetworkSize = 8,
-//      preferentialAttachementM = 2,
-//      beliefNetworkPCRatio = .5,
-//      initiatorPriorRatio = .25,
-//      initiatorCommunicativeIntentRatio = 3.0/8,
-//      maxUtteranceLength = 5,
-//      priorsOverlapRatio = 1 / 3.0,
-//      priorsAsymmetryRatio = .5,
-//      responderPriorRatio = .25,
-//      maxRoundLength = 6
-//    )
-//    c.simulate()//.reverse.foreach(println)
+
+    val c = Conversation.random(
+      beliefNetworkSize = 8,
+      preferentialAttachementM = 2,
+      beliefNetworkPCRatio = .5,
+      initiatorPriorRatio = 3.0/8,
+      initiatorCommunicativeIntentRatio = 3.0/8,
+      maxUtteranceLength = 5,
+      priorsOverlapRatio = 2 / 3.0,
+      priorsAsymmetryRatio = .5,
+      responderPriorRatio = 3.0/8,
+      maxRoundLength = 6
+    )
+    c.simulate().reverse.foreach(println)
 
 //    val graph = WUnDiGraph.preferentialAttachment(10, 2, 1.0)
 //    val negativeConstraints = scala.util.Random

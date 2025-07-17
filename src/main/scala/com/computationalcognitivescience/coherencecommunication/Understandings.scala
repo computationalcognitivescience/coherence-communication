@@ -5,7 +5,7 @@ import io.circe.{Decoder, Encoder}
 object Understandings extends Enumeration {
   type Understanding = Value
 
-  val YesConfirmed, YesLiteral, YesPerceived, NoPerceived, No = Value
+  val YesLiteral, YesPerceived, NotYet, No = Value
 
   implicit val genderDecoder: Decoder[Understandings.Value] =
     Decoder.decodeEnumeration(Understandings)

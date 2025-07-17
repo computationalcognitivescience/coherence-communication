@@ -114,7 +114,7 @@ object CSV {
                 initiatorIntentSize = firstTurn.initiatorIntentSize,
                 initiatorOwnBeliefsSize = firstTurn.initiatorState.ownBeliefs.size,
                 responderOwnBeliefsSize = firstTurn.responderState.ownBeliefs.size,
-                nRounds = conversation.size,
+                nRounds = conversation.size - 1,
                 nrOffers = conversation.count(turn =>
                   turn.restrictedOffer.isDefined && turn.restrictedOffer.get.nonEmpty
                 ),

@@ -55,7 +55,7 @@ case class Initiator(
 
   /** Computes a belief inference for an utterance from the other agents perspective by ignoring the
     * [[Initiator]]s own beliefs.
-    * @param beliefs
+    * @param utterance
     *   The utterance to compute the belief inference for.
     * @return
     */
@@ -79,17 +79,17 @@ case class Initiator(
 
     def relativeStructuralSimilarity(utterance: TruthValueAssignment): Double = {
       val perspective = perspectiveTaking(utterance)
-      val similarity = communicativeIntent ~ perspective
+      val similarity  = communicativeIntent ~ perspective
       if (similarity == 0) 0.0
       else (1.0 / utterance.size) * similarity
     }
 
 //    val bla = argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
-    val bla = allPossibleUtteranceBeliefs.map(u => u -> relativeStructuralSimilarity(u))
-    val max = bla.map(_._2).max
+    val bla  = allPossibleUtteranceBeliefs.map(u => u -> relativeStructuralSimilarity(u))
+    val max  = bla.map(_._2).max
     val bla2 = bla.filter(_._2 == max).map(_._1)
-    if(bla2.isEmpty) bla.foreach(println)
-      bla2.random.get
+    if (bla2.isEmpty) bla.foreach(println)
+    bla2.random.get
   }
 
   /** Computes <span style="font-variant-caps: normal;">Perceived Mutual Understanding</span> for
@@ -103,24 +103,37 @@ case class Initiator(
     *   Yes, YesLiteral, NotYet, or No understanding.
     */
   def perceivedMutualUnderstanding(offer: Option[TruthValueAssignment]): Understanding = {
-    if (offer.isEmpty && forall(communicativeIntent.beliefs, sharedBeliefs.contains))
+    val possibleReply = repairSolution(offer.getOrElse(TruthValueAssignment.empty))
+    if (forall(communicativeIntent.beliefs, (sharedBeliefs ++ possibleReply).contains))
+      // All intention beliefs have been literally communicated already or will be after reply to this offer
       Understandings.YesLiteral
-    else if (offer.isEmpty) {
-      val perspective = perspectiveTaking(TruthValueAssignment.empty)
-      if (
-        forall(communicativeIntent.beliefs, (b: Belief) => communicativeIntent(b) == perspective(b))
-      )
+    else {
+      val perspective =
+        if (offer.isDefined) perspectiveState.get.addSharedBeliefs(repairSolution(offer.get))
+        else perspectiveState.get
+      if (forall(communicativeIntent.beliefs, (b: Belief) => perspective.allBeliefs(b) == communicativeIntent(b) ))
         Understandings.YesPerceived
-      else
-      Understandings.NoPerceived
-    } else {
-      val perspective = perspectiveTaking(offer.get)
-      if (
-        forall(communicativeIntent.beliefs, (b: Belief) => communicativeIntent(b) == perspective(b))
-      )
-        Understandings.YesConfirmed
-      else Understandings.No
+      else Understandings.NotYet
     }
+
+//    if (offer.isEmpty && forall(communicativeIntent.beliefs, sharedBeliefs.contains))
+//      Understandings.YesLiteral
+//    else if (offer.isEmpty) {
+//      val perspective = perspectiveTaking(TruthValueAssignment.empty)
+//      val perspectiveUnderstanding =
+//        forall(communicativeIntent.beliefs, (b: Belief) => communicativeIntent(b) == perspective(b))
+//      if (perspectiveUnderstanding) Understandings.YesPerceived
+//      else Understandings.NoPerceived
+//    } else {
+//      val allIntentionsShared: Boolean =
+//        forall(communicativeIntent.beliefs, (offer.get.beliefs \/ sharedBeliefs.beliefs).contains
+//
+//      lazy val perspectiveUnderstanding: Boolean =
+//        forall(communicativeIntent.beliefs, (b: Belief) => communicativeIntent(b) == perspectiveTaking(offer.get)(b))
+//
+//      if (allIntentionsShared || perspectiveUnderstanding) Understandings.YesConfirmed
+//      else Understandings.No
+//    }
   }
 
   def repairSolution(offer: TruthValueAssignment): TruthValueAssignment = {
