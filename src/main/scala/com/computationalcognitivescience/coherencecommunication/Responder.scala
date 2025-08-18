@@ -21,7 +21,6 @@ case class Responder(
     */
   def troubleIdentification: Boolean = {
     if (previousState.isDefined) {
-//      println(this.coherence + " < " + previousState.get.coherence)
       this.coherence < previousState.get.coherence
     }
     else false

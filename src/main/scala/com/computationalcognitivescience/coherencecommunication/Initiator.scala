@@ -4,7 +4,6 @@ import com.computationalcognitivescience.coherencecommunication.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import com.computationalcognitivescience.coherencecommunication.util.SetTheoryDev._
 import com.computationalcognitivescience.coherencecommunication.coherence.{
-  BeliefNetwork,
   FoundationalBeliefNetwork,
   TruthValueAssignment
 }
@@ -60,7 +59,7 @@ case class Initiator(
     * @return
     */
   private def perspectiveTaking(utterance: TruthValueAssignment): TruthValueAssignment =
-    perspectiveState.get.addSharedBeliefs(sharedBeliefs ++ utterance).allBeliefs
+    perspectiveState.get.addSharedBeliefs(utterance).allBeliefs
 
   /** Computes <span style="font-variant-caps: normal;">Produce Utterance</span> for this
     * [[Initiator]].
@@ -78,18 +77,16 @@ case class Initiator(
           .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
 
     def relativeStructuralSimilarity(utterance: TruthValueAssignment): Double = {
-      val perspective = perspectiveTaking(utterance)
-      val similarity  = communicativeIntent ~ perspective
+      val perspective: TruthValueAssignment = perspectiveTaking(utterance)
+      val similarity: Int                   = communicativeIntent ~ perspective
       if (similarity == 0) 0.0
       else (1.0 / utterance.size) * similarity
     }
 
-//    val bla = argMax(allPossibleUtteranceBeliefs, relativeStructuralSimilarity)
-    val bla  = allPossibleUtteranceBeliefs.map(u => u -> relativeStructuralSimilarity(u))
-    val max  = bla.map(_._2).max
-    val bla2 = bla.filter(_._2 == max).map(_._1)
-    if (bla2.isEmpty) bla.foreach(println)
-    bla2.random.get
+    val allPossibleUtteranceBeliefsWithSimilarity  = allPossibleUtteranceBeliefs.map(u => u -> relativeStructuralSimilarity(u))
+    val max  = allPossibleUtteranceBeliefsWithSimilarity.map(_._2).max
+    val allPossibleUtteranceBeliefsWithMaxSimilarity = allPossibleUtteranceBeliefsWithSimilarity.filter(_._2 == max).map(_._1)
+    allPossibleUtteranceBeliefsWithMaxSimilarity.random.get
   }
 
   /** Computes <span style="font-variant-caps: normal;">Perceived Mutual Understanding</span> for
@@ -111,7 +108,12 @@ case class Initiator(
       val perspective =
         if (offer.isDefined) perspectiveState.get.addSharedBeliefs(repairSolution(offer.get))
         else perspectiveState.get
-      if (forall(communicativeIntent.beliefs, (b: Belief) => perspective.allBeliefs(b) == communicativeIntent(b) ))
+      if (
+        forall(
+          communicativeIntent.beliefs,
+          (b: Belief) => perspective.allBeliefs(b) == communicativeIntent(b)
+        )
+      )
         Understandings.YesPerceived
       else Understandings.NotYet
     }
@@ -152,7 +154,7 @@ case class Initiator(
     sharedBeliefs = sharedBeliefs ++ utterance,
     communicativeIntent = communicativeIntent,
     previousState = Some(this),
-    previousPerspectiveState = previousPerspectiveState,
+    previousPerspectiveState = Some(perspectiveState.get.addSharedBeliefs(utterance)),
     maxUtteranceLength = maxUtteranceLength
   )
 }

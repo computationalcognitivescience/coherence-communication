@@ -22,6 +22,7 @@ case class Conversation(
     round = 0,
     initiatorPerceivedMutualUnderstanding = Understandings.NotYet,
     utterance = None,
+    reply = None,
     restrictedOffer = None
   )
 
@@ -47,12 +48,12 @@ case class Conversation(
             responderState = responder.addSharedBeliefs(possibleReply),
             round = data.head.round + 1,
             initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-            utterance = if (restrictedOffer.isDefined) Some(possibleReply) else None,
+            utterance = None,
+            reply = if (restrictedOffer.isDefined) Some(possibleReply) else None,
             restrictedOffer = None
           )
 //          println(turnData)
           turnData +: data
-
         case NotYet =>
           // Did not perceive understanding via perspective taking. Continue with possibly reply.
           val utterance     = initiator.addSharedBeliefs(possibleReply).produceUtterance()
@@ -67,7 +68,8 @@ case class Conversation(
             responderState = nextResponder,
             round = data.head.round + 1,
             initiatorPerceivedMutualUnderstanding = Understandings.NotYet,
-            utterance = Some(possibleReply ++ utterance),
+            utterance = Some(utterance),
+            reply =  if (restrictedOffer.isDefined) Some(possibleReply) else None,
             restrictedOffer = nextOffer
           )
 //                    println(turnData)
@@ -77,112 +79,12 @@ case class Conversation(
             restrictedOffer = nextOffer,
             data = turnData +: data
           )
-
-//        case No => {
-//          // Offer was made, but not all beliefs in the offer match the communicative intent. Reply and continue.
-//          val reply         = initiator.repairSolution(restrictedOffer.get)
-//          val utterance     = initiator.addSharedBeliefs(reply).produceUtterance()
-//          val nextInitiator = initiator.addSharedBeliefs(reply ++ utterance)
-//          val nextResponder = responder.addSharedBeliefs(reply ++ utterance)
-//          val nextOffer =
-//            if (nextResponder.troubleIdentification) nextResponder.repairFormulation
-//            else None
-//
-//          val turnData = TurnData(
-//            initiatorState = nextInitiator,
-//            responderState = nextResponder,
-//            round = data.head.round + 1,
-//            initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-//            utterance = Some(reply ++ utterance),
-//            restrictedOffer = nextOffer
-//          )
-////          println(turnData)
-//          simulateRound(
-//            initiator = nextInitiator,
-//            responder = nextResponder,
-//            restrictedOffer = nextOffer,
-//            data = turnData +: data
-//          )
-//        }
-//        case YesConfirmed => {
-//          // Offer was made, and it matches the communicative intent. Confirm and then end the conversation.
-//          val turnData = TurnData(
-//            initiatorState = initiator.addSharedBeliefs(restrictedOffer.get),
-//            responderState = responder.addSharedBeliefs(restrictedOffer.get),
-//            round = data.head.round + 1,
-//            initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-//            utterance = Some(restrictedOffer.get),
-//            restrictedOffer = None
-//          )
-////          println(turnData)
-//          turnData +: data
-//        }
         case _ =>
           // Something went wrong
           data
-
       }
     }
-
-//    if (data.length > maxRounds) {
-//      // Stop conversation if it takes more than maxRounds
-//      data
-//    } else {
-//      // Figure Step 5 (or 0)
-//      val perceivedMutualUnderstanding = initiator.perceivedMutualUnderstanding(restrictedOffer)
-//      if (perceivedMutualUnderstanding == Yes) {
-//        // Offer made sense, or all intention beliefs were explicitly communicated, ending the conversation.
-//        TurnData(
-//          initiatorState = initiator,
-//          responderState = responder,
-//          round = data.head.round + 1,
-//          initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-//          utterance = TruthValueAssignment.empty,
-//          restrictedOffer = None
-//        ) +: data
-//      } else if(perceivedMutualUnderstanding == NotYet) {
-//        // No offer was made
-//        val utterance = initiator.produceUtterance() // Figure Step 1
-//        val nextInitiator = initiator.addSharedBeliefs(utterance)
-//        val nextResponder = responder.addSharedBeliefs(utterance)
-//        val trouble       = nextResponder.troubleIdentification
-//        val restrictedOfferOption =
-//          if (trouble) nextResponder.repairFormulation
-//          else None
-//        val turnData = TurnData(
-//          initiatorState = nextInitiator,
-//          responderState = nextResponder,
-//          round = data.head.round + 1,
-//          initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-//          utterance = utterance,
-//          restrictedOffer = restrictedOfferOption
-//        )
-//        simulateRound(nextInitiator, nextResponder, restrictedOfferOption, turnData +: data)
-//      } else {
-//        // Offer was given
-//        val repairSolution = initiator.repairSolution(restrictedOffer.get) // Figure Step 6
-//        val utterance = initiator
-//          .addSharedBeliefs(repairSolution)
-//          .produceUtterance() // Figure Step 7
-//        val nextInitiator = initiator.addSharedBeliefs(repairSolution ++ utterance)
-//        val nextResponder = responder.addSharedBeliefs(repairSolution ++ utterance)
-//        val trouble       = nextResponder.troubleIdentification
-//        val restrictedOfferOption =
-//          if (trouble) nextResponder.repairFormulation
-//          else None
-//        val turnData = TurnData(
-//          initiatorState = nextInitiator,
-//          responderState = nextResponder,
-//          round = data.head.round + 1,
-//          initiatorPerceivedMutualUnderstanding = perceivedMutualUnderstanding,
-//          utterance = utterance,
-//          restrictedOffer = restrictedOfferOption
-//        )
-//        simulateRound(nextInitiator, nextResponder, restrictedOfferOption, turnData +: data)
-//      }
-//    }
   }
-
 }
 
 object Conversation {
@@ -198,11 +100,11 @@ object Conversation {
       responderPriorRatio: Double,
       maxRoundLength: Int
   ): Conversation = {
-    val randomGraph1 =
+    val randomGraph =
       WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, preferentialAttachementM, 1.0)
-    val randomGraph = WUnDiGraph(
-      randomGraph1.vertices,
-      randomGraph1.edges.map(edge => WUnDiEdge(edge.left, edge.right, 1.0))
+    val randomGraph1 = WUnDiGraph(
+      randomGraph.vertices,
+      randomGraph.edges.map(edge => WUnDiEdge(edge.left, edge.right, 1.0))
     )
     //          WUnDiGraph.uniform(
     //            n = parameters.beliefNetworkSize,

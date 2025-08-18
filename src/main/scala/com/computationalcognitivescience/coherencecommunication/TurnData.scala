@@ -11,6 +11,7 @@ case class TurnData(
     round: Int,
     initiatorPerceivedMutualUnderstanding: Understanding,
     utterance: Option[TruthValueAssignment],
+    reply: Option[TruthValueAssignment],
     restrictedOffer: Option[TruthValueAssignment]
 ) {
 
@@ -50,7 +51,8 @@ case class TurnData(
   override def toString: String =
     s"""$round
        |utterance $utterance
-       |offer $restrictedOffer ${restrictedOffer.getOrElse(TruthValueAssignment.empty).subsetEquivalence(initiatorState.communicativeIntent)}
+       |reply $reply
+       |offer $restrictedOffer
        |perceived $initiatorPerceivedMutualUnderstanding
        |i_sha ${initiatorState.sharedBeliefs}
        |r_sha ${responderState.sharedBeliefs}

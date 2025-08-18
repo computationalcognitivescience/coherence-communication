@@ -13,7 +13,7 @@ trait Interlocutor {
   val previousState: Option[Interlocutor] = None
   val maxUtteranceLength: Option[Int]     = None
 
-  protected val foundationalBeliefNetwork: FoundationalBeliefNetwork = FoundationalBeliefNetwork(
+  val foundationalBeliefNetwork: FoundationalBeliefNetwork = FoundationalBeliefNetwork(
     graph = graph,
     negativeConstraints = negativeConstraints,
     priorBeliefs = ownBeliefs.beliefs \/ sharedBeliefs.beliefs,

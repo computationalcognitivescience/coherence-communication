@@ -60,6 +60,8 @@ object CSV {
       responderOwnBeliefsSize: Int,
       nRounds: Int,
       nrOffers: Int,
+      utteranceLength: Int,
+      repairLength: Int,
       asymmetryAllBeliefsFirst: Double,
       asymmetryIntentionBeliefsFirst: Double,
       asymmetryAllBeliefsLast: Double,
@@ -83,6 +85,8 @@ object CSV {
       "responderOwnBeliefsSize",
       "nRounds",
       "nrOffers",
+      "utteranceLength",
+      "repairLength",
       "asymmetryAllBeliefsFirst",
       "asymmetryIntentionBeliefsFirst",
       "asymmetryAllBeliefsLast",
@@ -118,6 +122,10 @@ object CSV {
                 nrOffers = conversation.count(turn =>
                   turn.restrictedOffer.isDefined && turn.restrictedOffer.get.nonEmpty
                 ),
+                utteranceLength = conversation.map(_.utterance.size).sum,
+                repairLength = conversation
+                  .map(turn => if (turn.reply.isDefined) turn.reply.get.size else 0)
+                  .sum,
                 asymmetryAllBeliefsFirst = firstTurn.allBeliefsAsymmetry,
                 asymmetryIntentionBeliefsFirst = firstTurn.intentionBeliefAsymmetry,
                 asymmetryAllBeliefsLast = lastTurn.allBeliefsAsymmetry,
@@ -125,8 +133,10 @@ object CSV {
                 ownBeliefsOverlap = firstTurn.ownBeliefsOverlap,
                 ownBeliefsAsymmetryFirst = firstTurn.ownBeliefAsymmetry,
                 ownBeliefsAsymmetryLast = lastTurn.ownBeliefAsymmetry,
-                ownBeliefsResponderChanged = lastTurn.ownBeliefsChangedResponder(firstTurn.responderState.ownBeliefs),
-                allBeliefsResponderChanged = lastTurn.allBeliefsChangedResponder(firstTurn.responderState.allBeliefs),
+                ownBeliefsResponderChanged =
+                  lastTurn.ownBeliefsChangedResponder(firstTurn.responderState.ownBeliefs),
+                allBeliefsResponderChanged =
+                  lastTurn.allBeliefsChangedResponder(firstTurn.responderState.allBeliefs),
                 endState = lastTurn.initiatorPerceivedMutualUnderstanding.toString
               )
             )
