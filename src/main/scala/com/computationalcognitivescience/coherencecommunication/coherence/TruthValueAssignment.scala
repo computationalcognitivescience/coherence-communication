@@ -4,21 +4,24 @@ import com.computationalcognitivescience.coherencecommunication.coherence.Belief
 import com.computationalcognitivescience.coherencecommunication.util.SetTheoryDev._
 import mathlib.set.SetTheory._
 
-import scala.annotation.tailrec
-
+/** A datatype for truth-value assignments, consisting of a set of beliefs and a set of belief,
+  * boolean pairs.
+  * @param beliefs
+  *   The set of beliefs.
+  * @param truthValueAssignment
+  *   The set of truth values for each belief.
+  */
 case class TruthValueAssignment(
     beliefs: Set[Belief],
     truthValueAssignment: Set[(Belief, Boolean)]
 ) {
 
-  /** Truth-value assignment merge as defined in Definition 1. Here, $T_A$ is `this` instance and
-    * $T_B$ is the `that` argument, and $A$ and $B$ are the sets of beliefs respectively:
+  /** Truth-value assignment merge $++$ as defined in Definition 1. Here, $T_A$ is `this` instance
+    * and $T_B$ is the `that` argument, and $A$ and $B$ are the sets of beliefs respectively.
     *
-    * Let $T_A:A\rightarrow\{true,false\}$ and $T_B:B\rightarrow\{true,false\}$ be two truth-value
-    * assignments. We define the merger $T_A\oplus T_B$ as an ordered relationship with $T_B$ taking
-    * precedence if a belief $x\in B$ and $x\in A$: $$ (T_A\oplus T_B)(x) \begin{cases} T_B(x) &
-    * \text{if } x\in B\\ T_A(x) & \text{if } x\in A\\ \text{undefined} & \text{thatwise}
-    * \end{cases} $$
+    * $$ (T_A ++ T_B)(x) \begin{cases} T_B(x) & \text{if}~x\in A~\text{and}~x\in B\\ T_A(x) &
+    * \text{if}~x\in A\\ T_B(x) & \text{if}~x\in B\\ \text{undefined} & \text{otherwise} \end{cases}
+    * $$
     *
     * @param that
     *   The truth-value assignment to merge with `this`.
@@ -60,7 +63,7 @@ case class TruthValueAssignment(
     )
 
   /** Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
-    * the productive version of Definition 2 and [[subsetEquivalence()]]. Note that this returns an
+    * the productive version of Definition 2 and `subsetEquivalence()`. Note that this returns an
     * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
     * `this.beliefs`.
     *
@@ -103,16 +106,8 @@ case class TruthValueAssignment(
     */
   def \(that: TruthValueAssignment): TruthValueAssignment =
     this -- that.beliefs
-//    TruthValueAssignment(beliefs \ that.beliefs, truthValueAssignment.filterNot(_._1 in that.beliefs))
 
-  /** Truth-value assignment merge as defined in Definition 1. Here, $T_A$ is `this` instance and
-    * $T_B$ is the `that` argument, and $A$ and $B$ are the sets of beliefs respectively:
-    *
-    * Let $T_A:A\rightarrow\{true,false\}$ and $T_B:B\rightarrow\{true,false\}$ be two truth-value
-    * assignments. We define the merger $T_A\oplus T_B$ as an ordered relationship with $T_A$ taking
-    * precedence if a belief $x\in A$ and $x\in B$: $$ (T_A\oplus T_B)(x) \begin{cases} T_A(x) &
-    * \text{if } x\in A\\ T_B(x) & \text{if } x\in B\\ \text{undefined} & \text{thatwise}
-    * \end{cases} $$
+  /** Shorthand for `merge`, truth-value assignment merge as defined in Definition 1.
     *
     * @param truthValueAssignment
     *   The truth-value assignment to merge with `this`.
@@ -134,40 +129,36 @@ case class TruthValueAssignment(
     )
   }
 
-  /** Subset equivalence as defined in Definition 2. Returns true if and only if all beliefs in
-    * `subset` are contained in both `this` and `that`, and the truth-value assignments are equal.
+  /** Subset equivalence $\overset{B}{\subset}$.
     *
-    * Let $T_A:A\rightarrow\{true,false\}$ be a truth-value assignment and let $B\subseteq V_A$. We
-    * define the subset $T_B\mathrel{\overset{B}{\subset}} T_A$ as $T_B(x)=T_A(x)$, for all $x\in
-    * B$.
+    * Let $T_A:A\rightarrow\{true,false\}$ be a truth-value assignment and let $B\subseteq V_A$.
+    *
     * @param that
     *   The truth-value assignment to evaluate subset equivalence for.
     * @return
+    *   Returns true if and only if all beliefs in `subset` are contained in both `this` and `that`,
+    *   and the truth-value assignments are equal.
     */
   def subsetEquivalence(that: TruthValueAssignment): Boolean = {
     (that.beliefs subsetOf this.beliefs) &&
     forall(that.beliefs, (b: Belief) => this(b) == that(b))
   }
 
-  /** Subset equivalence as defined in Definition 2. Returns true if and only if all beliefs in
-    * `subset` are contained in both `this` and `that`, and the truth-value assignments are equal.
-    *
-    * Let $T_A:A\rightarrow\{true,false\}$ be a truth-value assignment and let $B\subseteq V_A$. We
-    * define the subset $T_B\mathrel{\overset{B}{\subset}} T_A$ as $T_B(x)=T_A(x)$, for all $x\in
-    * B$.
+  /** Shorthand for `subsetEquivalence`, subset equivalence.
     * @param that
     *   The truth-value assignment to evaluate subset equivalence for.
     * @return
+    *   Returns true if and only if all beliefs in `subset` are contained in both `this` and `that`,
+    *   and the truth-value assignments are equal.
     */
   def <=(that: TruthValueAssignment): Boolean = this.subsetEquivalence(that)
 
-  /** Structural similarity as defined in Definition 3. Returns the number of beliefs that have the
-    * same truth value and are in both `this` and `that`.
+  /** Structural similarity $\sim$ as defined in Definition 2. Returns the number of beliefs that
+    * have the same truth value and are in both `this` and `that`. Here, $T_A$ is `this` instance
+    * and $T_B$ is the `that` argument
     *
-    * Structural similarity $\sim$] Let $T_A:A\rightarrow\{true,false\}$ and
-    * $T_B:B\rightarrow\{true,false\}$ be two truth-value assignments. We define the structural
-    * similarity relative to the intersection of $A\cap B$ as the number of equivalent truth-value
-    * assignments: $|\left\{x\in A \cap B \middle| T_A(x)=T_B(x)\right\}|$
+    * We define the structural similarity relative to the intersection of $A\cap B$ as the number of
+    * equivalent truth-value assignments: $|\left\{x\in A \cap B \middle| T_A(x)=T_B(x)\right\}|$
     *
     * @param that
     *   The truth-value assignment to compute similarity against.
@@ -177,13 +168,8 @@ case class TruthValueAssignment(
   def structuralSimilarity(that: TruthValueAssignment): Int =
     structuralSimilarity(that, this.beliefs)
 
-  /** Structural similarity as defined in Definition 3. Returns the number of beliefs that have the
-    * same truth value and are in both `this` and `that`.
-    *
-    * Structural similarity $\sim$] Let $T_A:A\rightarrow\{true,false\}$ and
-    * $T_B:B\rightarrow\{true,false\}$ be two truth-value assignments. We define the structural
-    * similarity relative to the intersection of $A\cap B$ as the number of equivalent truth-value
-    * assignments: $|\left\{x\in A \cap B \middle| T_A(x)=T_B(x)\right\}|$
+  /** Shorthand for `structuralSimilarity`, as defined in Definition 2. Returns the number of
+    * beliefs that have the same truth value and are in both `this` and `that`.
     *
     * @param that
     *   The truth-value assignment to compute similarity against.
@@ -192,8 +178,11 @@ case class TruthValueAssignment(
     */
   def ~(that: TruthValueAssignment): Int = structuralSimilarity(that)
 
-  /** Relative structural similarity as defined in Definition 4. Returns the number of beliefs that
-    * have the same truth value and are in both `this` and `that` and in `subset`.
+  /** Relative structural similarity $\overset{C}{\sim}$. Returns the
+    * number of beliefs in `subset` that have the same truth value and are in both `this` and
+    * `that`. Here, $T_A$ is `this` instance and $T_B$ is the `that` argument: $|\left\{x\in C
+    * \middle| T_A(x)=T_B(x)\right\}|$.
+    *
     * @param that
     *   The truth-value assignment to compute similarity against.
     * @param subset
@@ -206,18 +195,6 @@ case class TruthValueAssignment(
     def compare(belief: Belief): Boolean = this(belief) == that(belief)
     (intersectingBeliefs | compare _).size
   }
-
-  /** Relative structural similarity as defined in Definition 4. Returns the number of beliefs that
-    * have the same truth value and are in both `this` and `that` and in `subset`.
-    * @param that
-    *   The truth-value assignment to compute similarity against.
-    * @param subset
-    *   The subset to compute structural similarity for.
-    * @return
-    *   The number of equivalent beliefs.
-    */
-  def ~(subset: Set[Belief])(that: TruthValueAssignment): Int =
-    this.structuralSimilarity(that, subset)
 
   /** Asymmetry between two truth-value assignments, normalized by the size of the intersection:
     * $asymmetry(this, other)=1-\frac{this ~ other}{|this \cap other|}$
@@ -232,13 +209,15 @@ case class TruthValueAssignment(
     else 1.0 - (this ~ other).doubleValue / intersection.size
   }
 
-  override def toString: String = this.truthValueAssignment.toList.sortBy(_._1.toString).mkString("TruthValueAssignment(",",",")")
+  override def toString: String = this.truthValueAssignment.toList
+    .sortBy(_._1.toString)
+    .mkString("TruthValueAssignment(", ",", ")")
 
 }
 
 object TruthValueAssignment {
 
-  /** Constructs a truth value assignment based on a set of pairs only.
+  /** Constructs a truth value assignment from on a set of pairs only.
     * @param truthValueAssignment
     *   Set of belief-Boolean pairs.
     * @return
@@ -252,6 +231,10 @@ object TruthValueAssignment {
   def empty: TruthValueAssignment = TruthValueAssignment(Set.empty, Set.empty)
 
   implicit class ImplMap(map: Map[Belief, Boolean]) {
+
+    /** Converts a map of beliefs and boolean values to a [[TruthValueAssignment]].
+      * @return
+      */
     def toTruthValueAssignment: TruthValueAssignment = TruthValueAssignment(
       beliefs = map.keySet,
       truthValueAssignment = map.toSet

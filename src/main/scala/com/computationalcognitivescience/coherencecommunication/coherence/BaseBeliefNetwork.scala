@@ -6,19 +6,32 @@ import mathlib.set.SetTheory._
 
 import scala.annotation.tailrec
 
-trait BaseBeliefNetwork extends CMinusAlgorithm {
+/** Trait containing the specification of a belief network, represented as a weighted undirected
+  * graph with negative constraints.
+  */
+trait BaseBeliefNetwork {
 
+  /** The weighted undirected graph $G=(V,E)$ of the belief network. */
   val graph: WUnDiGraph[String]
+
+  /** The negative constraints $C&#94;-$ of the belief network. */
   val negativeConstraints: Set[WUnDiEdge[Belief]]
   require(
     negativeConstraints isSubsetEqTo graph.edges,
-    "The set of negative constraints is not a subset of or equal to the edges in the graph."
+    "[ERROR] The set of negative constraints is not a subset of or equal to the edges in the graph."
   )
-  override val positiveConstraints: Set[WUnDiEdge[Belief]] = graph.edges \ negativeConstraints
 
-  def vertices: Set[Belief]         = graph.vertices
+  /** The positive constraints $C&#94;+=E\setminus C&#94;-$   of the belief network. */
+  val positiveConstraints: Set[WUnDiEdge[Belief]] = graph.edges \ negativeConstraints
+
+  /** The set of vertices (beliefs) in this network. */
+  def vertices: Set[Belief] = graph.vertices
+
+  /** The set of edges (constraints) in this network. */
   def edges: Set[WUnDiEdge[Belief]] = graph.edges
-  def size: Int                     = graph.size
+
+  /** The size of the network. */
+  def size: Int = graph.size
 
   /** Check if in the given truth-value assignment a positive constraint is satisfied
     *
@@ -29,11 +42,12 @@ trait BaseBeliefNetwork extends CMinusAlgorithm {
     * @return
     *   True if the constraint is satisfied, false otherwise
     */
-  override protected def isSatisfiedPositiveConstraint(assignment: TruthValueAssignment)(
+  protected def isSatisfiedPositiveConstraint(assignment: TruthValueAssignment)(
       edge: WUnDiEdge[Belief]
   ): Boolean = assignment(edge.left) == assignment(edge.right)
 
   /** Check if in the given truth-value assignment a negative constraint is satisfied
+    * $\forall_{a,b\in assignment, a\neq b}T(a)\neq T(b)$.
     *
     * @param assignment
     *   The truth-value assignment over vertices
@@ -42,12 +56,12 @@ trait BaseBeliefNetwork extends CMinusAlgorithm {
     * @return
     *   True if the constraint is satisfied, false otherwise
     */
-  override protected def isSatisfiedNegativeConstraint(assignment: TruthValueAssignment)(
+  protected def isSatisfiedNegativeConstraint(assignment: TruthValueAssignment)(
       edge: WUnDiEdge[Belief]
   ): Boolean = assignment(edge.left) != assignment(edge.right)
 
   /** Check if in the given truth-value assignment a positive constraint is determined
-    *
+    * $\forall_{a,b\in assignment, a\neq b}T(a)= T(b)$.
     * @param assignment
     *   The truth-value assignment over vertices
     * @param edge
@@ -55,7 +69,7 @@ trait BaseBeliefNetwork extends CMinusAlgorithm {
     * @return
     *   True if both endpoints of the edge have been assigned, false otherwise
     */
-  override protected def isDeterminedConstraint(assignment: TruthValueAssignment)(
+  protected def isDeterminedConstraint(assignment: TruthValueAssignment)(
       edge: WUnDiEdge[Belief]
   ): Boolean = assignment.contains(edge.left) && assignment.contains(edge.right)
 
@@ -90,7 +104,14 @@ trait BaseBeliefNetwork extends CMinusAlgorithm {
 
   }
 
-  /** Calculate the coherence-value from all constraints with given truth-value assignment
+  /** Calculate the coherence-value from all constraints with given truth-value assignment as defined
+   * in <span style="font-variant: small-caps;">F-Coherence</span>:
+   *
+   * $$coh&#94;+(T)=\sum_{\substack{(a,b,w)\in C&#94;+\\T(a)=T(b)}}w$$
+   *
+   * $$coh&#94;-(T)=\sum_{\substack{(a,b,w)\in C&#94;-\\T(a)\neq T(b)}}w$$
+   *
+   * $$\arg\!\max_{T\in\mathcal{T}}\left(coh&#94;+(T)+coh&#94;-(T)\right)$$
     *
     * @param assignment
     *   A truth-value assignment over vertices
@@ -100,6 +121,11 @@ trait BaseBeliefNetwork extends CMinusAlgorithm {
   def coh(assignment: TruthValueAssignment): Double =
     cohPlus(assignment) + cohMin(assignment)
 
+  /** Evaluates to an optimal coherence truth-value assignment. In case multiple optimal solutions
+    * are possible, returns one at random.
+    * @return
+    *   An optimal truth-value assignment
+    */
   def coherence(): TruthValueAssignment =
     coherenceSolutions().random.get // Return the truth-value assignment that maximizes coherence value
 
@@ -121,6 +147,5 @@ trait BaseBeliefNetwork extends CMinusAlgorithm {
         ) // Convert Map to TruthValueAssignment
     allAssignments.argMax(coh)
   }
-
 
 }

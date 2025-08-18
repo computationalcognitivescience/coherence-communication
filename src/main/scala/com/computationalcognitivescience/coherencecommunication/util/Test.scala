@@ -31,6 +31,7 @@ object Test {
 
 
 
+
     val c = Conversation.random(
       beliefNetworkSize = 8,
       preferentialAttachementM = 2,

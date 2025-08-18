@@ -5,12 +5,26 @@ import com.computationalcognitivescience.coherencecommunication.coherence.TruthV
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
+/** A foundational belief network represented by a weighted undirected graph with negative cohering
+  * beliefs and a set of prior beliefs with a truth-value assignment. The prior beliefs are fixes
+  * for all possible inferred truth-value assignments.
+  *
+  * @param graph
+  *   A weighted directed graph, where the vertices with string values represent beliefs.
+  * @param negativeConstraints
+  *   A subset of the graph's edges that represent negative constraints.
+  * @param priorBeliefs
+  *   A set of prior beliefs.
+  * @param priorBeliefsAssignment
+  *   The truth-value assignment to the prior beliefs.
+  */
 case class FoundationalBeliefNetwork(
     override val graph: WUnDiGraph[String],
     override val negativeConstraints: Set[WUnDiEdge[Belief]],
     priorBeliefs: Set[Belief],
     priorBeliefsAssignment: TruthValueAssignment
-) extends BaseBeliefNetwork {
+) extends BaseBeliefNetwork
+    with CMinusAlgorithm {
 
   private def addFoundationalAssignment(
       assignment: TruthValueAssignment
@@ -93,6 +107,4 @@ case class FoundationalBeliefNetwork(
   def beliefs: Set[Belief] = vertices
 }
 
-case object FoundationalBeliefNetwork {
-
-}
+case object FoundationalBeliefNetwork {}

@@ -6,6 +6,19 @@ import mathlib.set.SetTheory._
 
 import scala.util.Random
 
+/** A biased belief network consisting of a regular belief network with additionally a set of biased
+  * beliefs.
+  * @param graph
+  *   The weighted undirected graph representing the belief network.
+  * @param negativeConstraints
+  *   The negative constraints in the belief network.
+  * @param biasBeliefs
+  *   The set of biased beliefs.
+  * @param biasAssignment
+  *   The truth-value assignment for the biased beliefs.
+  * @param biasWeights
+  *   The weights for each biased belief.
+  */
 case class BiasedBeliefNetwork(
     override val graph: WUnDiGraph[String],
     override val negativeConstraints: Set[WUnDiEdge[Belief]],
@@ -23,13 +36,7 @@ case class BiasedBeliefNetwork(
     */
   protected def cohBias(assignment: TruthValueAssignment): Double = {
 
-    /** Return the biased belief's weight if the belief is satisfied
-      *
-      * @param belief
-      *   A vertex in the network, must be a biased belief
-      * @return
-      *   The weight of the bias if the belief's bias is satisfied, 0.0 otherwise
-      */
+    /* Return the biased belief's weight if the belief is satisfied */
     def biasWeight(belief: Belief): Double =
       if (assignment(belief) == biasAssignment(belief)) biasWeights(belief)
       else 0.0
@@ -49,8 +56,4 @@ case class BiasedBeliefNetwork(
       assignment: TruthValueAssignment
   ): Double =
     cohPlus(assignment) + cohMin(assignment) + cohBias(assignment)
-}
-
-case object BiasedBeliefNetwork {
-
 }
