@@ -24,7 +24,7 @@ trait Interlocutor {
   val sharedBeliefs: TruthValueAssignment = TruthValueAssignment.empty
 
   /** An optional previous state of the interlocutor to provide access to the interlocutor's
-    * previous truth-value assignmend $T_{prev}$.
+    * previous truth-value assignment $T_{prev}$.
     */
   val previousState: Option[Interlocutor] = None
 
