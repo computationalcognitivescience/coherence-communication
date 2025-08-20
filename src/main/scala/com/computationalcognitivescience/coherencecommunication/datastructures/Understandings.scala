@@ -1,4 +1,4 @@
-package com.computationalcognitivescience.coherencecommunication
+package com.computationalcognitivescience.coherencecommunication.datastructures
 
 import io.circe.{Decoder, Encoder}
 

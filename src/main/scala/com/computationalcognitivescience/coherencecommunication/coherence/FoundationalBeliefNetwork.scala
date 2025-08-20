@@ -38,6 +38,7 @@ case class FoundationalBeliefNetwork(
 
   override def coherence(): TruthValueAssignment =
     coherenceSolutions().random.get // Return the truth-value assignment that maximizes coherence value
+
   /** Calculate the optimal truth-value assignment of this FoundationalBeliefNetwork
     *
     * Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and

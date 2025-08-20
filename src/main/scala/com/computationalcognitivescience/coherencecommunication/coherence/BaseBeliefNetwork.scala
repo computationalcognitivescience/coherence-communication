@@ -8,6 +8,18 @@ import scala.annotation.tailrec
 
 /** Trait containing the specification of a belief network, represented as a weighted undirected
   * graph with negative constraints.
+  *
+  * ==Bibliography==
+  *
+  * Blokpoel, M. & van Rooij, I. (2021-2025). Theoretical modeling for cognitive science and
+  * psychology. Retrieved 2025-08-15 from
+  * [[https://computationalcognitivescience.github.io/lovelace/]].
+  *
+  * van Rooij, I. (2008). The Tractable Cognition Thesis. _Cognitive Science: A Multidisciplinary
+  * Journal, 32_(6), 939–984. [[https://doi.org/10.1080/03640210801897856]]
+  *
+  * Thagard, P., & Verbeurgt, K. (1998). Coherence as Constraint Satisfaction. _Cognitive Science,
+  * 22_(1), 1–24. [[https://doi.org/10.1207/s15516709cog2201_1]]
   */
 trait BaseBeliefNetwork {
 
@@ -104,14 +116,14 @@ trait BaseBeliefNetwork {
 
   }
 
-  /** Calculate the coherence-value from all constraints with given truth-value assignment as defined
-   * in <span style="font-variant: small-caps;">F-Coherence</span>:
-   *
-   * $$coh&#94;+(T)=\sum_{\substack{(a,b,w)\in C&#94;+\\T(a)=T(b)}}w$$
-   *
-   * $$coh&#94;-(T)=\sum_{\substack{(a,b,w)\in C&#94;-\\T(a)\neq T(b)}}w$$
-   *
-   * $$\arg\!\max_{T\in\mathcal{T}}\left(coh&#94;+(T)+coh&#94;-(T)\right)$$
+  /** Calculate the coherence-value from all constraints with given truth-value assignment as
+    * defined in <span style="font-variant: small-caps;">F-Coherence</span>:
+    *
+    * $$coh&#94;+(T)=\sum_{\substack{(a,b,w)\in C&#94;+\\T(a)=T(b)}}w$$
+    *
+    * $$coh&#94;-(T)=\sum_{\substack{(a,b,w)\in C&#94;-\\T(a)\neq T(b)}}w$$
+    *
+    * $$\arg\!\max_{T\in\mathcal{T}}\left(coh&#94;+(T)+coh&#94;-(T)\right)$$
     *
     * @param assignment
     *   A truth-value assignment over vertices
@@ -129,10 +141,10 @@ trait BaseBeliefNetwork {
   def coherence(): TruthValueAssignment =
     coherenceSolutions().random.get // Return the truth-value assignment that maximizes coherence value
 
-  /** Calculate the optimal truth-value assignment of this BeliefNetwork
+  /** Calculate the set of optimal truth-value assignment of this BeliefNetwork
     *
-    * Based on Blokpoel, M. & van Rooij, I. (2021). Theoretical modeling for cognitive science and
-    * psychology Chapter 5
+    * Based on Blokpoel, M. & van Rooij, I. (2021-2025). Theoretical modeling for cognitive science
+    * and psychology Chapter 5.
     *
     * @return
     *   A truth-value assignment over vertices that results in maximum coherence If multiple maximal

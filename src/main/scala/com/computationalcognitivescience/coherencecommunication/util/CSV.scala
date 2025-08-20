@@ -1,11 +1,7 @@
 package com.computationalcognitivescience.coherencecommunication.util
 
-import com.computationalcognitivescience.coherencecommunication.JSON.loadJson
-import com.computationalcognitivescience.coherencecommunication.{
-  Parameters,
-  SimulationData,
-  TurnData
-}
+import JSON.loadJson
+import com.computationalcognitivescience.coherencecommunication.datastructures.{Parameters, SimulationData, TurnData}
 import os.Path
 import purecsv.safe._
 import purecsv.unsafe.RecordSplitter.defaultFieldSeparatorStr
