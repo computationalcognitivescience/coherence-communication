@@ -3,11 +3,34 @@ package com.computationalcognitivescience.coherencecommunication
 import com.computationalcognitivescience.coherencecommunication.datastructures.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
 import com.computationalcognitivescience.coherencecommunication.util.SetTheoryDev._
-import com.computationalcognitivescience.coherencecommunication.coherence.{FoundationalBeliefNetwork, TruthValueAssignment}
+import com.computationalcognitivescience.coherencecommunication.coherence.{
+  FoundationalBeliefNetwork,
+  TruthValueAssignment
+}
 import com.computationalcognitivescience.coherencecommunication.datastructures.Understandings
 import mathlib.set.SetTheory._
 import mathlib.graph._
 
+/** Class that implements all functions and data structures related to simulating the initiator.
+  *
+  * @param graph
+  *   The graph representing the belief network.
+  * @param negativeConstraints
+  *   The set of negative constraints.
+  * @param ownBeliefs
+  *   The set of the interlocutors own beliefs $T_{own}$.
+  * @param sharedBeliefs
+  *   The set of the shared (communicated) beliefs $T_{shared}$.
+  * @param communicativeIntent
+  *   The truth-value assignment representing the initator's communicative intent.
+  * @param previousState
+  *   An optional previous state of the initiator to provide access to the responder's previous
+  *   truth-value assignment $T_{prev}$.
+  * @param previousPerspectiveState
+  *   An optional previous state of the simulated perspective of the responder.
+  * @param maxUtteranceLength
+  *   The maximum number of beliefs that can be communicated in one utterance $k$.
+  */
 case class Initiator(
     override val graph: WUnDiGraph[String],
     override val negativeConstraints: Set[WUnDiEdge[Belief]],
@@ -24,6 +47,7 @@ case class Initiator(
     if (previousState.isDefined) previousState.get.allBeliefs
     else beliefInference()
 
+  /** The simulated perspective of the responder. */
   val perspectiveState: Option[Responder] =
     if (previousPerspectiveState.isDefined) previousPerspectiveState
     else
@@ -31,7 +55,7 @@ case class Initiator(
         Responder(
           graph = graph,
           negativeConstraints = negativeConstraints,
-          ownBeliefs = TruthValueAssignment.empty,
+          ownBeliefs = ownBeliefs,
           sharedBeliefs = TruthValueAssignment.empty,
           previousState = None,
           maxUtteranceLength = maxUtteranceLength
@@ -40,7 +64,7 @@ case class Initiator(
 
   assert(
     communicativeIntent.beliefs.forall(graph.vertices.contains),
-    "Communicative intent contains beliefs not present in the belief network."
+    "[ERROR] Communicative intent contains beliefs not present in the belief network."
   )
 
   override val foundationalBeliefNetwork: FoundationalBeliefNetwork = FoundationalBeliefNetwork(
@@ -59,20 +83,18 @@ case class Initiator(
   private def perspectiveTaking(utterance: TruthValueAssignment): TruthValueAssignment =
     perspectiveState.get.addSharedBeliefs(utterance).allBeliefs
 
-  /** Computes <span style="font-variant-caps: normal;">Produce Utterance</span> for this
+  /** Computes <span style="font-variant-caps: small-caps;">Produce Utterance</span> for this
     * [[Initiator]].
     *
-    * TODO Include updated LaTeX definition.
     * @return
     */
   def produceUtterance(): TruthValueAssignment = {
-    val allPossibleUtteranceBeliefs: Set[TruthValueAssignment] =
-      if (maxUtteranceLength.isDefined)
-        (powersetUp(graph.vertices \ sharedBeliefs.beliefs, maxUtteranceLength.get) - Set.empty)
-          .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
-      else
-        (powerset(graph.vertices \ sharedBeliefs.beliefs) - Set.empty)
-          .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
+    val k = maxUtteranceLength.getOrElse(graph.size)
+
+    val allPossibleUtteranceSubsets =
+      powersetUp(graph.vertices \ sharedBeliefs.beliefs, k) - Set.empty
+    val allPossibleUtterances: Set[TruthValueAssignment] = allPossibleUtteranceSubsets
+      .map(beliefSet => allBeliefs.subAssignment(beliefSet)) // Map the belief set to a tva
 
     def relativeStructuralSimilarity(utterance: TruthValueAssignment): Double = {
       val perspective: TruthValueAssignment = perspectiveTaking(utterance)
@@ -81,66 +103,52 @@ case class Initiator(
       else (1.0 / utterance.size) * similarity
     }
 
-    val allPossibleUtteranceBeliefsWithSimilarity  = allPossibleUtteranceBeliefs.map(u => u -> relativeStructuralSimilarity(u))
-    val max  = allPossibleUtteranceBeliefsWithSimilarity.map(_._2).max
-    val allPossibleUtteranceBeliefsWithMaxSimilarity = allPossibleUtteranceBeliefsWithSimilarity.filter(_._2 == max).map(_._1)
+    val allPossibleUtteranceBeliefsWithSimilarity =
+      allPossibleUtterances.map(u => u -> relativeStructuralSimilarity(u))
+    val max = allPossibleUtteranceBeliefsWithSimilarity.map(_._2).max
+    val allPossibleUtteranceBeliefsWithMaxSimilarity =
+      allPossibleUtteranceBeliefsWithSimilarity.filter(_._2 == max).map(_._1)
     allPossibleUtteranceBeliefsWithMaxSimilarity.random.get
   }
 
-  /** Computes <span style="font-variant-caps: normal;">Perceived Mutual Understanding</span> for
-    * this [[Initiator]], relative to an optional offer from the [[Responder]].
+  /** Computes <span style="font-variant-caps: small-caps;">Perceived Mutual Understanding</span>
+    * for this [[Initiator]], relative to an optional offer from the [[Responder]].
     *
-    * TODO Include updated LaTeX definition.
-    *
-    * @param offer
-    *   An optional restricted offer from a [[Responder]].
+    * @param reply
+    *   A (possibly empty) reply to a restricted offer from a [[Responder]].
     * @return
-    *   Yes, YesLiteral, NotYet, or No understanding.
+    *   Yes, YesLiteral or NotYet understanding.
     */
-  def perceivedMutualUnderstanding(offer: Option[TruthValueAssignment]): Understanding = {
-    val possibleReply = repairSolution(offer.getOrElse(TruthValueAssignment.empty))
-    if (forall(communicativeIntent.beliefs, (sharedBeliefs ++ possibleReply).contains))
-      // All intention beliefs have been literally communicated already or will be after reply to this offer
-      Understandings.YesLiteral
-    else {
-      val perspective =
-        if (offer.isDefined) perspectiveState.get.addSharedBeliefs(repairSolution(offer.get))
-        else perspectiveState.get
-      if (
-        forall(
-          communicativeIntent.beliefs,
-          (b: Belief) => perspective.allBeliefs(b) == communicativeIntent(b)
-        )
-      )
-        Understandings.YesPerceived
-      else Understandings.NotYet
-    }
+  def perceivedMutualUnderstanding(reply: TruthValueAssignment): Understanding = {
 
-//    if (offer.isEmpty && forall(communicativeIntent.beliefs, sharedBeliefs.contains))
-//      Understandings.YesLiteral
-//    else if (offer.isEmpty) {
-//      val perspective = perspectiveTaking(TruthValueAssignment.empty)
-//      val perspectiveUnderstanding =
-//        forall(communicativeIntent.beliefs, (b: Belief) => communicativeIntent(b) == perspective(b))
-//      if (perspectiveUnderstanding) Understandings.YesPerceived
-//      else Understandings.NoPerceived
-//    } else {
-//      val allIntentionsShared: Boolean =
-//        forall(communicativeIntent.beliefs, (offer.get.beliefs \/ sharedBeliefs.beliefs).contains
-//
-//      lazy val perspectiveUnderstanding: Boolean =
-//        forall(communicativeIntent.beliefs, (b: Belief) => communicativeIntent(b) == perspectiveTaking(offer.get)(b))
-//
-//      if (allIntentionsShared || perspectiveUnderstanding) Understandings.YesConfirmed
-//      else Understandings.No
-//    }
+    if (reply.isEmpty && communicativeIntent <= sharedBeliefs)
+      // Case 1a: Literal understanding
+      Understandings.YesLiteral
+    else if (reply.nonEmpty && communicativeIntent <= sharedBeliefs ++ reply)
+      // Case 1b: Literal understanding after reply
+      Understandings.YesLiteral
+    else if (reply.nonEmpty && communicativeIntent <= perspectiveTaking(reply))
+      // Case 2: Perceived understanding after perspective taking
+      Understandings.YesPerceived
+    else
+      // Otherwise: Not yet
+      Understandings.NotYet
   }
 
+  /** Calculates a reply to a restricted offer. If the offer is empty, the reply is empty.
+    *
+    * @param offer
+    *   A (possibly empty) restricted offer.
+    * @throws java.lang.AssertionError
+    *   Restricted offer should not contain previously communicated beliefs.
+    * @return
+    *   A reply to the restricted offer.
+    */
+  @throws(classOf[AssertionError])
   def repairSolution(offer: TruthValueAssignment): TruthValueAssignment = {
-//    println(offer)
     assert(
       offer.beliefs /\ sharedBeliefs.beliefs == Set.empty,
-      "Restricted offer contains previously communicated beliefs, something went wrong."
+      "[ERROR] Restricted offer contains previously communicated beliefs, something went wrong."
     )
     allBeliefs.subAssignment(offer.beliefs)
   }

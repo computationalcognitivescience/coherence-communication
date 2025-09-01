@@ -13,9 +13,9 @@ import coherence.TruthValueAssignment._
   * @param negativeConstraints
   *   The set of negative constraints.
   * @param ownBeliefs
-  *   The set of the interlocutors own beliefs $T_{own}.
+  *   The set of the interlocutors own beliefs $T_{own}$.
   * @param sharedBeliefs
-  *   The set of the shared (communicated) beliefs $T_{shared}.
+  *   The set of the shared (communicated) beliefs $T_{shared}$.
   * @param previousState
   *   An optional previous state of the responder to provide access to the responder's previous
   *   truth-value assignment $T_{prev}$.

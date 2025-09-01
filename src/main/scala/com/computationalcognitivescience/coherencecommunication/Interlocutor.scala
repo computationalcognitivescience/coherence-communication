@@ -17,10 +17,10 @@ trait Interlocutor {
   /** The set of negative constraints. */
   val negativeConstraints: Set[WUnDiEdge[Belief]]
 
-  /** The set of the interlocutors own beliefs $T_{own}. */
+  /** The set of the interlocutors own beliefs $T_{own}$. */
   val ownBeliefs: TruthValueAssignment
 
-  /** The set of the shared (communicated) beliefs $T_{shared}. */
+  /** The set of the shared (communicated) beliefs $T_{shared}$. */
   val sharedBeliefs: TruthValueAssignment = TruthValueAssignment.empty
 
   /** An optional previous state of the interlocutor to provide access to the interlocutor's

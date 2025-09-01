@@ -37,10 +37,10 @@ case class Conversation(
   ): ConversationData = {
     if (data.head.round == maxRounds) data
     else {
-      val perceivedMutualUnderstanding = initiator.perceivedMutualUnderstanding(restrictedOffer)
       val possibleReply =
         if (restrictedOffer.isDefined) initiator.repairSolution(restrictedOffer.get)
         else TruthValueAssignment.empty
+      val perceivedMutualUnderstanding = initiator.perceivedMutualUnderstanding(possibleReply)
       perceivedMutualUnderstanding match {
         case YesLiteral | YesPerceived =>
           /* All beliefs have been literally shared, possibly after reply to restricted offer. */
