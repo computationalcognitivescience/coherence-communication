@@ -83,8 +83,8 @@ case class Simulation(
     for (parameters <- allParameters) {
       println(s"Batch ${parameters.id} / ${allParameters.size}")
       val agentPairId = (1 to numberOfSimulations).toList
-      val batchConversationData: Seq[ConversationData] = agentPairId//.par
-        .map(id => {
+      val batchConversationData: Seq[ConversationData] = agentPairId.par
+        .map(_ => {
           val conversation: Conversation = Conversation.random(
             parameters.beliefNetworkSize,
             preferentialAttachementM = 2,
@@ -165,7 +165,7 @@ object Simulation {
 //     */
     Simulation(
       beliefNetworkSizes = List(8),
-      beliefNetworkConstraintsRatios = List(1.0), // not used in preferential attachement
+      beliefNetworkConstraintsRatios = List(1.0), // not used in preferential attachment
       beliefNetworkPCRatios = List(.25, .5, .75),
       intentionRatios = List(3.0/8, 4.0/8),
       initiatorOwnBeliefsRatios = List(0, 1.0/8, 2.0/8, 3.0/8),

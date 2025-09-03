@@ -4,7 +4,10 @@ import com.computationalcognitivescience.coherencecommunication.datastructures.C
 import com.computationalcognitivescience.coherencecommunication.datastructures.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
 import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
-import com.computationalcognitivescience.coherencecommunication.datastructures.{TurnData, Understandings}
+import com.computationalcognitivescience.coherencecommunication.datastructures.{
+  TurnData,
+  Understandings
+}
 import mathlib.graph.{WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
@@ -43,7 +46,9 @@ case class Conversation(
       val perceivedMutualUnderstanding = initiator.perceivedMutualUnderstanding(possibleReply)
       perceivedMutualUnderstanding match {
         case YesLiteral | YesPerceived =>
-          /* All beliefs have been literally shared, possibly after reply to restricted offer. */
+          /* All beliefs have been literally shared or the initiator perceives mutual understanding.
+           * End the conversation and finalize the conversation data.
+           */
           val turnData = TurnData(
             initiatorState = initiator.addSharedBeliefs(possibleReply),
             responderState = responder.addSharedBeliefs(possibleReply),
@@ -53,15 +58,16 @@ case class Conversation(
             reply = if (restrictedOffer.isDefined) Some(possibleReply) else None,
             restrictedOffer = None
           )
-//          println(turnData)
           turnData +: data
         case NotYet =>
-          // Did not perceive understanding via perspective taking. Continue with possibly reply.
-          val utterance     = initiator.addSharedBeliefs(possibleReply).produceUtterance()
-          val nextInitiator = initiator.addSharedBeliefs(possibleReply ++ utterance)
-          val nextResponder = responder.addSharedBeliefs(possibleReply ++ utterance)
+          /* Did not yet perceive understanding via perspective taking.
+           * Continue with possibly reply.
+           */
+          val utterance     = initiator.addSharedBeliefs(possibleReply).produceUtterance() // (1; 7)
+          val nextInitiator = initiator.addSharedBeliefs(possibleReply ++ utterance)       // (1; 7)   -> (5)
+          val nextResponder = responder.addSharedBeliefs(possibleReply ++ utterance)       // (1; 6,7) -> (2)
           val nextOffer =
-            if (nextResponder.troubleIdentification) nextResponder.repairFormulation
+            if (nextResponder.troubleIdentification) nextResponder.repairFormulation       // (3) and (4)
             else None
 
           val turnData = TurnData(
@@ -70,10 +76,9 @@ case class Conversation(
             round = data.head.round + 1,
             initiatorPerceivedMutualUnderstanding = Understandings.NotYet,
             utterance = Some(utterance),
-            reply =  if (restrictedOffer.isDefined) Some(possibleReply) else None,
+            reply = if (restrictedOffer.isDefined) Some(possibleReply) else None,
             restrictedOffer = nextOffer
           )
-//                    println(turnData)
           simulateRound(
             initiator = nextInitiator,
             responder = nextResponder,

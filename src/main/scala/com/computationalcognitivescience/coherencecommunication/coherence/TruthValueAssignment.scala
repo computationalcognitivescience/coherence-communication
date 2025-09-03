@@ -140,7 +140,7 @@ case class TruthValueAssignment(
     )
   }
 
-  /** Subset equivalence $\overset{B}{\subset}$.
+  /** Subset equivalence $\subset$.
     *
     * Let $T_A:A\rightarrow\{true,false\}$ be a truth-value assignment and let $B\subseteq V_A$.
     *
@@ -151,8 +151,8 @@ case class TruthValueAssignment(
     *   and the truth-value assignments are equal.
     */
   def subsetEquivalence(that: TruthValueAssignment): Boolean = {
-    (that.beliefs subsetOf this.beliefs) &&
-    forall(that.beliefs, (b: Belief) => this(b) == that(b))
+    (this.beliefs subsetOf that.beliefs) &&
+    forall(this.beliefs, (b: Belief) => this(b) == that(b))
   }
 
   /** Shorthand for `subsetEquivalence`, subset equivalence.
