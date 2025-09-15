@@ -41,7 +41,7 @@ case class TurnData(
 
   def networkSize: Int = initiatorState.graph.size
 
-  def networkConstraints: Int = initiatorState.graph.vertices.size
+  def networkConstraints: Int = initiatorState.graph.edges.size
 
   def networkPCRatio: Double =
     initiatorState.negativeConstraints.size.doubleValue / networkConstraints
