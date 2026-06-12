@@ -1,8 +1,8 @@
-package com.computationalcognitivescience.coherencecommunication.datastructures
+package computationalcognitivescience.coherencecommunication.datastructures
 
 import Understandings.Understanding
-import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
-import com.computationalcognitivescience.coherencecommunication.{Initiator, Responder}
+import computationalcognitivescience.coherencecommunication.{Initiator, Responder}
+import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
 import mathlib.set.SetTheory._
 
 case class TurnData(

@@ -1,13 +1,10 @@
-package com.computationalcognitivescience.coherencecommunication
+package computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.datastructures.ConversationData.ConversationData
-import com.computationalcognitivescience.coherencecommunication.datastructures.Understandings._
-import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
-import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
-import com.computationalcognitivescience.coherencecommunication.datastructures.{
-  TurnData,
-  Understandings
-}
+import computationalcognitivescience.coherencecommunication.datastructures.ConversationData.ConversationData
+import computationalcognitivescience.coherencecommunication.datastructures.Understandings._
+import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
+import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment
+import computationalcognitivescience.coherencecommunication.datastructures.{TurnData, Understandings}
 import mathlib.graph.{WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 

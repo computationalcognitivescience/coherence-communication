@@ -1,10 +1,10 @@
-package com.computationalcognitivescience.coherencecommunication.util
+package computationalcognitivescience.coherencecommunication.util
 
-import com.computationalcognitivescience.coherencecommunication.{Conversation, Initiator, Responder, Simulation}
-import com.computationalcognitivescience.coherencecommunication.coherence.{FoundationalBeliefNetwork, TruthValueAssignment}
-import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
+import computationalcognitivescience.coherencecommunication.{Conversation, Initiator, Responder, Simulation}
+import computationalcognitivescience.coherencecommunication.coherence.{FoundationalBeliefNetwork, MaxFlow, TruthValueAssignment}
+import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
 import mathlib.graph.GraphImplicits.N
-import mathlib.graph.{WUnDiEdge, WUnDiGraph}
+import mathlib.graph.{WDiEdge, WDiGraph, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
 import scala.util.Random
@@ -29,22 +29,28 @@ object Test {
 //    println("t2 -- Set(N(\"a\")):\t" + (t2 -- Set(N("a"))))
 //    println("t2 \\ t1:\t" + t2 \ t1)
 
+//    val c = Conversation.random(
+//      beliefNetworkSize = 8,
+//      preferentialAttachementM = 2,
+//      beliefNetworkPCRatio = .5,
+//      initiatorPriorRatio = 3.0/8,
+//      initiatorCommunicativeIntentRatio = 3.0/8,
+//      maxUtteranceLength = 5,
+//      priorsOverlapRatio = 2 / 3.0,
+//      priorsAsymmetryRatio = .5,
+//      responderPriorRatio = 3.0/8,
+//      maxRoundLength = 6
+//    )
+//    c.simulate().reverse.foreach(println)
 
-
-
-    val c = Conversation.random(
-      beliefNetworkSize = 8,
-      preferentialAttachementM = 2,
-      beliefNetworkPCRatio = .5,
-      initiatorPriorRatio = 3.0/8,
-      initiatorCommunicativeIntentRatio = 3.0/8,
-      maxUtteranceLength = 5,
-      priorsOverlapRatio = 2 / 3.0,
-      priorsAsymmetryRatio = .5,
-      responderPriorRatio = 3.0/8,
-      maxRoundLength = 6
-    )
-    c.simulate().reverse.foreach(println)
+    val _g = WDiGraph.preferentialAttachment(size = 10, m = 2)
+    val g = WDiGraph(_g.vertices, _g.edges.map(e => WDiEdge(e.left, e.right, math.round(e.weight*10.0)/10.0)))
+    val s = g.vertices.random.get
+    val t = (g.vertices - s).random.get
+    println(g.toDOTString)
+    println(s"s:\t\t $s")
+    println(s"t:\t\t $t")
+    MaxFlow.shortestPaths(g, s, t)
 
 //    val graph = WUnDiGraph.preferentialAttachment(10, 2, 1.0)
 //    val negativeConstraints = scala.util.Random

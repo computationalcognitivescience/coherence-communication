@@ -1,4 +1,4 @@
-package com.computationalcognitivescience.coherencecommunication.coherence
+package computationalcognitivescience.coherencecommunication.coherence
 
 import mathlib.graph.Node
 

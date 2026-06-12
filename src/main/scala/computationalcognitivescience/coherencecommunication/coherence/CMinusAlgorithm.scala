@@ -1,6 +1,6 @@
-package com.computationalcognitivescience.coherencecommunication.coherence
+package computationalcognitivescience.coherencecommunication.coherence
 
-import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
+import Belief.Belief
 import mathlib.graph._
 import mathlib.set.SetTheory._
 import scala.annotation.tailrec
@@ -514,6 +514,7 @@ trait CMinusAlgorithm extends BaseBeliefNetwork {
         sourceNode: Belief = sourceNode,
         targetNode: Belief = targetNode
     ): WDiGraph[String] = {
+      // TODO Find all shortest paths?
       // Find path from a to r
       val augmentingPath: List[WDiEdge[Belief]] = bfs(graph, sourceNode, targetNode, aList)
       if (augmentingPath.isEmpty) graph

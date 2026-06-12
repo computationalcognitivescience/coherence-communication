@@ -1,4 +1,4 @@
-package com.computationalcognitivescience.coherencecommunication.datastructures
+package computationalcognitivescience.coherencecommunication.datastructures
 
 object ConversationData {
   type ConversationData = Seq[TurnData]

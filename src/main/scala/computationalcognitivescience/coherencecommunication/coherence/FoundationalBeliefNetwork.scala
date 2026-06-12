@@ -1,7 +1,7 @@
-package com.computationalcognitivescience.coherencecommunication.coherence
+package computationalcognitivescience.coherencecommunication.coherence
 
-import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
-import com.computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
+import Belief.Belief
+import TruthValueAssignment.ImplMap
 import mathlib.graph._
 import mathlib.set.SetTheory._
 

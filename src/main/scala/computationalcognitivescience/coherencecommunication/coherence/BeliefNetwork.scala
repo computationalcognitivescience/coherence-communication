@@ -1,6 +1,6 @@
-package com.computationalcognitivescience.coherencecommunication.coherence
+package computationalcognitivescience.coherencecommunication.coherence
 
-import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
+import Belief.Belief
 import mathlib.graph._
 
 /** A belief network represented by a weighted undirected graph with negative cohering beliefs.

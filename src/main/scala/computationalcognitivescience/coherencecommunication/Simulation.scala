@@ -1,8 +1,8 @@
-package com.computationalcognitivescience.coherencecommunication
+package computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.datastructures.ConversationData.ConversationData
-import com.computationalcognitivescience.coherencecommunication.datastructures.{Parameters, SimulationData}
-import com.computationalcognitivescience.coherencecommunication.util.CSV
+import computationalcognitivescience.coherencecommunication.datastructures.ConversationData.ConversationData
+import computationalcognitivescience.coherencecommunication.datastructures.{Parameters, SimulationData}
+import computationalcognitivescience.coherencecommunication.util.CSV
 
 import java.time.{LocalDateTime, ZoneOffset}
 import scala.collection.parallel.CollectionConverters._

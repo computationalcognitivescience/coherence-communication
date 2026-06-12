@@ -1,12 +1,12 @@
-package com.computationalcognitivescience.coherencecommunication
+package computationalcognitivescience.coherencecommunication
 
-import com.computationalcognitivescience.coherencecommunication.datastructures.Understandings._
-import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
-import com.computationalcognitivescience.coherencecommunication.coherence.{
+import computationalcognitivescience.coherencecommunication.datastructures.Understandings._
+import computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
+import coherence.{
   FoundationalBeliefNetwork,
   TruthValueAssignment
 }
-import com.computationalcognitivescience.coherencecommunication.datastructures.Understandings
+import computationalcognitivescience.coherencecommunication.datastructures.Understandings
 import mathlib.set.SetTheory._
 import mathlib.graph._
 

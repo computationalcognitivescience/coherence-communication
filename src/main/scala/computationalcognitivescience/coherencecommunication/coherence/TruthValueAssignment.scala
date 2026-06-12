@@ -1,6 +1,6 @@
-package com.computationalcognitivescience.coherencecommunication.coherence
+package computationalcognitivescience.coherencecommunication.coherence
 
-import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
+import Belief.Belief
 import mathlib.set.SetTheory._
 
 /** A datatype for truth-value assignments, consisting of a set of beliefs and a set of belief,

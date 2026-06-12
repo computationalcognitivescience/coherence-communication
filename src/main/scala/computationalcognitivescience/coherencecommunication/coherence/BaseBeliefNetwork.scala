@@ -1,6 +1,6 @@
-package com.computationalcognitivescience.coherencecommunication.coherence
+package computationalcognitivescience.coherencecommunication.coherence
 
-import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
+import Belief.Belief
 import mathlib.graph._
 import mathlib.set.SetTheory._
 

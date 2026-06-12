@@ -1,4 +1,4 @@
-package com.computationalcognitivescience.coherencecommunication
+package computationalcognitivescience.coherencecommunication
 
 /** Provides classes for different variants of Coherence, based on Thagard & Verbeurgt (1998) and
   * van Rooij (2008).

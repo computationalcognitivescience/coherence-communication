@@ -1,6 +1,6 @@
-package com.computationalcognitivescience.coherencecommunication.util
+package computationalcognitivescience.coherencecommunication.util
 
-import com.computationalcognitivescience.coherencecommunication.datastructures.SimulationData
+import computationalcognitivescience.coherencecommunication.datastructures.SimulationData
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax.EncoderOps
