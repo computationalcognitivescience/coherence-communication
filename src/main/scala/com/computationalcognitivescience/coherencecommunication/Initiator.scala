@@ -2,7 +2,6 @@ package com.computationalcognitivescience.coherencecommunication
 
 import com.computationalcognitivescience.coherencecommunication.datastructures.Understandings._
 import com.computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
-import com.computationalcognitivescience.coherencecommunication.util.SetTheoryDev._
 import com.computationalcognitivescience.coherencecommunication.coherence.{
   FoundationalBeliefNetwork,
   TruthValueAssignment

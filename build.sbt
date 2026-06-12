@@ -1,6 +1,6 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "2.13.12"
+ThisBuild / scalaVersion := "2.13.16"
 
 val circeVersion = "0.14.13"
 
@@ -14,7 +14,7 @@ lazy val injectMathJax = taskKey[Unit]("Injects MathJax Javascript into Scaladoc
 lazy val root = (project in file("."))
   .settings(
     name := "coherence-communication",
-    libraryDependencies += "com.markblokpoel" %% "mathlib" % "0.9.2-b2",
+    libraryDependencies += "com.markblokpoel" %% "mathlib" % "0.9.3",
     libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.9.1",
     libraryDependencies += "io.kontainers" %% "purecsv" % "1.3.10",
     libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
