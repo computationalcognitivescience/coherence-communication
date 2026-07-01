@@ -25,7 +25,7 @@ case class BiasedBeliefNetwork(
     biasBeliefs: Set[Belief],
     biasAssignment: TruthValueAssignment,
     biasWeights: Map[Belief, Double]
-) extends BaseBeliefNetwork {
+) extends BaseBeliefNetwork with CMinusAlgorithm {
 
   /** Calculate the coherence-value from biased beliefs with a given truth-value assignment
     *

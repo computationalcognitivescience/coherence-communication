@@ -1,7 +1,18 @@
 package computationalcognitivescience.coherencecommunication.util
 
-import computationalcognitivescience.coherencecommunication.{Conversation, Initiator, Responder, Simulation}
-import computationalcognitivescience.coherencecommunication.coherence.{FoundationalBeliefNetwork, MaxFlow, TruthValueAssignment}
+import computationalcognitivescience.coherencecommunication.{
+  Conversation,
+  Initiator,
+  Responder,
+  Simulation
+}
+import computationalcognitivescience.coherencecommunication.coherence.{
+  BeliefNetwork,
+  BiasedBeliefNetwork,
+  FoundationalBeliefNetwork,
+  MaxFlow,
+  TruthValueAssignment
+}
 import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
 import mathlib.graph.GraphImplicits.N
 import mathlib.graph.{WDiEdge, WDiGraph, WUnDiEdge, WUnDiGraph}
@@ -11,6 +22,49 @@ import scala.util.Random
 
 object Test {
   def main(args: Array[String]): Unit = {
+
+    /** FPT stuff */
+    //    val _g = WDiGraph.preferentialAttachment(size = 10, m = 2)
+    //    val g = WDiGraph(_g.vertices, _g.edges.map(e => WDiEdge(e.left, e.right, math.round(e.weight*10.0)/10.0)))
+    //    val s = g.vertices.random.get
+    //    val t = (g.vertices - s).random.get
+    //    println(g.toDOTString)
+    //    println(s"s:\t\t $s")
+    //    println(s"t:\t\t $t")
+    //    MaxFlow.shortestPaths(g, s, t)
+
+    val _randomGraph =
+      WUnDiGraph.preferentialAttachment(12, 3, 1.0)
+    val randomGraph = WUnDiGraph(
+      _randomGraph.vertices,
+      _randomGraph.edges.map(edge => WUnDiEdge(edge.left, edge.right, 1.0))
+    )
+
+    val negativeConstraints = scala.util.Random
+      .shuffle(randomGraph.edges.toSeq)
+      .take((randomGraph.edges.size * 0.2).intValue)
+      .toSet
+
+    val biasedBeliefAssignment = Random
+      .shuffle(randomGraph.vertices.toSeq)
+      .take((randomGraph.vertices.size * 0.2).intValue)
+      .map(belief => (belief, Random.nextBoolean()))
+      .toMap
+      .toTruthValueAssignment
+
+    val bn = BeliefNetwork(
+      randomGraph,
+      negativeConstraints,
+      biasedBeliefAssignment.beliefs,
+      biasedBeliefAssignment
+    )
+
+    println(bn)
+    bn.cMin().foreach(test => {
+      println(test.biasAssignment)
+    })
+
+    /** Simulation stuff */
 //    val t1 = TruthValueAssignment(Set(N("a"), N("b")), Set(N("a") -> true, N("b") -> false))
 //    val t2 = TruthValueAssignment(
 //      Set(N("a"), N("b"), N("c")),
@@ -42,15 +96,6 @@ object Test {
 //      maxRoundLength = 6
 //    )
 //    c.simulate().reverse.foreach(println)
-
-    val _g = WDiGraph.preferentialAttachment(size = 10, m = 2)
-    val g = WDiGraph(_g.vertices, _g.edges.map(e => WDiEdge(e.left, e.right, math.round(e.weight*10.0)/10.0)))
-    val s = g.vertices.random.get
-    val t = (g.vertices - s).random.get
-    println(g.toDOTString)
-    println(s"s:\t\t $s")
-    println(s"t:\t\t $t")
-    MaxFlow.shortestPaths(g, s, t)
 
 //    val graph = WUnDiGraph.preferentialAttachment(10, 2, 1.0)
 //    val negativeConstraints = scala.util.Random

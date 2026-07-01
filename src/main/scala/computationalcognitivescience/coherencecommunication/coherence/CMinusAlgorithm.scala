@@ -871,7 +871,7 @@ trait CMinusAlgorithm extends BaseBeliefNetwork {
       TruthValueAssignment(assignmentAsMap.keySet, assignmentAsMap.toSet)
 
     // Calculate coherence over the max-flow subgraph
-    val tempBeliefNet: BeliefNetwork = BeliefNetwork(graph, Set.empty)
+    val tempBeliefNet: BeliefNetwork = BeliefNetwork(graph, Set.empty, Set.empty, TruthValueAssignment.empty)
     val coherenceValue: Double       = tempBeliefNet.coh(assignment)
 
     // Return the full assignment plus the coherence value
