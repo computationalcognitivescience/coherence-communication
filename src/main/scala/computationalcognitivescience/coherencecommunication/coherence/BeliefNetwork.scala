@@ -90,8 +90,8 @@ case class BeliefNetwork(
 
     if (trueBeliefs.isEmpty && falseBeliefs.isEmpty) None
     else {
-      val nextTrueMergeNodeID =
-        graph.vertices.map(_.label).filter(_.startsWith("M")).map(_.toInt).max + 1
+      val mergedNodeSet       = graph.vertices.map(_.label).filter(_.startsWith("M"))
+      val nextTrueMergeNodeID = if (mergedNodeSet.isEmpty) 0 else mergedNodeSet.map(_.toInt).max + 1
       val nextFalseMergeNodeID = nextTrueMergeNodeID + 1
 
       val nextMergedTrueBelief  = Belief(s"M$nextTrueMergeNodeID")
@@ -133,16 +133,50 @@ case class BeliefNetwork(
     }
   }
 
+  def toDOTString: String = {
+    val vertices = graph.vertices
+      .map(b => {
+        val fillColor =
+          if (biasAssignment.contains(b) && biasAssignment(b).get) "palegreen4"
+          else if (biasAssignment.contains(b) && !biasAssignment(b).get) "lightsalmon"
+          else "white"
+        val color = if (b.label.startsWith("M")) "mediumslateblue" else "black"
+        "\t" + b.label + s"[style=filled,fillcolor=$fillColor,color=$color];"
+      })
+      .mkString("\n")
+    val constraints = edges
+      .map(edge => {
+        val style = if (negativeConstraints.contains(edge)) "dashed" else "solid"
+        "\t" + edge.left.label + " -- " + edge.right.label +
+          " [weight=" + edge.weight + "style=" + style + "]"
+      })
+      .mkString("\n")
+    s"""graph G {
+        | layout=circo;
+        | $vertices
+        | $constraints
+      }""".stripMargin
+
+  }
+
   def cMin(): Set[BeliefNetwork] = {
-    def searchTree(currentNetwork: BeliefNetwork): Set[BeliefNetwork] = {
-      val next = currentNetwork.ac1()
-      if(next.isEmpty) Set(currentNetwork)
+    def searchTree(searchTreeNode: BeliefNetwork): Set[BeliefNetwork] = {
+      val pathsOption = searchTreeNode.ac1()
+      if (pathsOption.isEmpty) Set.empty
       else {
-        val (left, right) = next.get
-        Set(currentNetwork) \/ searchTree(left) \/ searchTree(right)
+        val (leftPath, rightPath) = pathsOption.get
+        Set(leftPath, rightPath) \/ searchTree(leftPath) \/ searchTree(rightPath)
       }
     }
-    searchTree(this)
+    val searchSpace = searchTree(this)
+    searchSpace
+      .map(network => {
+        val ac2Opt = network.ac2()
+        if (ac2Opt.isEmpty) network.ac3() // if ac2 yields no results, apply ac3
+        else ac2Opt                       // if ac2 yields results, keep ac2
+      })
+      .filter(_.isDefined)
+      .map(_.get)
   }
 
 }
