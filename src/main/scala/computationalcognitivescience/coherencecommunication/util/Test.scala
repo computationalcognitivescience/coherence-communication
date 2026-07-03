@@ -113,7 +113,7 @@ object Test {
             |        .renderDot(dot);
             |    leftgraphviz
             |        .renderDot(ldot);
-            |    d3.select("#index").text(dotIndex + "/" + (dots.length-1));
+            |    d3.select("#index").text((dotIndex+1) + "/" + (dots.length));
             |}
             |
             |function next() {

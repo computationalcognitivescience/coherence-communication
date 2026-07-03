@@ -1,7 +1,7 @@
 package computationalcognitivescience.coherencecommunication.coherence
 
 import Belief.Belief
-import mathlib.graph.GraphImplicits.{EdgeImpl, WUnDiEdgeImpl}
+import mathlib.graph.GraphImplicits.{EdgeImpl, EdgeImpl2, WUnDiEdgeImpl}
 import mathlib.graph._
 import mathlib.set.SetTheory._
 
@@ -99,33 +99,25 @@ case class BeliefNetwork(
 
       val mergedBeliefs =
         graph.vertices \ trueBeliefs \ falseBeliefs + nextMergedTrueBelief + nextMergedFalseBelief
-      val mergedNegativeConstraints = negativeConstraints.map((constraint: WUnDiEdge[Belief]) => {
-        if (constraint.left in trueBeliefs)
-          constraint.right ~ nextMergedTrueBelief % constraint.weight
-        else if (constraint.right in trueBeliefs)
-          constraint.left ~ nextMergedTrueBelief % constraint.weight
-        else if (constraint.left in falseBeliefs)
-          constraint.right ~ nextMergedFalseBelief % constraint.weight
-        else if (constraint.right in falseBeliefs)
-          constraint.left ~ nextMergedFalseBelief % constraint.weight
-        else constraint
-      })
-      val mergedPositiveConstraints = positiveConstraints.map((constraint: WUnDiEdge[Belief]) => {
-        if (constraint.left in trueBeliefs)
-          constraint.right ~ nextMergedTrueBelief % constraint.weight
-        else if (constraint.right in trueBeliefs)
-          constraint.left ~ nextMergedTrueBelief % constraint.weight
-        else if (constraint.left in falseBeliefs)
-          constraint.right ~ nextMergedFalseBelief % constraint.weight
-        else if (constraint.right in falseBeliefs)
-          constraint.left ~ nextMergedFalseBelief % constraint.weight
-        else constraint
-      })
+
+      val mergedConstraints = unassignedBeliefs
+        .flatMap(ub => {
+          val neighbours = graph.adjacencyList(ub)
+          val trueNeighbours = neighbours.filter(trueBeliefs contains _.node)
+          val mergedTrueConstraint = ub ~ nextMergedTrueBelief % trueNeighbours.toList.map(_.weight).sum
+          val falseNeighbours = neighbours.filter(falseBeliefs contains _.node)
+          val mergedFalseConstraint = ub ~ nextMergedFalseBelief % falseNeighbours.toList.map(_.weight).sum
+          val regularConstraints = (neighbours \ trueNeighbours \ falseNeighbours).map(un =>
+          {ub ~ un.node % un.weight})
+
+          regularConstraints + mergedTrueConstraint + mergedFalseConstraint
+        })
+
 
       Some(
         BeliefNetwork(
-          new WUnDiGraph(mergedBeliefs, mergedNegativeConstraints \/ mergedPositiveConstraints),
-          mergedNegativeConstraints,
+          new WUnDiGraph(mergedBeliefs, mergedConstraints),
+          Set.empty,
           biasBeliefs + nextMergedTrueBelief + nextMergedFalseBelief,
           biasAssignment + (nextMergedTrueBelief -> true) + (nextMergedFalseBelief -> false)
         )
@@ -148,7 +140,7 @@ case class BeliefNetwork(
       .map(edge => {
         val style = if (negativeConstraints.contains(edge)) "dashed" else "solid"
         "\t" + edge.left.label + " -- " + edge.right.label +
-          " [weight=" + edge.weight + "style=" + style + "]"
+          " [label=" + edge.weight + "style=" + style + "]"
       })
       .mkString("\n")
     s"""graph G {
@@ -162,11 +154,12 @@ case class BeliefNetwork(
   def cMin(): Set[BeliefNetwork] = {
     def searchTree(searchTreeNode: BeliefNetwork): Set[BeliefNetwork] = {
       val pathsOption = searchTreeNode.ac1()
-      if (pathsOption.isEmpty) Set.empty
+      if(pathsOption.isEmpty) Set(searchTreeNode)
       else {
         val (leftPath, rightPath) = pathsOption.get
-        Set(leftPath, rightPath) \/ searchTree(leftPath) \/ searchTree(rightPath)
+        searchTree(leftPath) \/ searchTree(rightPath)
       }
+
     }
     val searchSpace = searchTree(this)
     searchSpace
