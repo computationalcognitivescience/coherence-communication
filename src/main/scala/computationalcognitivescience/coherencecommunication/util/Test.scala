@@ -60,12 +60,11 @@ object Test {
       biasedBeliefAssignment
     )
 
-    println(bn)
     val data = bn.cMin()
 
     val dataDir  = os.pwd / "output"
     val filename = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC).toString + ".html"
-
+//TODO Visualize ac1, ac2 and ac3 steps.
     os.write(
       dataDir / filename,
       s"""

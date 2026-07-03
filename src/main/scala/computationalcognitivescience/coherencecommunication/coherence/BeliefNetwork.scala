@@ -163,11 +163,19 @@ case class BeliefNetwork(
     }
     val searchSpace = searchTree(this)
     searchSpace
-      .map(network => {
-        val ac2Opt = network.ac2()
-        if (ac2Opt.isEmpty) network.ac3() // if ac2 yields no results, apply ac3
-        else ac2Opt                       // if ac2 yields results, keep ac2
-      })
+      .map(network => network.ac2().getOrElse(network).ac3())
+//      .map(network => {
+//        val ac2Opt = network.ac2()
+//
+//        if (ac2Opt.isEmpty) {
+//          println("Doing AC3")
+//          network.ac3()
+//        } // if ac2 yields no results, apply ac3
+//        else {
+//          println("Doing AC2")
+//          ac2Opt
+//        }                       // if ac2 yields results, keep ac2
+//      })
       .filter(_.isDefined)
       .map(_.get)
   }
