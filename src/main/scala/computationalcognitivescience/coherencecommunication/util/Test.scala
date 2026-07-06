@@ -11,11 +11,12 @@ import computationalcognitivescience.coherencecommunication.coherence.{
   BiasedBeliefNetwork,
   FoundationalBeliefNetwork,
   MaxFlow,
+  MinCut,
   TruthValueAssignment
 }
 import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
-import mathlib.graph.GraphImplicits.N
-import mathlib.graph.{WDiEdge, WDiGraph, WUnDiEdge, WUnDiGraph}
+import mathlib.graph.GraphImplicits.{EdgeImpl2, N, WUnDiEdgeImpl}
+import mathlib.graph.{Node, WDiEdge, WDiGraph, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
 import java.time.{LocalDateTime, ZoneOffset}
@@ -61,88 +62,111 @@ object Test {
     )
 
     val data = bn.cMin()
+//    println(MinCut.minCut(data.head.graph))
+
+    println(
+      MinCut.minCut(
+        WUnDiGraph(
+          Set(
+            "a" ~ "b" % 2,
+            "a" ~ "e" % 3,
+            "b" ~ "c" % 3,
+            "b" ~ "e" % 2,
+            "b" ~ "f" % 2,
+            "c" ~ "d" % 4,
+            "c" ~ "g" % 2,
+            "d" ~ "g" % 2,
+            "d" ~ "h" % 2,
+            "e" ~ "f" % 3,
+            "f" ~ "g" % 1,
+            "g" ~ "h" % 3
+          )
+        ),
+        Node("b")
+      )
+    )
 
     val dataDir  = os.pwd / "output"
     val filename = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC).toString + ".html"
 //TODO Visualize ac1, ac2 and ac3 steps.
-    os.write(
-      dataDir / filename,
-      s"""
-            |<!DOCTYPE html>
-            |<meta charset="utf-8">
-            |<body>
-            |<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js"></script>
-            |<script src="https://unpkg.com/@hpcc-js/wasm@2.20.0/dist/graphviz.umd.js"></script>
-            |<script src="https://unpkg.com/d3-graphviz@5.6.0/build/d3-graphviz.js"></script>
-            |<div id="leftgraph" style="text-align: center;">
-            |</div>
-            |<div id="rightgraph" style="text-align: center;"></div>
-            |<div id="index"></div>
-            |<div>
-            |    <button onclick="prev()">Previous</button>
-            |    <button onclick="next()">Next</button>
-            |</div>
-            |<script>
-            |
-            |var dotIndex = 0;
-            |var rightgraphviz = d3.select("#rightgraph").graphviz()
-            |    .engine("fdp")
-            |    .transition(function () {
-            |        return d3.transition("main")
-            |            //.ease(d3.easeLinear)
-            |            //.duration(1500)
-            |            .delay(0);
-            |    })
-            |    .logEvents(true)
-            |    .on("initEnd", render);
-            |var leftgraphviz = d3.select("#leftgraph").graphviz()
-            |    .engine("fdp")
-            |    .transition(function () {
-            |        return d3.transition("main")
-            |            .delay(0);
-            |    })
-            |    .logEvents(true)
-            |    .on("initEnd", render);
-            |
-            |function render() {
-            |    var dotLines = dots[dotIndex];
-            |    var dot = dotLines.join('');
-            |    var ldot = leftDot.join('');
-            |    rightgraphviz
-            |        .renderDot(dot);
-            |    leftgraphviz
-            |        .renderDot(ldot);
-            |    d3.select("#index").text((dotIndex+1) + "/" + (dots.length));
-            |}
-            |
-            |function next() {
-            |    dotIndex = (dotIndex + 1) % dots.length;
-            |    render();
-            |}
-            |
-            |function prev() {
-            |    if(dotIndex - 1 < 0) {
-            |      dotIndex = dots.length - 1;
-            |    } else {
-            |      dotIndex = (dotIndex - 1) % dots.length;
-            |    }
-            |    render();
-            |}
-            |
-            |var leftDot = ${bn.toDOTString.split("\n").mkString("['", "',\n'", "']\n")}
-            |
-            |var dots = [
-            |""".stripMargin,
-      createFolders = true
-    )
-    data.foreach(network => {
-      os.write.append(
-        dataDir / filename,
-        network.toDOTString.split("\n").mkString("['", "',\n'", "'],\n")
-      )
-    })
-    os.write.append(dataDir / filename, "];\n</script>")
-    os.write.append(dataDir / filename, "<body></html>")
+//    os.write(
+//      dataDir / filename,
+//      s"""
+//            |<!DOCTYPE html>
+//            |<meta charset="utf-8">
+//            |<body>
+//            |<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js"></script>
+//            |<script src="https://unpkg.com/@hpcc-js/wasm@2.20.0/dist/graphviz.umd.js"></script>
+//            |<script src="https://unpkg.com/d3-graphviz@5.6.0/build/d3-graphviz.js"></script>
+//            |<div id="leftgraph" style="text-align: center;">
+//            |</div>
+//            |<div id="rightgraph" style="text-align: center;"></div>
+//            |<div id="index"></div>
+//            |<div>
+//            |    <button onclick="prev()">Previous</button>
+//            |    <button onclick="next()">Next</button>
+//            |</div>
+//            |<script>
+//            |
+//            |var dotIndex = 0;
+//            |var rightgraphviz = d3.select("#rightgraph").graphviz()
+//            |    .engine("fdp")
+//            |    .transition(function () {
+//            |        return d3.transition("main")
+//            |            //.ease(d3.easeLinear)
+//            |            //.duration(1500)
+//            |            .delay(0);
+//            |    })
+//            |    .logEvents(true)
+//            |    .on("initEnd", render);
+//            |var leftgraphviz = d3.select("#leftgraph").graphviz()
+//            |    .engine("fdp")
+//            |    .transition(function () {
+//            |        return d3.transition("main")
+//            |            .delay(0);
+//            |    })
+//            |    .logEvents(true)
+//            |    .on("initEnd", render);
+//            |
+//            |function render() {
+//            |    var dotLines = dots[dotIndex];
+//            |    var dot = dotLines.join('');
+//            |    var ldot = leftDot.join('');
+//            |    rightgraphviz
+//            |        .renderDot(dot);
+//            |    leftgraphviz
+//            |        .renderDot(ldot);
+//            |    d3.select("#index").text((dotIndex+1) + "/" + (dots.length));
+//            |}
+//            |
+//            |function next() {
+//            |    dotIndex = (dotIndex + 1) % dots.length;
+//            |    render();
+//            |}
+//            |
+//            |function prev() {
+//            |    if(dotIndex - 1 < 0) {
+//            |      dotIndex = dots.length - 1;
+//            |    } else {
+//            |      dotIndex = (dotIndex - 1) % dots.length;
+//            |    }
+//            |    render();
+//            |}
+//            |
+//            |var leftDot = ${bn.toDOTString.split("\n").mkString("['", "',\n'", "']\n")}
+//            |
+//            |var dots = [
+//            |""".stripMargin,
+//      createFolders = true
+//    )
+//    data.foreach(network => {
+//      os.write.append(
+//        dataDir / filename,
+//        network.toDOTString.split("\n").mkString("['", "',\n'", "'],\n")
+//      )
+//    })
+//    os.write.append(dataDir / filename, "];\n</script>")
+//    os.write.append(dataDir / filename, "<body></html>")
 
     /** Simulation stuff */
 //    val t1 = TruthValueAssignment(Set(N("a"), N("b")), Set(N("a") -> true, N("b") -> false))
