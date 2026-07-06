@@ -81,8 +81,7 @@ object Test {
             "f" ~ "g" % 1,
             "g" ~ "h" % 3
           )
-        ),
-        Node("b")
+        )
       )
     )
 
