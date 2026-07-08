@@ -85,7 +85,7 @@ object Test {
       testGraph
     ).foreach(cut => {
       println(cut)
-      println(" => " + MinCut.minCutValue(testGraph, cut))
+      println(" => " + MinCut.minCutValue(testGraph, cut._1, cut._2))
     })
 
 
