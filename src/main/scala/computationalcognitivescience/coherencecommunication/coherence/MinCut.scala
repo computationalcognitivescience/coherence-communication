@@ -12,19 +12,26 @@ object MinCut {
   // UPDATED GRAPH FUNCTIONS
   def toDOTString[T](g: WUnDiGraph[T]): String = {
     "graph G {\n" +
-      g.edges.map(edge => "\t\"" + edge.left.label + "\" -- \"" + edge.right.label + "\" [label="+edge.weight+"]").mkString("\n") +
+      g.edges
+        .map(edge =>
+          "\t\"" + edge.left.label + "\" -- \"" + edge.right.label + "\" [label=" + edge.weight + "]"
+        )
+        .mkString("\n") +
       "\n}"
   }
 
   def getWeight[T](g: WUnDiGraph[T], left: Node[T], right: Node[T]): Double = {
     val optEdge = g.edges.find(e => (e contains left) && (e contains right))
-    if(optEdge.isEmpty) 0.0
+    if (optEdge.isEmpty) 0.0
     else optEdge.get.weight
   }
   // END UPDATED GRAPH FUNCTIONS
 
-
-  def minCutValue[T](graph: WUnDiGraph[T], partitionA: Set[Node[T]], partitionB: Set[Node[T]]): Double = {
+  def minCutValue[T](
+      graph: WUnDiGraph[T],
+      partitionA: Set[Node[T]],
+      partitionB: Set[Node[T]]
+  ): Double = {
     (partitionA x partitionB).toSeq.map(pair => getWeight(graph, pair._1, pair._2)).sum
   }
 
@@ -59,7 +66,10 @@ object MinCut {
       }
     }
 
-    def minCutRec(_mergeGraph: WUnDiGraph[Set[T]], cutWeight: Double): Set[(Set[Node[T]], Set[Node[T]], Double)] = {
+    def minCutRec(
+        _mergeGraph: WUnDiGraph[Set[T]],
+        cutWeight: Double
+    ): Set[(Set[Node[T]], Set[Node[T]], Double)] = {
       println("---")
       println(_mergeGraph.size)
       println(toDOTString(_mergeGraph))
@@ -67,7 +77,13 @@ object MinCut {
 
       if (_mergeGraph.size == 2) {
         // Convert the last two remaining nodes to two sets of original graph nodes
-        Set((_mergeGraph.vertices.head.label.map(Node(_)), _mergeGraph.vertices.last.label.map(Node(_)), cutWeight))
+        Set(
+          (
+            _mergeGraph.vertices.head.label.map(Node(_)),
+            _mergeGraph.vertices.last.label.map(Node(_)),
+            cutWeight + _mergeGraph.edges.head.weight
+          )
+        )
       } else {
         val allMaxAdejencyPairs: Set[(Node[Set[T]], Node[Set[T]], Double)] =
           _mergeGraph.vertices.map(v => maxAdjacencySearch(_mergeGraph, Seq(v)))
@@ -100,15 +116,14 @@ object MinCut {
           (WUnDiGraph(mergedEdges \/ nonMergedEdges), w)
         })
 
-        println(nextMergeGraphsWithCutWeight)
-          val minCutWeight: Double = nextMergeGraphsWithCutWeight.minBy(_._2)._2
+        val minCutWeight: Double = nextMergeGraphsWithCutWeight.minBy(_._2)._2
         nextMergeGraphsWithCutWeight
           .filter(_._2 == minCutWeight)
           .flatMap(nmgw => minCutRec(nmgw._1, cutWeight + nmgw._2))
       }
     }
 
-    val cuts = minCutRec(mergeGraph, 0)
+    val cuts                      = minCutRec(mergeGraph, 0)
     val minCutWeightValue: Double = cuts.minBy(_._3)._3
 
     cuts.filter(_._3 == minCutWeightValue)
