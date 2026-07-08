@@ -61,32 +61,37 @@ object Test {
       biasedBeliefAssignment
     )
 
-    val data = bn.cMin()
-//    println(MinCut.minCut(data.head.graph))
+    val cminOutputs = bn.cMin()
+    val optOutputs = bn.coherenceSolutions()
 
-    val testGraph = WUnDiGraph(
-      Set(
-        "a" ~ "b" % 2,
-        "a" ~ "e" % 3,
-        "b" ~ "c" % 3,
-        "b" ~ "e" % 2,
-        "b" ~ "f" % 2,
-        "c" ~ "d" % 4,
-        "c" ~ "g" % 2,
-        "d" ~ "g" % 2,
-        "d" ~ "h" % 2,
-        "e" ~ "f" % 3,
-        "f" ~ "g" % 1,
-        "g" ~ "h" % 3
-      )
-    )
+    println("opt")
+    optOutputs.foreach(println)
+    println("fpt")
+    cminOutputs.foreach(println)
 
-    MinCut.minCut(
-      testGraph
-    ).foreach(cut => {
-      println(cut)
-      println(" => " + MinCut.minCutValue(testGraph, cut._1, cut._2))
-    })
+//    val testGraph = WUnDiGraph(
+//      Set(
+//        "a" ~ "b" % 2,
+//        "a" ~ "e" % 3,
+//        "b" ~ "c" % 3,
+//        "b" ~ "e" % 2,
+//        "b" ~ "f" % 2,
+//        "c" ~ "d" % 4,
+//        "c" ~ "g" % 2,
+//        "d" ~ "g" % 2,
+//        "d" ~ "h" % 2,
+//        "e" ~ "f" % 3,
+//        "f" ~ "g" % 1,
+//        "g" ~ "h" % 3
+//      )
+//    )
+//
+//    MinCut.minCut(
+//      testGraph
+//    ).foreach(cut => {
+//      println(cut)
+//      println(" => " + MinCut.minCutValue(testGraph, cut._1, cut._2))
+//    })
 
 
     val dataDir  = os.pwd / "output"

@@ -70,11 +70,6 @@ object MinCut {
         _mergeGraph: WUnDiGraph[Set[T]],
         cutWeight: Double
     ): Set[(Set[Node[T]], Set[Node[T]], Double)] = {
-      println("---")
-      println(_mergeGraph.size)
-      println(toDOTString(_mergeGraph))
-      println(cutWeight)
-
       if (_mergeGraph.size == 2) {
         // Convert the last two remaining nodes to two sets of original graph nodes
         Set(
@@ -127,6 +122,5 @@ object MinCut {
     val minCutWeightValue: Double = cuts.minBy(_._3)._3
 
     cuts.filter(_._3 == minCutWeightValue)
-//      .map(x => (x._1, x._2))
   }
 }

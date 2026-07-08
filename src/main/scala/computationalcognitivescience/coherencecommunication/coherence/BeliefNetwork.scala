@@ -151,7 +151,7 @@ case class BeliefNetwork(
 
   }
 
-  def cMin(): Set[BeliefNetwork] = {
+  def cMin(): Set[TruthValueAssignment] = {
     def searchTree(searchTreeNode: BeliefNetwork): Set[BeliefNetwork] = {
       val pathsOption = searchTreeNode.ac1()
       if(pathsOption.isEmpty) Set(searchTreeNode)
@@ -164,20 +164,16 @@ case class BeliefNetwork(
     val searchSpace = searchTree(this)
     searchSpace
       .map(network => network.ac2().getOrElse(network).ac3())
-//      .map(network => {
-//        val ac2Opt = network.ac2()
-//
-//        if (ac2Opt.isEmpty) {
-//          println("Doing AC3")
-//          network.ac3()
-//        } // if ac2 yields no results, apply ac3
-//        else {
-//          println("Doing AC2")
-//          ac2Opt
-//        }                       // if ac2 yields results, keep ac2
-//      })
       .filter(_.isDefined)
       .map(_.get)
+      .flatMap(bn => {
+        val allMinCuts = MinCut.minCut(bn.graph)
+        allMinCuts.map(mc => {
+          val trueBeliefs = mc._1.map(b => b -> true)
+          val falseBeliefs = mc._2.map(b => b -> false)
+          TruthValueAssignment(trueBeliefs \/ falseBeliefs)
+        })
+      })
   }
 
 }
