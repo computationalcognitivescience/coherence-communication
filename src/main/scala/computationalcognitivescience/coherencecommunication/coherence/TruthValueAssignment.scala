@@ -47,6 +47,16 @@ case class TruthValueAssignment(
   /** Is true is this truth-value assignment is empty. */
   def isEmpty: Boolean = beliefs.isEmpty
 
+  /** Returns a truth-value assignment that contains only the beliefs for which `f` evaluates to
+    * `true`.
+    * @param f
+    *   A function that takes a belief and returns a boolean.
+    * @return
+    *   A truth-value assignment with only beliefs for which `f` is `true`.
+    */
+  def filter(f: Belief => Boolean): TruthValueAssignment =
+    this.subAssignment(beliefs.filter(f))
+
   /** Adds the truth value for a belief, will overwrite existing truth value is belief is in the
     * current truth value assignment.
     *
@@ -62,9 +72,8 @@ case class TruthValueAssignment(
     )
 
   /** Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
-    * an implementation of Definition 2. Note that this returns an
-    * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
-    * `this.beliefs`.
+    * an implementation of Definition 2. Note that this returns an empty truth-value assignment if
+    * none of the beliefs in `utteranceBeliefs` are in `this.beliefs`.
     *
     * @param subset
     *   The subset of beliefs to return the value assignments for.
@@ -76,14 +85,13 @@ case class TruthValueAssignment(
   )
 
   /** Returns a truth-value assignment that contains only the beliefs in `utteranceBeliefs`. This is
-   * an implementation of Definition 2. Note that this returns an
-   * empty truth-value assignment if none of the beliefs in `utteranceBeliefs` are in
-   * `this.beliefs`.
-   *
-   * @param subset
-   *   The subset of beliefs to return the value assignments for.
-   * @return
-   */
+    * an implementation of Definition 2. Note that this returns an empty truth-value assignment if
+    * none of the beliefs in `utteranceBeliefs` are in `this.beliefs`.
+    *
+    * @param subset
+    *   The subset of beliefs to return the value assignments for.
+    * @return
+    */
   def <<(subset: Set[Belief]): TruthValueAssignment = subAssignment(subset)
 
   /** Returns the number of beliefs in the truth-value assignment. */
@@ -188,10 +196,9 @@ case class TruthValueAssignment(
     */
   def ~(that: TruthValueAssignment): Int = structuralSimilarity(that)
 
-  /** Relative structural similarity $\overset{C}{\sim}$. Returns the
-    * number of beliefs in `subset` that have the same truth value and are in both `this` and
-    * `that`. Here, $T_A$ is `this` instance and $T_B$ is the `that` argument: $|\left\{x\in C
-    * \middle| T_A(x)=T_B(x)\right\}|$.
+  /** Relative structural similarity $\overset{C}{\sim}$. Returns the number of beliefs in `subset`
+    * that have the same truth value and are in both `this` and `that`. Here, $T_A$ is `this`
+    * instance and $T_B$ is the `that` argument: $|\left\{x\in C \middle| T_A(x)=T_B(x)\right\}|$.
     *
     * @param that
     *   The truth-value assignment to compute similarity against.

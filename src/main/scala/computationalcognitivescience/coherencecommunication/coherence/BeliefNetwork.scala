@@ -102,17 +102,19 @@ case class BeliefNetwork(
 
       val mergedConstraints = unassignedBeliefs
         .flatMap(ub => {
-          val neighbours = graph.adjacencyList(ub)
+          val neighbours     = graph.adjacencyList(ub)
           val trueNeighbours = neighbours.filter(trueBeliefs contains _.node)
-          val mergedTrueConstraint = ub ~ nextMergedTrueBelief % trueNeighbours.toList.map(_.weight).sum
+          val mergedTrueConstraint =
+            ub ~ nextMergedTrueBelief % trueNeighbours.toList.map(_.weight).sum
           val falseNeighbours = neighbours.filter(falseBeliefs contains _.node)
-          val mergedFalseConstraint = ub ~ nextMergedFalseBelief % falseNeighbours.toList.map(_.weight).sum
-          val regularConstraints = (neighbours \ trueNeighbours \ falseNeighbours).map(un =>
-          {ub ~ un.node % un.weight})
+          val mergedFalseConstraint =
+            ub ~ nextMergedFalseBelief % falseNeighbours.toList.map(_.weight).sum
+          val regularConstraints = (neighbours \ trueNeighbours \ falseNeighbours).map(un => {
+            ub ~ un.node % un.weight
+          })
 
           regularConstraints + mergedTrueConstraint + mergedFalseConstraint
         })
-
 
       Some(
         BeliefNetwork(
@@ -154,7 +156,7 @@ case class BeliefNetwork(
   def cMin(): Set[TruthValueAssignment] = {
     def searchTree(searchTreeNode: BeliefNetwork): Set[BeliefNetwork] = {
       val pathsOption = searchTreeNode.ac1()
-      if(pathsOption.isEmpty) Set(searchTreeNode)
+      if (pathsOption.isEmpty) Set(searchTreeNode)
       else {
         val (leftPath, rightPath) = pathsOption.get
         searchTree(leftPath) \/ searchTree(rightPath)
@@ -169,9 +171,13 @@ case class BeliefNetwork(
       .flatMap(bn => {
         val allMinCuts = MinCut.minCut(bn.graph)
         allMinCuts.map(mc => {
-          val trueBeliefs = mc._1.map(b => b -> true)
+          val trueBeliefs  = mc._1.map(b => b -> true)
           val falseBeliefs = mc._2.map(b => b -> false)
-          TruthValueAssignment(trueBeliefs \/ falseBeliefs)
+          bn.biasAssignment // The truth-value assignment resulting from ac1-3
+            .merge(
+              TruthValueAssignment(trueBeliefs \/ falseBeliefs)
+            )                                 // Add truth-values derived by minCut
+            .filter(!_.label.startsWith("M")) // Remove the merged nodes added by ac3
         })
       })
   }

@@ -68,6 +68,8 @@ object Test {
     optOutputs.foreach(println)
     println("fpt")
     cminOutputs.foreach(println)
+    println("test")
+    println(s"opt === fpt => ${optOutputs == cminOutputs}")
 
 //    val testGraph = WUnDiGraph(
 //      Set(
