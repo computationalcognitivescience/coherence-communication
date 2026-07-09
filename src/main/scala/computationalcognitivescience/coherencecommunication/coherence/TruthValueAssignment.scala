@@ -228,6 +228,7 @@ case class TruthValueAssignment(
 
   override def toString: String = this.truthValueAssignment.toList
     .sortBy(_._1.toString)
+    .map(kv => kv._1.label + "->" + (if(kv._2) "t" else "f"))
     .mkString("TruthValueAssignment(", ",", ")")
 
 }

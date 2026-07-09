@@ -45,6 +45,8 @@ trait BaseBeliefNetwork {
   /** The size of the network. */
   def size: Int = graph.size
 
+
+
   /** Check if in the given truth-value assignment a positive constraint is satisfied
     *
     * @param assignment

@@ -21,6 +21,20 @@ case class BeliefNetwork(
     with FixedParameterTractableCoherence {
   private val unassignedBeliefs: Set[Node[String]] = graph.vertices \ biasBeliefs
 
+  def mapBeliefs(f: Belief => Belief): BeliefNetwork = BeliefNetwork(
+    WUnDiGraph(graph.vertices.map(f), graph.edges),
+    negativeConstraints,
+    biasBeliefs,
+    biasAssignment
+  )
+
+  def mapConstraints(f: WUnDiEdge[Belief] => WUnDiEdge[Belief]): BeliefNetwork = BeliefNetwork(
+    WUnDiGraph(graph.vertices, graph.edges.map(f)),
+    negativeConstraints,
+    biasBeliefs,
+    biasAssignment
+  )
+
   /** Given a random unassigned belief connected to a negative constraint, it can either be true or
     * false.
     *

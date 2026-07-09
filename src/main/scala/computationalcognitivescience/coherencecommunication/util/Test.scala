@@ -61,15 +61,15 @@ object Test {
       biasedBeliefAssignment
     )
 
-    val cminOutputs = bn.cMin()
-    val optOutputs = bn.coherenceSolutions()
-
-    println("opt")
-    optOutputs.foreach(println)
-    println("fpt")
-    cminOutputs.foreach(println)
-    println("test")
-    println(s"opt === fpt => ${optOutputs == cminOutputs}")
+//    val cminOutputs = bn.cMin()
+//    val optOutputs = bn.coherenceSolutions()
+//
+//    println("opt")
+//    optOutputs.foreach(println)
+//    println("fpt")
+//    cminOutputs.foreach(println)
+//    println("test")
+//    println(s"opt === fpt => ${optOutputs == cminOutputs}")
 
 //    val testGraph = WUnDiGraph(
 //      Set(
@@ -95,6 +95,18 @@ object Test {
 //      println(" => " + MinCut.minCutValue(testGraph, cut._1, cut._2))
 //    })
 
+    val _test = WUnDiGraph.preferentialAttachment(8, 2, 5)
+    val test = WUnDiGraph(
+      _test.vertices,
+      _test.edges.map(e => WUnDiEdge(e.left, e.right, math.ceil(e.weight)))
+    )
+    println(MinCut.toDOTString(test))
+    MinCut
+      .minCut(test)
+      .foreach(cut => {
+        println(cut)
+        println(" => " + MinCut.minCutValue(test, cut._1, cut._2))
+      })
 
     val dataDir  = os.pwd / "output"
     val filename = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC).toString + ".html"
