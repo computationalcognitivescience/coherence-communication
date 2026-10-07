@@ -1,13 +1,9 @@
 package computationalcognitivescience.coherencecommunication.util
 
-import computationalcognitivescience.coherencecommunication.{
-  Conversation,
-  Initiator,
-  Responder,
-  Simulation
-}
-import computationalcognitivescience.coherencecommunication.coherence.{BeliefNetwork, BiasedBeliefNetwork, FoundationalBeliefNetwork, MaxFlow, MinCut, TruthValueAssignment}
+import computationalcognitivescience.coherencecommunication.{Conversation, Initiator, Responder, Simulation}
+import computationalcognitivescience.coherencecommunication.coherence.{BeliefNetwork, BiasedBeliefNetwork, FoundationalBeliefNetwork, MinCut, TruthValueAssignment}
 import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
+import computationalcognitivescience.coherencecommunication.coherence.graph.WUnDiCut.ImplWUnDiGraph
 import mathlib.graph.GraphImplicits.{EdgeImpl2, N, WUnDiEdgeImpl}
 import mathlib.graph.{Node, WDiEdge, WDiGraph, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
@@ -93,12 +89,11 @@ object Test {
       _test.vertices,
       _test.edges.map(e => WUnDiEdge(e.left, e.right, math.ceil(e.weight)))
     )
-    println(MinCut.toDOTString(test))
-    MinCut
-      .minCut(test)
+    println(test.toDOTStringCorrect)
+    test
+      .minCut()
       .foreach(cut => {
-        println(cut)
-        println(" => " + MinCut.minCutValue(test, cut._1, cut._2))
+        println(cut.weight + " => " + cut.edges)
       })
 
     val dataDir  = os.pwd / "output"

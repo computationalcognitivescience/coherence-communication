@@ -1,6 +1,7 @@
 package computationalcognitivescience.coherencecommunication.coherence
 
 import Belief.Belief
+import computationalcognitivescience.coherencecommunication.coherence.graph.WUnDiCut.ImplWUnDiGraph
 import mathlib.graph.GraphImplicits.{EdgeImpl, EdgeImpl2, WUnDiEdgeImpl}
 import mathlib.graph._
 import mathlib.set.SetTheory._
@@ -183,10 +184,10 @@ case class BeliefNetwork(
       .filter(_.isDefined)
       .map(_.get)
       .flatMap(bn => {
-        val allMinCuts = MinCut.minCut(bn.graph)
+        val allMinCuts = bn.graph.minCut()
         allMinCuts.map(mc => {
-          val trueBeliefs  = mc._1.map(b => b -> true)
-          val falseBeliefs = mc._2.map(b => b -> false)
+          val trueBeliefs  = mc.left.vertices.map(b => b -> true)
+          val falseBeliefs = mc.right.vertices.map(b => b -> false)
           bn.biasAssignment // The truth-value assignment resulting from ac1-3
             .merge(
               TruthValueAssignment(trueBeliefs \/ falseBeliefs)

@@ -149,5 +149,20 @@ case object WUnDiCut {
         })
       }
     }
+
+    def toDOTStringCorrect: String = {
+      val vertexIds = graph.vertices.toSeq.zipWithIndex
+
+      "graph G {\n" +
+        vertexIds.map(nid => s"\tN${nid._2} [label=\"${nid._1.label}\"]").mkString("", "\n", "\n") +
+        graph.edges
+          .map(edge => {
+            "\tN" + vertexIds.find(_._1 == edge.left).get._2 +
+              " -- N" + vertexIds.find(_._1 == edge.right).get._2 +
+              " [label=" + edge.weight + "]"
+          })
+          .mkString("\n") +
+        "\n}"
+    }
   }
 }

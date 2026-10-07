@@ -42,21 +42,5 @@ object MinCutTest {
     )
     val res2 = test2.minCut()
     res2.foreach(cut => println(cut.weight + " => " + cut.edges))
-
-
-    def toDOTStringCorrect[T](g: WUnDiGraph[T]): String = {
-      val vertexIds = g.vertices.toSeq.zipWithIndex
-
-      "graph G {\n" +
-        vertexIds.map(nid => s"\tN${nid._2} [label=\"${nid._1.label}\"]").mkString("", "\n", "\n") +
-        g.edges
-          .map(edge => {
-            "\tN" + vertexIds.find(_._1 == edge.left).get._2 +
-              " -- N" + vertexIds.find(_._1 == edge.right).get._2 +
-              " [label=" + edge.weight + "]"
-          })
-          .mkString("\n") +
-        "\n}"
-    }
   }
 }
