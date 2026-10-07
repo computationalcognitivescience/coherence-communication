@@ -24,7 +24,7 @@ object MinCutTest {
     )
 
     val res1 = test1.minCut()
-    res1.foreach(cut => println(cut.weight + " => " + cut.edges))
+    res1.foreach(cut => println(s"${cut.weight}  => ${cut.edges}"))
 
     /*
     1 -- 2
@@ -41,6 +41,6 @@ object MinCutTest {
       )
     )
     val res2 = test2.minCut()
-    res2.foreach(cut => println(cut.weight + " => " + cut.edges))
+    res2.foreach(cut => println(s"${cut.weight}  => ${cut.edges}"))
   }
 }
