@@ -6,6 +6,28 @@ import mathlib.set.SetTheory._
 case class WUnDiCut[T](left: WUnDiGraph[T], right: WUnDiGraph[T], cut: Set[WUnDiEdge[Node[T]]])
     extends Cut[T, WUnDiEdge[Node[T]], WUnDiGraph[T]] {
   override lazy val weight: Double = sum(cut, (e: WUnDiEdge[Node[T]]) => e.weight)
+
+  override def canEqual(obj: Any): Boolean =
+    obj.isInstanceOf[WUnDiCut[_]]
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case obj: WUnDiCut[_] => {
+        (obj.left == left && obj.right == right ||
+          obj.right == left && obj.left == right) &&
+          obj.cut == cut
+      }
+      case _             => false
+    }
+  }
+
+  override def hashCode: Int = {
+    val prime  = 31
+    var result = 1
+    result = prime * result + left.hashCode() + right.hashCode()
+    result = prime * result + cut.hashCode()
+    result
+  }
 }
 
 case object WUnDiCut {

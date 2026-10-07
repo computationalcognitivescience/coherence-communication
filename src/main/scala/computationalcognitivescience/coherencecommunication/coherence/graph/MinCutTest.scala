@@ -23,13 +23,15 @@ object MinCutTest {
       )
     )
 
-
 //    println(test1.minCutPhase(test1.initializeMergeGraph, Node(Set(Node("2")))))
 
-    test1.minCut().foreach(cut => {
+    val res = test1.minCut()
+    res.foreach(cut => {
       println(cut.cut)
       println(cut.weight)
     })
+
+    println(res.head == res.last)
 
     //    println(
     //      toDOTStringCorrect(
