@@ -1,7 +1,7 @@
 package computationalcognitivescience.coherencecommunication.util
 
 import computationalcognitivescience.coherencecommunication.{Conversation, Initiator, Responder, Simulation}
-import computationalcognitivescience.coherencecommunication.coherence.{BeliefNetwork, BiasedBeliefNetwork, FoundationalBeliefNetwork, MinCut, TruthValueAssignment}
+import computationalcognitivescience.coherencecommunication.coherence.{BeliefNetwork, BiasedBeliefNetwork, FoundationalBeliefNetwork, TruthValueAssignment}
 import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
 import computationalcognitivescience.coherencecommunication.coherence.graph.WUnDiCut.ImplWUnDiGraph
 import mathlib.graph.GraphImplicits.{EdgeImpl2, N, WUnDiEdgeImpl}
