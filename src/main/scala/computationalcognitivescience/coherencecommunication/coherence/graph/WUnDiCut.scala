@@ -4,7 +4,9 @@ import mathlib.graph.{Node, NodeWeightPair, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
 case class WUnDiCut[T](left: WUnDiGraph[T], right: WUnDiGraph[T], cut: Set[WUnDiEdge[Node[T]]])
-    extends Cut[T, WUnDiEdge[Node[T]], WUnDiGraph[T]]
+    extends Cut[T, WUnDiEdge[Node[T]], WUnDiGraph[T]] {
+  override lazy val weight: Double = sum(cut, (e: WUnDiEdge[Node[T]]) => e.weight)
+}
 
 case object WUnDiCut {
   def apply[T](
@@ -13,27 +15,27 @@ case object WUnDiCut {
   ): WUnDiCut[T] = {
     val leftVertices: Set[Node[T]]  = phase.s.label
     val rightVertices: Set[Node[T]] = phase.t.label
-    val left: WUnDiGraph[T]         = graph - leftVertices
-    val right: WUnDiGraph[T]        = graph - rightVertices
-    val cut: Set[WUnDiEdge[Node[T]]] = graph.edges.filter(e =>
-      (e.left in leftVertices)
-        || (e.right in leftVertices)
-        || (e.left in rightVertices)
-        || (e.right in rightVertices)
-    )
+
+    val left: WUnDiGraph[T]  = graph - leftVertices
+    val right: WUnDiGraph[T] = graph - rightVertices
+
+    val cut: Set[WUnDiEdge[Node[T]]] = graph.edges.filter(e => {
+      leftVertices.contains(e.left) && rightVertices.contains(e.right) ||
+        leftVertices.contains(e.right) && rightVertices.contains(e.left)
+    })
     WUnDiCut(left, right, cut)
   }
 
   implicit class ImplWUnDiGraph[T](graph: WUnDiGraph[T]) {
 
-    private lazy val initializeMergeGraph: WUnDiGraph[Set[Node[T]]] = {
+    lazy val initializeMergeGraph: WUnDiGraph[Set[Node[T]]] = {
       val mergeVertices: Set[Node[Set[Node[T]]]] = graph.vertices.map(v => Node(Set(v)))
       val mergeEdges: Set[WUnDiEdge[Node[Set[Node[T]]]]] =
         graph.edges.map(e => WUnDiEdge(Node(Set(e.left)), Node(Set(e.right)), e.weight))
       WUnDiGraph(mergeVertices, mergeEdges)
     }
 
-    private def minCutPhase(
+    def minCutPhase(
         mergeGraph: WUnDiGraph[Set[Node[T]]],
         a: Node[Set[Node[T]]],
         foundSet: List[Node[Set[Node[T]]]] = List.empty
@@ -94,9 +96,14 @@ case object WUnDiCut {
       WUnDiGraph(mergedEdges \/ nonMergedEdges)
     }
 
-    def minCuts(
-        mergeGraph: WUnDiGraph[Set[Node[T]]] = initializeMergeGraph,
-        minCut: Option[Phase[T]] = None
+    def minCut(): Set[WUnDiCut[T]] = {
+      val allCutsDFS = minCutRec(initializeMergeGraph, None)
+      argMax(allCutsDFS, (cut: WUnDiCut[T]) => -1 * cut.weight)
+    }
+
+    private def minCutRec(
+        mergeGraph: WUnDiGraph[Set[Node[T]]],
+        minCut: Option[Phase[T]]
     ): Set[WUnDiCut[T]] = {
       if (mergeGraph.isEmpty) Set(WUnDiCut(minCut.get, graph))
       else {
@@ -109,14 +116,14 @@ case object WUnDiCut {
 
         minCutOfPhases.flatMap((cut: Phase[T]) => {
           if (minCut.isEmpty || minCut.get.w > cut.w) {
-            minCuts(mergeCut(mergeGraph, cut), Some(cut))
+            minCutRec(mergeCut(mergeGraph, cut), Some(cut))
           } else if (minCut.get.w == cut.w) {
-            minCuts(mergeCut(mergeGraph, cut), Some(cut)) \/ minCuts(
+            minCutRec(mergeCut(mergeGraph, cut), Some(cut)) \/ minCutRec(
               mergeCut(mergeGraph, cut),
               Some(minCut.get)
             )
           } else {
-            minCuts(mergeCut(mergeGraph, cut), Some(minCut.get))
+            minCutRec(mergeCut(mergeGraph, cut), Some(minCut.get))
           }
         })
       }

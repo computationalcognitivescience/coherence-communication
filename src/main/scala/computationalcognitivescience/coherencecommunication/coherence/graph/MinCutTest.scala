@@ -2,7 +2,7 @@ package computationalcognitivescience.coherencecommunication.coherence.graph
 
 import computationalcognitivescience.coherencecommunication.coherence.graph.WUnDiCut.ImplWUnDiGraph
 import mathlib.graph.GraphImplicits._
-import mathlib.graph.WUnDiGraph
+import mathlib.graph.{Node, WUnDiGraph}
 
 object MinCutTest {
   def main(args: Array[String]): Unit = {
@@ -23,7 +23,13 @@ object MinCutTest {
       )
     )
 
-    test1.minCuts().foreach(println)
+
+//    println(test1.minCutPhase(test1.initializeMergeGraph, Node(Set(Node("2")))))
+
+    test1.minCut().foreach(cut => {
+      println(cut.cut)
+      println(cut.weight)
+    })
 
     //    println(
     //      toDOTStringCorrect(
