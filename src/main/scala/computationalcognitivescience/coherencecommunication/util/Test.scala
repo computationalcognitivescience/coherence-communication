@@ -50,15 +50,26 @@ object Test {
       biasedBeliefAssignment
     )
 
-//    val cminOutputs = bn.cMin()
-//    val optOutputs = bn.coherenceSolutions()
-//
-//    println("opt")
-//    optOutputs.foreach(println)
-//    println("fpt")
-//    cminOutputs.foreach(println)
-//    println("test")
-//    println(s"opt === fpt => ${optOutputs == cminOutputs}")
+    val cminOutputs = bn.cMin()
+    val optOutputs = bn.coherenceSolutions()
+
+    def tva2string(tva: Set[TruthValueAssignment]): String = {
+      val tvaseq = tva.toSeq
+      val sortedBeliefs = tvaseq.head.beliefs.toSeq.sortBy(_.label)
+      val header = sortedBeliefs.map(_.label).mkString("","\t","\n")
+      val tvas = tvaseq
+        .map(tva => sortedBeliefs.map(b => if(tva(b).get) "T" else "F").mkString("\t"))
+        .mkString("\n")
+      header + tvas
+    }
+
+
+    println(s"opt #${optOutputs.size}")
+    println(tva2string(optOutputs))
+    println(s"fpt #${cminOutputs.size}")
+    println(tva2string(cminOutputs))
+    println("test")
+    println(s"opt === fpt => ${optOutputs == cminOutputs}")
 
 //    val testGraph = WUnDiGraph(
 //      Set(
@@ -84,17 +95,19 @@ object Test {
 //      println(" => " + MinCut.minCutValue(testGraph, cut._1, cut._2))
 //    })
 
-    val _test = WUnDiGraph.preferentialAttachment(8, 2, 5)
-    val test = WUnDiGraph(
-      _test.vertices,
-      _test.edges.map(e => WUnDiEdge(e.left, e.right, math.ceil(e.weight)))
-    )
-    println(test.toDOTStringCorrect)
-    test
-      .minCut()
-      .foreach(cut => {
-        println(s"${cut.weight}  => ${cut.edges}")
-      })
+//    val _test = WUnDiGraph.preferentialAttachment(8, 2, 5)
+//    val test = WUnDiGraph(
+//      _test.vertices,
+//      _test.edges.map(e => WUnDiEdge(e.left, e.right, math.ceil(e.weight)))
+//    )
+//    println(test.toDOTStringCorrect)
+//    test
+//      .minCut()
+//      .foreach(cut => {
+//        println(s"${cut.weight}  => ${cut.edges}")
+//      })
+
+
 
     val dataDir  = os.pwd / "output"
     val filename = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC).toString + ".html"

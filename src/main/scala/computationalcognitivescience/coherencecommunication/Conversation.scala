@@ -92,16 +92,16 @@ case class Conversation(
 
 object Conversation {
   def random(
-      beliefNetworkSize: Int,
-      preferentialAttachementM: Int,
-      beliefNetworkPCRatio: Double,
-      initiatorPriorRatio: Double,
-      initiatorCommunicativeIntentRatio: Double,
-      maxUtteranceLength: Int,
-      priorsOverlapRatio: Double,
-      priorsAsymmetryRatio: Double,
-      responderPriorRatio: Double,
-      maxRoundLength: Int
+              beliefNetworkSize: Int,
+              preferentialAttachementM: Int,
+              beliefNetworkNegativeConstraintRatio: Double,
+              initiatorPriorRatio: Double,
+              initiatorCommunicativeIntentRatio: Double,
+              maxUtteranceLength: Int,
+              priorsOverlapRatio: Double,
+              priorsAsymmetryRatio: Double,
+              responderPriorRatio: Double,
+              maxRoundLength: Int
   ): Conversation = {
     val randomGraph =
       WUnDiGraph.preferentialAttachment(beliefNetworkSize + 2, preferentialAttachementM, 1.0)
@@ -116,7 +116,7 @@ object Conversation {
     //          )
     val negativeConstraints = scala.util.Random
       .shuffle(randomGraph.edges.toSeq)
-      .take((randomGraph.edges.size * beliefNetworkPCRatio).intValue)
+      .take((randomGraph.edges.size * beliefNetworkNegativeConstraintRatio).intValue)
       .toSet
 
     val initiatorOwnBeliefs = Random

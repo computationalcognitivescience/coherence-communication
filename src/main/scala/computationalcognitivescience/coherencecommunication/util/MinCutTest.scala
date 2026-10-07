@@ -1,8 +1,8 @@
-package computationalcognitivescience.coherencecommunication.coherence.graph
+package computationalcognitivescience.coherencecommunication.util
 
 import computationalcognitivescience.coherencecommunication.coherence.graph.WUnDiCut.ImplWUnDiGraph
 import mathlib.graph.GraphImplicits._
-import mathlib.graph.{Node, WUnDiGraph}
+import mathlib.graph.WUnDiGraph
 
 object MinCutTest {
   def main(args: Array[String]): Unit = {
