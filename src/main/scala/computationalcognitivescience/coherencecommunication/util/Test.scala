@@ -93,7 +93,7 @@ object Test {
     test
       .minCut()
       .foreach(cut => {
-        println(cut.weight + " => " + cut.edges)
+        println(s"${cut.weight}  => ${cut.edges}")
       })
 
     val dataDir  = os.pwd / "output"
