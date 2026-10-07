@@ -23,28 +23,26 @@ object MinCutTest {
       )
     )
 
-//    println(test1.minCutPhase(test1.initializeMergeGraph, Node(Set(Node("2")))))
+    val res1 = test1.minCut()
+    res1.foreach(cut => println(cut.weight + " => " + cut.edges))
 
-    val res = test1.minCut()
-    res.foreach(cut => {
-      println(cut.cut)
-      println(cut.weight)
-    })
+    /*
+    1 -- 2
+    |    |
+    3 -- 4
+    */
+    println("Test 2")
+    val test2 = WUnDiGraph(
+      Set(
+        N("1") ~ N("2") % 3,
+        N("1") ~ N("3") % 3,
+        N("2") ~ N("4") % 3,
+        N("3") ~ N("4") % 3
+      )
+    )
+    val res2 = test2.minCut()
+    res2.foreach(cut => println(cut.weight + " => " + cut.edges))
 
-    println(res.head == res.last)
-
-    //    println(
-    //      toDOTStringCorrect(
-    //        test1.mergeCut(
-    //          test1.initializeMergeGraph,
-    //          Phase(
-    //            Node(Set("1")),
-    //            Node(Set("5")),
-    //            5
-    //          )
-    //        )
-    //      )
-    //    )
 
     def toDOTStringCorrect[T](g: WUnDiGraph[T]): String = {
       val vertexIds = g.vertices.toSeq.zipWithIndex

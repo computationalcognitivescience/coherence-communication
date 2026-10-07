@@ -3,21 +3,20 @@ package computationalcognitivescience.coherencecommunication.coherence.graph
 import mathlib.graph.{Node, NodeWeightPair, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
-case class WUnDiCut[T](left: WUnDiGraph[T], right: WUnDiGraph[T], cut: Set[WUnDiEdge[Node[T]]])
+case class WUnDiCut[T](left: WUnDiGraph[T], right: WUnDiGraph[T], edges: Set[WUnDiEdge[Node[T]]])
     extends Cut[T, WUnDiEdge[Node[T]], WUnDiGraph[T]] {
-  override lazy val weight: Double = sum(cut, (e: WUnDiEdge[Node[T]]) => e.weight)
+  override lazy val weight: Double = sum(edges, (e: WUnDiEdge[Node[T]]) => e.weight)
 
   override def canEqual(obj: Any): Boolean =
     obj.isInstanceOf[WUnDiCut[_]]
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case obj: WUnDiCut[_] => {
+      case obj: WUnDiCut[_] =>
         (obj.left == left && obj.right == right ||
           obj.right == left && obj.left == right) &&
-          obj.cut == cut
-      }
-      case _             => false
+        obj.edges == edges
+      case _ => false
     }
   }
 
@@ -25,7 +24,7 @@ case class WUnDiCut[T](left: WUnDiGraph[T], right: WUnDiGraph[T], cut: Set[WUnDi
     val prime  = 31
     var result = 1
     result = prime * result + left.hashCode() + right.hashCode()
-    result = prime * result + cut.hashCode()
+    result = prime * result + edges.hashCode()
     result
   }
 }
@@ -43,7 +42,7 @@ case object WUnDiCut {
 
     val cut: Set[WUnDiEdge[Node[T]]] = graph.edges.filter(e => {
       leftVertices.contains(e.left) && rightVertices.contains(e.right) ||
-        leftVertices.contains(e.right) && rightVertices.contains(e.left)
+      leftVertices.contains(e.right) && rightVertices.contains(e.left)
     })
     WUnDiCut(left, right, cut)
   }
