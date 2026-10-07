@@ -6,14 +6,7 @@ import computationalcognitivescience.coherencecommunication.{
   Responder,
   Simulation
 }
-import computationalcognitivescience.coherencecommunication.coherence.{
-  BeliefNetwork,
-  BiasedBeliefNetwork,
-  FoundationalBeliefNetwork,
-  MaxFlow,
-  MinCut,
-  TruthValueAssignment
-}
+import computationalcognitivescience.coherencecommunication.coherence.{BeliefNetwork, BiasedBeliefNetwork, FoundationalBeliefNetwork, MaxFlow, MinCut, TruthValueAssignment}
 import computationalcognitivescience.coherencecommunication.coherence.TruthValueAssignment.ImplMap
 import mathlib.graph.GraphImplicits.{EdgeImpl2, N, WUnDiEdgeImpl}
 import mathlib.graph.{Node, WDiEdge, WDiGraph, WUnDiEdge, WUnDiGraph}

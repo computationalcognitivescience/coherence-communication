@@ -1,7 +1,6 @@
 package computationalcognitivescience.coherencecommunication.coherence
 
-import computationalcognitivescience.coherencecommunication.coherence.Belief.Belief
-import mathlib.graph.{Node, NodeWeightPair, WUnDiEdge, WUnDiGraph}
+import mathlib.graph.{Node, WUnDiEdge, WUnDiGraph}
 import mathlib.set.SetTheory._
 
 import scala.annotation.tailrec
