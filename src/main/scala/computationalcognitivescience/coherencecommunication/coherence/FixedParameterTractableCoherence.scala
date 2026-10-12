@@ -28,15 +28,15 @@ trait FixedParameterTractableCoherence extends BaseBeliefNetwork {
     *
     * @return
     */
-  def ac2(): Option[BaseBeliefNetwork]
+  def ac2(): BaseBeliefNetwork
 
-  /** ''(AC 3), is applied only if rule (AC 2) does not apply. The rule (AC 3) is based on the
+  /** ''The rule (AC 3) is based on the
     * observation that for all elements [that are assigned true] we can merge them into one single
     * element s without affecting the amount of coherence in the network; similarly, for all
     * elements in [that are assigned false] we can merge them into one single element t.''
     *
     * @return
     */
-  def ac3(): Option[BaseBeliefNetwork]
+  def ac3(): BaseBeliefNetwork
 
 }

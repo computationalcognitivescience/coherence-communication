@@ -49,6 +49,32 @@ case object WUnDiCut {
 
   implicit class ImplWUnDiGraph[T](graph: WUnDiGraph[T]) {
 
+    def mergeVertices(mergeSet: Set[Node[T]], mergeNode: Node[T]): WUnDiGraph[T] = {
+      val toBeMergedEdges = graph.edges
+        .filter(e => (e.left in mergeSet) || (e.right in mergeSet))
+        .filterNot(e => (e.left in mergeSet) && (e.right in mergeSet))
+
+      val mergedEdges = toBeMergedEdges
+        .groupBy(edge => {
+          if(edge.left in mergeSet) edge.right
+          else edge.left
+        })
+        .map {
+          case (connectingNode: Node[T], edgeSet: Set[WUnDiEdge[Node[T]]]) =>
+            val w = sum(edgeSet, (e: WUnDiEdge[Node[T]]) => e.weight)
+            WUnDiEdge(mergeNode, connectingNode, w)
+        }
+        .toSet
+
+      val nonMergedEdges = graph.edges \ toBeMergedEdges
+
+      WUnDiGraph(
+        graph.vertices \ mergeSet + mergeNode,
+        mergedEdges \/ nonMergedEdges
+      )
+    }
+
+
     lazy val initializeMergeGraph: WUnDiGraph[Set[Node[T]]] = {
       val mergeVertices: Set[Node[Set[Node[T]]]] = graph.vertices.map(v => Node(Set(v)))
       val mergeEdges: Set[WUnDiEdge[Node[Set[Node[T]]]]] =

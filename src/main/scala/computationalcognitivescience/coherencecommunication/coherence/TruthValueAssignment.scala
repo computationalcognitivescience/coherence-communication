@@ -226,6 +226,10 @@ case class TruthValueAssignment(
     else 1.0 - (this ~ other).doubleValue / intersection.size
   }
 
+  def trueBeliefs: Set[Belief] = truthValueAssignment.filter(_._2).map(_._1)
+
+  def falseBeliefs: Set[Belief] = truthValueAssignment.filterNot(_._2).map(_._1)
+
   override def toString: String = this.truthValueAssignment.toList
     .sortBy(_._1.toString)
     .map(kv => kv._1.label + "->" + (if(kv._2) "t" else "f"))
