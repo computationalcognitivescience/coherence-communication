@@ -167,15 +167,30 @@ case class BeliefNetwork(
     val kernels = branchOnNegativeConstraints(this).map(network => network.ac2().ac3())
 
     kernels.flatMap(kernel => {
-      val minCutSolutions = kernel.graph.minCut()
+      val minCutSolutions = kernel.graph
+        .minCut()
+        .filter(cut => {
+          (Belief("T") in cut.left.vertices) && (Belief("F") in cut.right.vertices) ||
+          (Belief("T") in cut.right.vertices) && (Belief("F") in cut.left.vertices)
+        })
 
       minCutSolutions.map(minCut => {
-        val trueBeliefs  = minCut.left.vertices.map(b => b -> true)
-        val falseBeliefs = minCut.right.vertices.map(b => b -> false)
+
+        val leftBeliefs =
+          if (Belief("T") in minCut.left.vertices)
+            minCut.left.vertices.map(b => b -> true)
+          else
+            minCut.left.vertices.map(b => b -> false)
+
+        val rightBeliefs =
+          if (Belief("T") in minCut.right.vertices)
+            minCut.right.vertices.map(b => b -> true)
+          else
+            minCut.right.vertices.map(b => b -> false)
 
         kernel.biasAssignment // The truth-value assignment resulting from ac1-3
           .merge(
-            TruthValueAssignment(trueBeliefs \/ falseBeliefs)
+            TruthValueAssignment(leftBeliefs \/ rightBeliefs)
           ) // Add truth-values derived by minCut
           .filter(belief =>
             !(belief.label == "T" || belief.label == "F")
