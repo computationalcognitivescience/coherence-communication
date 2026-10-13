@@ -108,19 +108,16 @@ case class BeliefNetwork(
       val mergeNodeTrue  = graph.vertices.find(_.label == "T").getOrElse(Belief("T"))
       val mergeNodeFalse = graph.vertices.find(_.label == "F").getOrElse(Belief("F"))
 
-      println(this.toDOTString)
       val mergedGraph = graph
         .mergeVertices(falseBeliefs, mergeNodeFalse)
         .mergeVertices(trueBeliefs, mergeNodeTrue)
 
-      val mergedNet = BeliefNetwork(
+      BeliefNetwork(
         mergedGraph,
         Set.empty,
         biasBeliefs + mergeNodeFalse + mergeNodeTrue,
         biasAssignment + (mergeNodeFalse -> false) + (mergeNodeTrue -> true)
       )
-      println(mergedNet.toDOTString)
-      mergedNet
     }
   }
 
@@ -169,13 +166,15 @@ case class BeliefNetwork(
     kernels.flatMap(kernel => {
       val minCutSolutions = kernel.graph
         .minCut()
-        .filter(cut => {
-          (Belief("T") in cut.left.vertices) && (Belief("F") in cut.right.vertices) ||
-          (Belief("T") in cut.right.vertices) && (Belief("F") in cut.left.vertices)
-        })
+//        .filter(cut => {
+//          (Belief("T") in cut.left.vertices) && (Belief("F") in cut.right.vertices) ||
+//          (Belief("T") in cut.right.vertices) && (Belief("F") in cut.left.vertices)
+//        })
+
+//      println(kernel.toDOTString)
+      println(minCutSolutions)
 
       minCutSolutions.map(minCut => {
-
         val leftBeliefs =
           if (Belief("T") in minCut.left.vertices)
             minCut.left.vertices.map(b => b -> true)

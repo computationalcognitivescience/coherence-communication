@@ -36,18 +36,18 @@ object Test {
       .take((randomGraph.edges.size * 0.2).intValue)
       .toSet
 
-    val biasedBeliefAssignment = Random
-      .shuffle(randomGraph.vertices.toSeq)
-      .take((randomGraph.vertices.size * 0.2).intValue)
-      .map(belief => (belief, Random.nextBoolean()))
-      .toMap
-      .toTruthValueAssignment
+//    val biasedBeliefAssignment = Random
+//      .shuffle(randomGraph.vertices.toSeq)
+//      .take((randomGraph.vertices.size * 0.2).intValue)
+//      .map(belief => (belief, Random.nextBoolean()))
+//      .toMap
+//      .toTruthValueAssignment
 
     val bn = BeliefNetwork(
       randomGraph,
       negativeConstraints,
-      biasedBeliefAssignment.beliefs,
-      biasedBeliefAssignment
+      Set.empty,
+      TruthValueAssignment.empty
     )
 
     val cminOutputs = bn.cMin()
